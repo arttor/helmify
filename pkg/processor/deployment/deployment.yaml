@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "<CHART_NAME>.fullname" . }}-controller-manager
+  labels:
+    control-plane: controller-manager
+  {{- include "<CHART_NAME>.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  {{- include "<CHART_NAME>.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        control-plane: controller-manager
+    {{- include "<CHART_NAME>.selectorLabels" . | nindent 8 }}
+    spec:
