@@ -36,7 +36,8 @@ func readFlags() config.Config {
 	flag.StringVar(&only, "only", "chart", "A comma-separated list of processed kubernetes resources."+
 		" Useful if you want to update certain objects of existing chart. "+
 		"Supported values: crd,deployment,rbac. Example: helmify -only=crd,rbac")
-	flag.BoolVar(&result.UpdateValues, "values", true, "Set false if you don't want to update Helm values.yaml. The default value is true. Example: helmify -values=false")
+	flag.BoolVar(&result.UpdateValues, "values", true, "Set false if you don't want"+
+		" to update Helm values.yaml. The default value is true. Example: helmify -values=false")
 	flag.Parse()
 	result.ChartName = flag.Arg(0)
 	if result.ChartName == "" {
