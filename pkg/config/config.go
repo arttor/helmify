@@ -1,5 +1,7 @@
 package config
 
 type Config struct {
-	ChartName string
+	ChartName    string
+	ProcessOnly  []string
+	UpdateValues bool
 }
