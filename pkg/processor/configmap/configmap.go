@@ -62,6 +62,7 @@ func (d configMap) Process(obj *unstructured.Unstructured) (bool, context.Templa
 		data, _ := yaml.Marshal(cm.Data)
 		data = yamlformat.Indent(data, 2)
 		data = bytes.TrimRight(data, "\n ")
+		data = bytes.ReplaceAll(data, []byte("'"), []byte(""))
 		res = res + string(data)
 	}
 	return true, &result{
@@ -145,7 +146,7 @@ func replace(config *map[string]interface{}, values *context.Values, path []stri
 		return
 	}
 	_ = unstructured.SetNestedField(*values, val, valName...)
-	(*config)[key] = "{{ .Values." + strings.Join(valName, ".") + " }}"
+	(*config)[key] = "{{ .Values." + strings.Join(valName, ".") + " | quote }}"
 }
 
 type result struct {
