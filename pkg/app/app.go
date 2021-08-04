@@ -18,6 +18,9 @@ import (
 )
 
 func Start(input io.Reader, config config.Config) error {
+	if !config.Verbose {
+		logrus.SetLevel(logrus.ErrorLevel)
+	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	done := make(chan os.Signal, 1)
@@ -29,7 +32,7 @@ func Start(input io.Reader, config config.Config) error {
 	}()
 	objects := decoder.Decode(ctx.Done(), input)
 	appContext := &appctx.Context{}
-	appContext = appContext.WithProcessors(configmap.New(),
+	appContext = appContext.WithConfig(config).WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
 		rbac.ClusterRole(),
@@ -38,7 +41,7 @@ func Start(input io.Reader, config config.Config) error {
 		rbac.RoleBinding(),
 		rbac.ServiceAccount()).WithOutput(helm.NewOutput())
 	for obj := range objects {
-		err:=appContext.Process(obj)
+		err := appContext.Process(obj)
 		if err != nil {
 			return err
 		}

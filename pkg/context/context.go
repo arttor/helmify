@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
@@ -16,6 +17,7 @@ type Context struct {
 	values       Values
 	operatorName string
 	output       Output
+	config       config.Config
 }
 
 func (c *Context) WithProcessor(processor Processor) *Context {
@@ -24,6 +26,10 @@ func (c *Context) WithProcessor(processor Processor) *Context {
 }
 func (c *Context) WithOutput(output Output) *Context {
 	c.output = output
+	return c
+}
+func (c *Context) WithConfig(config config.Config) *Context {
+	c.config = config
 	return c
 }
 
@@ -98,7 +104,7 @@ type Template interface {
 	Filename() string
 	GVK() schema.GroupVersionKind
 	Values() Values
-	Write(writer io.Writer)error
+	Write(writer io.Writer) error
 	PostProcess(data Data)
 	SetChartName(name string)
 }
