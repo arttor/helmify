@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 	"strings"
-
 	//"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -42,23 +41,23 @@ func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Templ
 	depl := appsv1.Deployment{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &depl)
 	if err != nil {
-		return true, nil,  errors.Wrap(err, "unable to cast to deployment")
+		return true, nil, errors.Wrap(err, "unable to cast to deployment")
 	}
 	if depl.Labels["control-plane"] != "controller-manager" {
 		logrus.Warn("got deployment but not controller manager")
-		return false, nil,  nil
+		return false, nil, nil
 	}
 	var repo, tag string
 	for i, c := range depl.Spec.Template.Spec.Containers {
 		if c.Name != "manager" {
 			continue
 		}
-		imgTag := strings.Split(c.Image, ":")
-		if len(imgTag) != 2 {
+		index := strings.LastIndex(c.Image, ":")
+		if index < 0 {
 			return true, nil, errors.New("wrong image format: " + c.Image)
 		}
-		repo = imgTag[0]
-		tag = imgTag[1]
+		repo = c.Image[:index]
+		tag = c.Image[index+1:]
 		c.Image = "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
 		depl.Spec.Template.Spec.Containers[i] = c
 	}
@@ -77,11 +76,11 @@ func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Templ
 	values := context.Values{}
 	err = unstructured.SetNestedField(values, false, "autoscaling", "enabled")
 	if err != nil {
-		return true, nil,  errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, errors.Wrap(err, "unable to set deployment value field")
 	}
 	err = unstructured.SetNestedField(values, int64(*depl.Spec.Replicas), "replicaCount")
 	if err != nil {
-		return true, nil,  errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, errors.Wrap(err, "unable to set deployment value field")
 	}
 	err = unstructured.SetNestedStringMap(values, depl.Spec.Template.ObjectMeta.Annotations, "podAnnotations")
 	if err != nil {
@@ -93,16 +92,17 @@ func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Templ
 	}
 	err = unstructured.SetNestedField(values, tag, "manager", "image", "tag")
 	if err != nil {
-		return true, nil,  errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, errors.Wrap(err, "unable to set deployment value field")
 	}
 	return true, &result{
-		values:  values,
-		data: res,
+		values: values,
+		data:   res,
 	}, nil
 }
+
 type result struct {
 	data      []byte
-	values context.Values
+	values    context.Values
 	chartName string
 }
 
