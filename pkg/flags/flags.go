@@ -27,11 +27,11 @@ func Read() config.Config {
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
 	flag.BoolVar(&help, "help", false, "Print help. Example: helmify -help")
 	flag.BoolVar(&result.Verbose, "v", false, "Enable verbose output. Example: helmify -v")
-	flag.StringVar(&only, "only", "", "A comma-separated list of processed kubernetes resources."+
-		"\nUseful if you want to update certain objects of existing chart.\n"+
-		"Supported values: crd,deployment,rbac. Example: helmify -only=crd,rbac")
-	flag.BoolVar(&result.SkipValues, "skip-val", true, "Set the flag if you don't want"+
-		" to update Helm values.yaml.\n Example: helmify -skip-val")
+	//flag.StringVar(&only, "only", "", "A comma-separated list of processed kubernetes resources."+
+	//	"\nUseful if you want to update certain objects of existing chart.\n"+
+	//	"Supported values: crd,deployment,rbac. Example: helmify -only=crd,rbac")
+	//flag.BoolVar(&result.SkipValues, "skip-val", true, "Set the flag if you don't want"+
+	//	" to update Helm values.yaml.\n Example: helmify -skip-val")
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)

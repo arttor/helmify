@@ -10,6 +10,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor/crd"
 	"github.com/arttor/helmify/pkg/processor/deployment"
 	"github.com/arttor/helmify/pkg/processor/rbac"
+	"github.com/arttor/helmify/pkg/processor/service"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ func Start(input io.Reader, config config.Config) error {
 	appContext = appContext.WithConfig(config).WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
+		service.New(),
 		rbac.ClusterRole(),
 		rbac.ClusterRoleBinding(),
 		rbac.Role(),

@@ -55,7 +55,7 @@ func (o *output) write(filename, chartName string, templates []context.Template)
 			return err
 		}
 		if i != len(templates)-1 {
-			_,err=f.Write([]byte("\n---\n"))
+			_, err = f.Write([]byte("\n---\n"))
 			if err != nil {
 				return err
 			}
@@ -66,19 +66,6 @@ func (o *output) write(filename, chartName string, templates []context.Template)
 func (o *output) writeValues(chartName string, values context.Values) error {
 	file := filepath.Join(chartName, "values.yaml")
 	if fi, err := os.Stat(file); err == nil && fi.Size() != 0 {
-		yamlFile, err := ioutil.ReadFile(file)
-		if err != nil {
-			return err
-		}
-		prevVal := context.Values{}
-		err = yaml.Unmarshal(yamlFile, &prevVal)
-		if err != nil {
-			return err
-		}
-		err = values.Merge(prevVal)
-		if err != nil {
-			return err
-		}
 		err = os.Remove(file)
 		if err != nil {
 			return err

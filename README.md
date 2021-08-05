@@ -38,26 +38,19 @@ Usage:
 | --- | --- | --- |
 | -h -help | Prints help | `helmify -h`|
 | -v | Enable verbose output. | `helmify -v`|
-| -only | A comma-separated list of processed kubernetes resources.<br/>Useful if you want to update certain objects of existing chart.<br/>Supported values: `crd`,`deployment`,`rbac`. | `helmify -only=crd,rbac`|
-| -skip-val | Set if you don't want to update Helm `values.yaml`.<br/>Option may be useful if you don't want to lose<br/>comments or change item order in your `values.yaml` | `helmify -skip-val` |
 
 ## Status
 Supported default operator resources:
 - deployment
+- service
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
 - configmap
 
-TODO:
-- webhooks (service,cert, etc...)
+
 
 ### Known issues
 - Helmify will not overwrite `Chart.yaml` file if presented. Done on purpose.
 - Helmify will not delete existing template file, only overwrite. So, if you delete CRD, re-run `kustomize | helmify` 
 crd file will still be in templates directory. (todo: add option for this)
-- Helmify overwrites template files on every run. 
-  This meas that all your manual changes in helm files will be lost on the next run. See `-only` flags
-- Helmify merges `values.yaml` on every re-run. This means that your manual changes in `values.yaml`
-  will be preserved but values may be reordered and comments will be lost on every re-run. Merge flow:
-  - read values from existing `values.yaml` and stores it in map
-  - merges new values into map
-  - overwrite `values.yaml` with values from map
+- Helmify overwrites templates and values files on every run. 
+  This meas that all your manual changes in helm template files will be lost on the next run. See `-only` flag.
