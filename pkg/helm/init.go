@@ -110,14 +110,14 @@ version: 0.1.0
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "1.16.0"
+appVersion: "0.1.0"
 `
 
 var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 const maxChartNameLength = 250
 
-func (o*output)Init(chartName, appName string) error {
+func (o *output) Init(chartName, appName string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}
@@ -135,23 +135,23 @@ func create(chartName, appName string) error {
 			return err
 		}
 	}
-	err := os.WriteFile(filepath.Join(chartName,"Chart.yaml"), []byte(fmt.Sprintf(defaultChartfile, appName)), 0755)
+	err := os.WriteFile(filepath.Join(chartName, "Chart.yaml"), []byte(fmt.Sprintf(defaultChartfile, appName)), 0755)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(chartName,".helmignore"), []byte(defaultIgnore), 0755)
+	err = os.WriteFile(filepath.Join(chartName, ".helmignore"), []byte(defaultIgnore), 0755)
 	if err != nil {
 		return err
 	}
-	err= os.WriteFile(filepath.Join(chartName,".helmignore"), []byte(defaultIgnore), 0755)
+	err = os.WriteFile(filepath.Join(chartName, ".helmignore"), []byte(defaultIgnore), 0755)
 	if err != nil {
 		return err
 	}
-	err = os.Mkdir(filepath.Join(chartName,"templates"), 0755)
+	err = os.Mkdir(filepath.Join(chartName, "templates"), 0755)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(chartName,"templates","_helpers.tpl"), []byte(strings.ReplaceAll(defaultHelpers,"<CHARTNAME>",chartName)), 0755)
+	return os.WriteFile(filepath.Join(chartName, "templates", "_helpers.tpl"), []byte(strings.ReplaceAll(defaultHelpers, "<CHARTNAME>", chartName)), 0755)
 }
 func validateChartName(name string) error {
 	if name == "" || len(name) > maxChartNameLength {
