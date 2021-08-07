@@ -3,6 +3,7 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/arttor/helmify)
 ![GitHub](https://img.shields.io/github/license/arttor/helmify)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/arttor/helmify)
+[![Go Report Card](https://goreportcard.com/badge/github.com/arttor/helmify)](https://goreportcard.com/report/github.com/arttor/helmify)
 
 Helmify reads kubernetes resources from std.in and produces a [Helm](https://github.com/helm/helm) chart.
 
