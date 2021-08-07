@@ -38,9 +38,10 @@ func (c *Context) WithProcessors(processors ...Processor) *Context {
 
 // Add k8s object to helmify context
 func (c *Context) Add(obj *unstructured.Unstructured) {
-	if c.info.OperatorName == "" {
-		c.info.OperatorName = processor.ExtractOperatorName(obj)
+	if c.info.OperatorNamespace == "" {
+		c.info.OperatorNamespace = processor.ExtractOperatorNamespace(obj)
 	}
+	c.info.OperatorName = processor.ExtractOperatorName(obj, c.info.OperatorName)
 	c.objects = append(c.objects, obj)
 }
 

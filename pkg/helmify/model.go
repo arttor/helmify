@@ -42,6 +42,7 @@ type Output interface {
 }
 
 type ChartInfo struct {
-	ChartName    string
-	OperatorName string
+	ChartName         string
+	OperatorName      string
+	OperatorNamespace string
 }

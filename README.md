@@ -45,6 +45,7 @@ Supported default operator resources:
 - service
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
 - configmap
+- webhooks (cert, issuer, ValidatingWebhookConfiguration)
 
 
 

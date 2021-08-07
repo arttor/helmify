@@ -16,13 +16,13 @@ import (
 	"strings"
 )
 
-var (
-	deploymentGVC = schema.GroupVersionKind{
-		Group:   "apps",
-		Version: "v1",
-		Kind:    "Deployment",
-	}
-	deploymentTempl = `apiVersion: apps/v1
+var deploymentGVC = schema.GroupVersionKind{
+	Group:   "apps",
+	Version: "v1",
+	Kind:    "Deployment",
+}
+
+const deploymentTempl = `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "%[1]s.fullname" . }}-controller-manager
@@ -49,7 +49,6 @@ spec:
     spec:
 %[2]s
 `
-)
 
 func New() helmify.Processor {
 	return &deployment{}

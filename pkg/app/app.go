@@ -11,6 +11,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor/deployment"
 	"github.com/arttor/helmify/pkg/processor/rbac"
 	"github.com/arttor/helmify/pkg/processor/service"
+	"github.com/arttor/helmify/pkg/processor/webhook"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -41,7 +42,10 @@ func Start(input io.Reader, config config.Config) error {
 		rbac.ClusterRoleBinding(),
 		rbac.Role(),
 		rbac.RoleBinding(),
-		rbac.ServiceAccount()).WithOutput(helm.NewOutput())
+		rbac.ServiceAccount(),
+		webhook.Issuer(),
+		webhook.Certificate(),
+		webhook.Webhook()).WithOutput(helm.NewOutput())
 
 	for obj := range objects {
 		helmifyContext.Add(obj)

@@ -27,12 +27,12 @@ metadata:
 `
 	svcTempSpec = `
 spec:
-  type: {{ .Values.%s.type }}
+  type: {{ .Values.%[1]s.type }}
   selector:
-%s
-  {{- include "chart.selectorLabels" . | nindent 4 }}
+%[2]s
+  {{- include "%[3]s.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.%s.ports | toYaml | nindent 2 -}}
+	{{- .Values.%[1]s.ports | toYaml | nindent 2 -}}
 `
 )
 
@@ -104,7 +104,7 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		ports = append(ports, pMap)
 	}
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
-	res = res + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, shortNameCamel)
+	res = res + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
 	return true, &result{
 		name:   shortName,
 		data:   res,

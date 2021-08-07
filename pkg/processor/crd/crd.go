@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var crdTeml = `apiVersion: apiextensions.k8s.io/v1
+const crdTeml = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: {{ .Values.crd.%[1]s.plural }}.{{ .Values.crd.%[1]s.group }}

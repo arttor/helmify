@@ -602,3 +602,66 @@ spec:
         runAsNonRoot: true
       serviceAccountName: ceph-limiter-operator-controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ceph-limiter-operator-webhook-service
+  namespace: ceph-limiter-operator-system
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+  selector:
+    control-plane: controller-manager
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ceph-limiter-operator-serving-cert
+  namespace: ceph-limiter-operator-system
+spec:
+  dnsNames:
+  - ceph-limiter-operator-webhook-service.ceph-limiter-operator-system.svc
+  - ceph-limiter-operator-webhook-service.ceph-limiter-operator-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: ceph-limiter-operator-selfsigned-issuer
+  secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ceph-limiter-operator-selfsigned-issuer
+  namespace: ceph-limiter-operator-system
+spec:
+  selfSigned: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: ceph-limiter-operator-system/ceph-limiter-operator-serving-cert
+  name: ceph-limiter-operator-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: ceph-limiter-operator-webhook-service
+      namespace: ceph-limiter-operator-system
+      path: /validate-ceph-example-com-v1alpha1-volume
+  failurePolicy: Fail
+  name: vvolume.kb.io
+  rules:
+  - apiGroups:
+    - test.example.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - volumes
+  sideEffects: None
