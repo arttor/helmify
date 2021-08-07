@@ -1,4 +1,5 @@
 # Helmify
+[![CI](https://github.com/arttor/helmify/actions/workflows/ci.yml/badge.svg)](https://github.com/arttor/helmify/actions/workflows/ci.yml)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/arttor/helmify)
 ![GitHub](https://img.shields.io/github/license/arttor/helmify)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/arttor/helmify)
