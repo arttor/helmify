@@ -32,10 +32,15 @@ jobs:
       
     - name: Run
       run: cat test_data/kustomize.output | go run cmd/helmify/main.go -v mychart
+      
+    - name: helm-check
+      uses: igabaydulin/helm-check-action@0.1.4
+      env:
+        CHART_LOCATION: ./mychart
          
-    - name: Validate Helm
-      uses: WyriHaximus/github-action-helm3@v2.0
-      with:
-          exec: helm lint ./mychart/  --strict 
+#    - name: Validate Helm
+#     uses: WyriHaximus/github-action-helm3@v2.0
+#     with:
+#         exec: helm lint ./mychart/  --strict 
       
 
