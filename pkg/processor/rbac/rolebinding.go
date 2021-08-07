@@ -95,6 +95,3 @@ func (r *rbResult) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
 }
-
-func (r *rbResult) PostProcess(values helmify.Values) {
-}

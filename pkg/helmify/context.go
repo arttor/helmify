@@ -47,28 +47,19 @@ func (c *Context) Add(obj *unstructured.Unstructured) {
 
 // CreateHelm creates helm chart from context k8s objects
 func (c *Context) CreateHelm(stop <-chan struct{}) error {
-	values := Values{}
 	var templates []Template
 	for _, obj := range c.objects {
-		if interrupted(stop) {
-			return nil
-		}
 		template, err := c.process(obj)
 		if err != nil {
 			return err
 		}
 		if template != nil {
 			templates = append(templates, template)
-			err = values.Merge(template.Values())
-			if err != nil {
-				return err
-			}
 		}
-	}
-	for _, t := range templates {
-		t.PostProcess(values)
-		if interrupted(stop) {
+		select {
+		case <-stop:
 			return nil
+		default:
 		}
 	}
 	return c.output.Create(c.info, templates)
@@ -88,13 +79,4 @@ func (c *Context) process(obj *unstructured.Unstructured) (Template, error) {
 		"Name":     obj.GetName(),
 	}).Warn("skipped: no suitable processor found")
 	return nil, nil
-}
-
-func interrupted(stop <-chan struct{}) bool {
-	select {
-	case <-stop:
-		return true
-	default:
-		return false
-	}
 }

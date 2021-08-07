@@ -72,16 +72,3 @@ func (r *rResult) Write(writer io.Writer) error {
 	_, err := writer.Write([]byte(r.data))
 	return err
 }
-
-func (r *rResult) PostProcess(values helmify.Values) {
-	crds, ok, err := unstructured.NestedMap(values, "crd")
-	if err != nil || !ok {
-		return
-	}
-	for k, v := range crds {
-		group := v.(map[string]interface{})["group"].(string)
-		plural := v.(map[string]interface{})["plural"].(string)
-		r.data = strings.ReplaceAll(r.data, group, "{{ .Values.crd."+k+".group }}")
-		r.data = strings.ReplaceAll(r.data, plural, "{{ .Values.crd."+k+".plural }}")
-	}
-}

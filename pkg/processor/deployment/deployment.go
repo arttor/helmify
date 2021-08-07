@@ -144,6 +144,3 @@ func (r *result) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
 }
-
-func (r *result) PostProcess(helmify.Values) {
-}

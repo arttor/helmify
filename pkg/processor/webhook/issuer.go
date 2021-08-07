@@ -70,6 +70,3 @@ func (r *issResult) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
 }
-
-func (r *issResult) PostProcess(values helmify.Values) {
-}

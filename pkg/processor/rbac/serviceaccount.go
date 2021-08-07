@@ -60,6 +60,3 @@ func (r *saResult) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
 }
-
-func (r *saResult) PostProcess(values helmify.Values) {
-}

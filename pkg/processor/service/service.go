@@ -130,6 +130,3 @@ func (r *result) Write(writer io.Writer) error {
 	_, err := writer.Write([]byte(r.data))
 	return err
 }
-
-func (r *result) PostProcess(values helmify.Values) {
-}
