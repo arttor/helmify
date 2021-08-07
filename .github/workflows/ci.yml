@@ -57,7 +57,7 @@ jobs:
 #     - name: Run chart-testing (install)
 #       uses: HexF/chart-testing-action@v3.0.0
 #       with:
-        command: install --chart-dirs mychart --charts mychart
+#         command: install --chart-dirs mychart --charts mychart
       
 #    - name: helm-check
 #      uses: igabaydulin/helm-check-action@0.1.4
