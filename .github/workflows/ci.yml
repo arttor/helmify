@@ -18,17 +18,14 @@ jobs:
       with:
         go-version: 1.16
 
-#     - name: Fmt
-#       run: go fmt ./...
+    - name: Fmt
+      run: go fmt ./...
       
-#     - name: Vet
-#       run: go vet ./...
-      
-#     - name: Build
-#       run: go build -v ./...
+    - name: Vet
+      run: go vet ./...
 
-#     - name: Test
-#       run: go test -v ./...
+    - name: Test
+      run: go test -v ./...
       
     - name: Run
       run: cat test_data/kustomize.output | go run cmd/helmify/main.go -v mychart
@@ -41,32 +38,16 @@ jobs:
     - name: helm lint
       run: helm lint mychart --strict 
 
-    - name: Create kind cluster
-      uses: helm/kind-action@v1.0.0-alpha.3
-      with:
-        install_local_path_provisioner: true
-        
-    - name: cert install
-      run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml 
-        
-    - name: helm install
-      run: helm install my-release ./mychart -n my-namespace --create-namespace  
-      
-
-#     - name: Run chart-testing (install)
-#       uses: HexF/chart-testing-action@v3.0.0
+#     - name: Create kind cluster
+#       uses: helm/kind-action@v1.0.0-alpha.3
 #       with:
-#         command: install --chart-dirs mychart --charts mychart
-      
-#    - name: helm-check
-#      uses: igabaydulin/helm-check-action@0.1.4
-#       env:
-#         CHART_LOCATION: ./mychart
-#         CHART_VALUES: ./hmychart/values.yaml
-         
-#    - name: Validate Helm
-#     uses: WyriHaximus/github-action-helm3@v2.0
-#     with:
-#         exec: helm lint ./mychart/  --strict 
+#         install_local_path_provisioner: true
+        
+#     - name: cert install
+#       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml 
+        
+#     - name: helm install
+#       run: helm install my-release ./mychart -n my-namespace --create-namespace  
+
       
 
