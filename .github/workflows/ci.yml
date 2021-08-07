@@ -21,8 +21,8 @@ jobs:
     - name: Fmt
       run: go fmt ./...
       
-    - name: Vet
-      run: go vet ./...
+#     - name: Vet
+#       run: go vet ./...
       
     - name: Build
       run: go build -v ./...
@@ -33,22 +33,30 @@ jobs:
     - name: Run
       run: cat test_data/kustomize.output | go run cmd/helmify/main.go -v mychart
       
-    - name: Run chart-testing (lint)
-      id: lint
-      uses: HexF/chart-testing-action@v3.0.0
+    - name: Helm lint
+      uses: azure/setup-helm@v1
       with:
-        command: lint --chart-dirs mychart --charts mychart
+        version: 'v3.6.2'
+     
+    - name: helm
+      run: helm lint mychart --strict 
+      
+#     - name: Run chart-testing (lint)
+#       id: lint
+#       uses: HexF/chart-testing-action@v3.0.0
+#       with:
+#         command: lint --chart-dirs mychart --charts mychart
 
-    - name: Create kind cluster
-      uses: helm/kind-action@v1.0.0-alpha.3
-      with:
-        install_local_path_provisioner: true
-      # Only build a kind cluster if there are chart changes to test.
-      if: steps.lint.outputs.changed == 'true'
+#     - name: Create kind cluster
+#       uses: helm/kind-action@v1.0.0-alpha.3
+#       with:
+#         install_local_path_provisioner: true
+#       # Only build a kind cluster if there are chart changes to test.
+#       if: steps.lint.outputs.changed == 'true'
 
-    - name: Run chart-testing (install)
-      uses: HexF/chart-testing-action@v3.0.0
-      with:
+#     - name: Run chart-testing (install)
+#       uses: HexF/chart-testing-action@v3.0.0
+#       with:
         command: install --chart-dirs mychart --charts mychart
       
 #    - name: helm-check
