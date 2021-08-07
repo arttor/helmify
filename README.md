@@ -21,7 +21,7 @@ Tested with operator-sdk version: "v1.8.0".
 ```makefile
 HELMIFY = $(shell pwd)/bin/helmify
 helmify:
-	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.1.0)
+	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.2.0)
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)

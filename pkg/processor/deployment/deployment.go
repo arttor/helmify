@@ -47,8 +47,7 @@ spec:
         control-plane: controller-manager
     {{- include "%[1]s.selectorLabels" . | nindent 8 }}
     spec:
-%[2]s
-`
+%[2]s`
 
 func New() helmify.Processor {
 	return &deployment{}

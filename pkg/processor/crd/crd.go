@@ -37,8 +37,7 @@ status:
     kind: ""
     plural: ""
   conditions: []
-  storedVersions: []
-`
+  storedVersions: []`
 
 var crdGVC = schema.GroupVersionKind{
 	Group:   "apiextensions.k8s.io",

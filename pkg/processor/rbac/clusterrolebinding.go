@@ -25,8 +25,7 @@ metadata:
 roleRef:
 %[3]s
 subjects:
-%[4]s
-`
+%[4]s`
 )
 
 var (

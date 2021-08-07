@@ -20,8 +20,7 @@ metadata:
   labels:
   {{- include "%[1]s.labels" . | nindent 4 }}
 spec:
-%[3]s
-`
+%[3]s`
 )
 
 var (
