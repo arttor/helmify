@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Fmt
+      run: go fmt -v ./...
+      
+    - name: Vet
+      run: go vet -v ./...
+      
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
+      
+    - name: Run
+      run: cat test_data/kustomize.output | go run cmd/helmify/main.go mychart
+         
+    - name: Validate Helm
+      uses: WyriHaximus/github-action-helm3@v2.0
+      with:
+          exec: helm lint ./mychart/  --strict 
+      
+
