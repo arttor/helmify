@@ -15,7 +15,7 @@ import (
 
 const (
 	certTempl = `apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: Certificate
 metadata:
   name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
