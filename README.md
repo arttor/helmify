@@ -53,4 +53,5 @@ Supported default operator resources:
 - Helmify will not delete existing template file, only overwrite. So, if you delete CRD, re-run `kustomize | helmify` 
 crd file will still be in templates directory. (todo: add option for this)
 - Helmify overwrites templates and values files on every run. 
-  This meas that all your manual changes in helm template files will be lost on the next run. See `-only` flag.
+  This meas that all your manual changes in helm template files will be lost on the next run. 
+  Use kustomize /config folder as a single source of true and make changes there.
