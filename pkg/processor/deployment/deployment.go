@@ -2,8 +2,8 @@ package deployment
 
 import (
 	"bytes"
-	_ "embed"
-	"github.com/arttor/helmify/pkg/context"
+	"fmt"
+	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 	"strings"
-	//"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var (
@@ -23,18 +22,43 @@ var (
 		Version: "v1",
 		Kind:    "Deployment",
 	}
-	//go:embed deployment.yaml
-	deploymentYaml []byte
+	deploymentTempl = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "%[1]s.fullname" . }}-controller-manager
+  labels:
+    control-plane: controller-manager
+  {{- include "%[1]s.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  {{- include "%[1]s.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        control-plane: controller-manager
+    {{- include "%[1]s.selectorLabels" . | nindent 8 }}
+    spec:
+%[2]s
+`
 )
 
-func New() context.Processor {
+func New() helmify.Processor {
 	return &deployment{}
 }
 
 type deployment struct {
 }
 
-func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != deploymentGVC {
 		return false, nil, nil
 	}
@@ -61,19 +85,24 @@ func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Templ
 		c.Image = "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
 		depl.Spec.Template.Spec.Containers[i] = c
 	}
-	name := strings.TrimSuffix(depl.GetNamespace(), "-system")
+	name := info.OperatorName
+
+	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+
 	for _, v := range depl.Spec.Template.Spec.Volumes {
 		if v.ConfigMap != nil {
-			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, `{{ include "<CHART_NAME>.fullname" . }}`)
+			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, fullNameTeml)
 		}
 	}
-	depl.Spec.Template.Spec.ServiceAccountName = strings.ReplaceAll(depl.Spec.Template.Spec.ServiceAccountName, name, `{{ include "<CHART_NAME>.fullname" . }}`)
+	depl.Spec.Template.Spec.ServiceAccountName = strings.ReplaceAll(depl.Spec.Template.Spec.ServiceAccountName, name, fullNameTeml)
 
 	spec, _ := yaml.Marshal(depl.Spec.Template.Spec)
 	spec = yamlformat.Indent(spec, 6)
 	spec = bytes.TrimRight(spec, "\n ")
-	res := append(deploymentYaml, spec...)
-	values := context.Values{}
+
+	res := fmt.Sprintf(deploymentTempl, info.ChartName, string(spec))
+
+	values := helmify.Values{}
 	err = unstructured.SetNestedField(values, false, "autoscaling", "enabled")
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to set deployment value field")
@@ -96,36 +125,27 @@ func (d deployment) Process(obj *unstructured.Unstructured) (bool, context.Templ
 	}
 	return true, &result{
 		values: values,
-		data:   res,
+		data:   []byte(res),
 	}, nil
 }
 
 type result struct {
-	data      []byte
-	values    context.Values
-	chartName string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *result) Filename() string {
 	return "deployment.yaml"
 }
 
-func (r *result) GVK() schema.GroupVersionKind {
-	return deploymentGVC
-}
-
-func (r *result) Values() context.Values {
+func (r *result) Values() helmify.Values {
 	return r.values
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(bytes.ReplaceAll(r.data, []byte("<CHART_NAME>"), []byte(r.chartName)))
+	_, err := writer.Write(r.data)
 	return err
 }
 
-func (r *result) PostProcess(data context.Data) {
-}
-
-func (r *result) SetChartName(name string) {
-	r.chartName = name
+func (r *result) PostProcess(helmify.Values) {
 }

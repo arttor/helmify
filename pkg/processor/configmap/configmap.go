@@ -4,7 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"github.com/arttor/helmify/pkg/context"
+	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -22,10 +22,11 @@ const (
 	configmapTempl = `apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "<CHART_NAME>.fullname" . }}-<NAME>
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
-  {{- include "<CHART_NAME>.labels" . | nindent 4 }}
+  {{- include "%[1]s.labels" . | nindent 4 }}
 data:
+%[3]s
 `
 )
 
@@ -37,14 +38,14 @@ var (
 	}
 )
 
-func New() context.Processor {
+func New() helmify.Processor {
 	return &configMap{}
 }
 
 type configMap struct {
 }
 
-func (d configMap) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
@@ -53,18 +54,18 @@ func (d configMap) Process(obj *unstructured.Unstructured) (bool, context.Templa
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to configmap")
 	}
-	prefix := strings.TrimSuffix(cm.GetNamespace(), "system")
-	name := strings.TrimPrefix(cm.GetName(), prefix)
-	res := strings.ReplaceAll(configmapTempl, "<NAME>", name)
-	var values context.Values
+	name := strings.TrimPrefix(cm.GetName(), info.OperatorName+"-")
+	var values helmify.Values
+	var data []byte
 	if cm.Data != nil && len(cm.Data) != 0 {
 		cm.Data, values = parseMapData(cm.Data)
-		data, _ := yaml.Marshal(cm.Data)
+		data, _ = yaml.Marshal(cm.Data)
 		data = yamlformat.Indent(data, 2)
 		data = bytes.TrimRight(data, "\n ")
 		data = bytes.ReplaceAll(data, []byte("'"), []byte(""))
-		res = res + string(data)
 	}
+	res := fmt.Sprintf(configmapTempl, info.ChartName, name, string(data))
+
 	return true, &result{
 		name:   name + ".yaml",
 		data:   []byte(res),
@@ -72,9 +73,9 @@ func (d configMap) Process(obj *unstructured.Unstructured) (bool, context.Templa
 	}, nil
 }
 
-func parseMapData(data map[string]string) (map[string]string, context.Values) {
+func parseMapData(data map[string]string) (map[string]string, helmify.Values) {
 	configStr := data["controller_manager_config.yaml"]
-	values := context.Values{}
+	values := helmify.Values{}
 	if configStr == "" {
 		return data, values
 	}
@@ -88,13 +89,13 @@ func parseMapData(data map[string]string) (map[string]string, context.Values) {
 	confBytes, err := yaml.Marshal(config)
 	if err != nil {
 		logrus.WithError(err).Warn("unable to marshal controller_manager_config.yaml")
-		return data, context.Values{}
+		return data, helmify.Values{}
 	}
 	data["controller_manager_config.yaml"] = string(confBytes)
 	return data, values
 }
 
-func parseConfig(config *map[string]interface{}, values *context.Values, path []string) {
+func parseConfig(config *map[string]interface{}, values *helmify.Values, path []string) {
 	for k, v := range *config {
 		switch t := v.(type) {
 		case string, bool, float64, int64:
@@ -116,7 +117,7 @@ func parseConfig(config *map[string]interface{}, values *context.Values, path []
 		}
 	}
 }
-func replace(config *map[string]interface{}, values *context.Values, path []string, key string) {
+func replace(config *map[string]interface{}, values *helmify.Values, path []string, key string) {
 	if key == "kind" || key == "apiVersion" {
 		return
 	}
@@ -150,32 +151,23 @@ func replace(config *map[string]interface{}, values *context.Values, path []stri
 }
 
 type result struct {
-	name      string
-	data      []byte
-	chartName string
-	values    context.Values
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *result) Filename() string {
 	return r.name
 }
 
-func (r *result) GVK() schema.GroupVersionKind {
-	return configMapGVC
-}
-
-func (r *result) Values() context.Values {
+func (r *result) Values() helmify.Values {
 	return r.values
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(bytes.ReplaceAll(r.data, []byte("<CHART_NAME>"), []byte(r.chartName)))
+	_, err := writer.Write(r.data)
 	return err
 }
 
-func (r *result) PostProcess(data context.Data) {
-}
-
-func (r *result) SetChartName(name string) {
-	r.chartName = name
+func (r *result) PostProcess(helmify.Values) {
 }

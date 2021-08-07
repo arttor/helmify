@@ -1,44 +1,54 @@
 package helm
 
 import (
-	"github.com/arttor/helmify/pkg/context"
+	"github.com/arttor/helmify/pkg/helmify"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/yaml"
 )
 
-func NewOutput() context.Output {
+func NewOutput() helmify.Output {
 	return &output{}
 }
 
 type output struct {
-	files map[string][]context.Template
 }
 
-func (o *output) Add(template context.Template) {
-	if o.files == nil {
-		o.files = map[string][]context.Template{}
-	}
-	file := o.files[template.Filename()]
-	file = append(file, template)
-	o.files[template.Filename()] = file
-}
-
-func (o *output) Flush(chartName string, values context.Values) error {
-	err := o.writeValues(chartName, values)
+func (o *output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template) error {
+	// init Helm structure if not exists (Chart.yaml, .helmignore, templates/_helpers.tpl)
+	err := o.init(chartInfo.ChartName, chartInfo.OperatorName)
 	if err != nil {
 		return err
 	}
-	for filename, tpls := range o.files {
-		err = o.write(filename, chartName, tpls)
+	// align templates into files
+	files := map[string][]helmify.Template{}
+	values := helmify.Values{}
+	for _, template := range templates {
+		file := files[template.Filename()]
+		file = append(file, template)
+		files[template.Filename()] = file
+		err = values.Merge(template.Values())
+		if err != nil {
+			return err
+		}
+	}
+	// overwrite values.yaml
+	err = o.writeValues(chartInfo.ChartName, values)
+	if err != nil {
+		return err
+	}
+	// overwrite templates files
+	for filename, tpls := range files {
+		err = o.write(filename, chartInfo.ChartName, tpls)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
-func (o *output) write(filename, chartName string, templates []context.Template) error {
+
+func (o *output) write(filename, chartName string, templates []helmify.Template) error {
 	file := filepath.Join(chartName, "templates", filename)
 	err := os.Remove(file)
 	if err != nil && !os.IsNotExist(err) {
@@ -63,7 +73,8 @@ func (o *output) write(filename, chartName string, templates []context.Template)
 	}
 	return nil
 }
-func (o *output) writeValues(chartName string, values context.Values) error {
+
+func (o *output) writeValues(chartName string, values helmify.Values) error {
 	file := filepath.Join(chartName, "values.yaml")
 	if fi, err := os.Stat(file); err == nil && fi.Size() != 0 {
 		err = os.Remove(file)

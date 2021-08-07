@@ -117,7 +117,7 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 const maxChartNameLength = 250
 
-func (o *output) Init(chartName, appName string) error {
+func (o *output) init(chartName, appName string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}

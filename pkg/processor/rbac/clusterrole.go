@@ -2,7 +2,8 @@ package rbac
 
 import (
 	"bytes"
-	"github.com/arttor/helmify/pkg/context"
+	"fmt"
+	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,10 +16,11 @@ const (
 	clusterRoleTempl = `apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: <NAME>
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
-  {{- include "<CHART_NAME>.labels" . | nindent 4 }}
+  {{- include "%[1]s.labels" . | nindent 4 }}
 rules:
+%[3]s
 `
 )
 
@@ -30,32 +32,31 @@ var (
 	}
 )
 
-func ClusterRole() context.Processor {
+func ClusterRole() helmify.Processor {
 	return &clusterRole{}
 }
 
 type clusterRole struct {
 }
 
-func (r clusterRole) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (r clusterRole) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleGVC {
 		return false, nil, nil
 	}
-
 	rules, _ := yaml.Marshal(obj.Object["rules"])
 	rules = yamlformat.Indent(rules, 2)
 	rules = bytes.TrimRight(rules, "\n ")
-	res := clusterRoleTempl + string(rules)
+	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	res := fmt.Sprintf(clusterRoleTempl, info.ChartName, name, string(rules))
 	return true, &crResult{
-		name: obj.GetName(),
+		name: name,
 		data: res,
 	}, nil
 }
 
 type crResult struct {
-	name      string
-	data      string
-	chartName string
+	name string
+	data string
 }
 
 func (r *crResult) Filename() string {
@@ -66,19 +67,17 @@ func (r *crResult) GVK() schema.GroupVersionKind {
 	return clusterRoleGVC
 }
 
-func (r *crResult) Values() context.Values {
-	return context.Values{}
+func (r *crResult) Values() helmify.Values {
+	return helmify.Values{}
 }
 
 func (r *crResult) Write(writer io.Writer) error {
-	_, err := writer.Write([]byte(strings.ReplaceAll(r.data, "<CHART_NAME>", r.chartName)))
+	_, err := writer.Write([]byte(r.data))
 	return err
 }
 
-func (r *crResult) PostProcess(data context.Data) {
-	r.name = strings.TrimPrefix(r.name, data.Name()+"-")
-	r.data = strings.ReplaceAll(r.data, "<NAME>", `{{ include "<CHART_NAME>.fullname" . }}-`+r.name)
-	crds, ok, err := unstructured.NestedMap(data.Values(), "crd")
+func (r *crResult) PostProcess(values helmify.Values) {
+	crds, ok, err := unstructured.NestedMap(values, "crd")
 	if err != nil || !ok {
 		return
 	}
@@ -88,8 +87,4 @@ func (r *crResult) PostProcess(data context.Data) {
 		r.data = strings.ReplaceAll(r.data, group, "{{ .Values.crd."+k+".group }}")
 		r.data = strings.ReplaceAll(r.data, plural, "{{ .Values.crd."+k+".plural }}")
 	}
-}
-
-func (r *crResult) SetChartName(name string) {
-	r.chartName = name
 }

@@ -3,7 +3,7 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"github.com/arttor/helmify/pkg/context"
+	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -21,9 +21,9 @@ const (
 	svcTemplMeta = `apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "<CHART_NAME>.fullname" . }}-%s
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
-  {{- include "<CHART_NAME>.labels" . | nindent 4 }}
+  {{- include "%[1]s.labels" . | nindent 4 }}
 `
 	svcTempSpec = `
 spec:
@@ -44,14 +44,14 @@ var (
 	}
 )
 
-func New() context.Processor {
+func New() helmify.Processor {
 	return &svc{}
 }
 
 type svc struct {
 }
 
-func (r svc) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != svcGVC {
 		return false, nil, nil
 	}
@@ -60,11 +60,11 @@ func (r svc) Process(obj *unstructured.Unstructured) (bool, context.Template, er
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to service")
 	}
-	prefix := strings.TrimSuffix(obj.GetNamespace(), "system")
-	name := strings.TrimPrefix(obj.GetName(), prefix)
+
+	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
-	res := fmt.Sprintf(svcTemplMeta, name)
+	res := fmt.Sprintf(svcTemplMeta, info.ChartName, name)
 	if len(obj.GetLabels()) > 0 {
 		labels, _ := yaml.Marshal(obj.GetLabels())
 		labels = yamlformat.Indent(labels, 4)
@@ -76,7 +76,7 @@ func (r svc) Process(obj *unstructured.Unstructured) (bool, context.Template, er
 	selector = yamlformat.Indent(selector, 4)
 	selector = bytes.TrimRight(selector, "\n ")
 
-	values := context.Values{}
+	values := helmify.Values{}
 	svcType := service.Spec.Type
 	if svcType == "" {
 		svcType = corev1.ServiceTypeClusterIP
@@ -115,7 +115,7 @@ func (r svc) Process(obj *unstructured.Unstructured) (bool, context.Template, er
 type result struct {
 	name      string
 	data      string
-	values    context.Values
+	values    helmify.Values
 	chartName string
 }
 
@@ -123,22 +123,14 @@ func (r *result) Filename() string {
 	return r.name + ".yaml"
 }
 
-func (r *result) GVK() schema.GroupVersionKind {
-	return svcGVC
-}
-
-func (r *result) Values() context.Values {
+func (r *result) Values() helmify.Values {
 	return r.values
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write([]byte(strings.ReplaceAll(r.data, "<CHART_NAME>", r.chartName)))
+	_, err := writer.Write([]byte(r.data))
 	return err
 }
 
-func (r *result) PostProcess(data context.Data) {
-}
-
-func (r *result) SetChartName(name string) {
-	r.chartName = name
+func (r *result) PostProcess(values helmify.Values) {
 }

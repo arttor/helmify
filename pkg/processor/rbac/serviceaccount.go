@@ -1,8 +1,8 @@
 package rbac
 
 import (
-	"bytes"
-	"github.com/arttor/helmify/pkg/context"
+	"fmt"
+	"github.com/arttor/helmify/pkg/helmify"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -13,9 +13,9 @@ const (
 	serviceAccountTempl = `apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "<CHART_NAME>.fullname" . }}-<NAME>
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
-  {{- include "<CHART_NAME>.labels" . | nindent 4 }}`
+  {{- include "%[1]s.labels" . | nindent 4 }}`
 )
 
 var (
@@ -26,51 +26,40 @@ var (
 	}
 )
 
-func ServiceAccount() context.Processor {
+func ServiceAccount() helmify.Processor {
 	return &serviceAccount{}
 }
 
 type serviceAccount struct {
 }
 
-func (sa serviceAccount) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (sa serviceAccount) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != serviceAccountGVC {
 		return false, nil, nil
 	}
-	prefix := strings.TrimSuffix(obj.GetNamespace(), "system")
-	name := strings.TrimPrefix(obj.GetName(), prefix)
-	res := strings.ReplaceAll(serviceAccountTempl, "<NAME>", name)
+	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	res := fmt.Sprintf(serviceAccountTempl, info.ChartName, name)
 	return true, &saResult{
 		data: []byte(res),
 	}, nil
 }
 
-
 type saResult struct {
-	data      []byte
-	chartName string
+	data []byte
 }
 
 func (r *saResult) Filename() string {
 	return "deployment.yaml"
 }
 
-func (r *saResult) GVK() schema.GroupVersionKind {
-	return serviceAccountGVC
-}
-
-func (r *saResult) Values() context.Values {
-	return context.Values{}
+func (r *saResult) Values() helmify.Values {
+	return helmify.Values{}
 }
 
 func (r *saResult) Write(writer io.Writer) error {
-	_, err := writer.Write(bytes.ReplaceAll(r.data, []byte("<CHART_NAME>"), []byte(r.chartName)))
+	_, err := writer.Write(r.data)
 	return err
 }
 
-func (r *saResult) PostProcess(data context.Data) {
-}
-
-func (r *saResult) SetChartName(name string) {
-	r.chartName = name
+func (r *saResult) PostProcess(values helmify.Values) {
 }

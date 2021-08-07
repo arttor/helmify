@@ -2,7 +2,8 @@ package rbac
 
 import (
 	"bytes"
-	"github.com/arttor/helmify/pkg/context"
+	"fmt"
+	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
 	"io"
@@ -18,10 +19,13 @@ const (
 	clusterRoleBindingTempl = `apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "<CHART_NAME>.fullname" . }}-<NAME>
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
   labels:
-  {{- include "<CHART_NAME>.labels" . | nindent 4 }}
+  {{- include "%[1]s.labels" . | nindent 4 }}
 roleRef:
+%[3]s
+subjects:
+%[4]s
 `
 )
 
@@ -33,83 +37,66 @@ var (
 	}
 )
 
-func ClusterRoleBinding() context.Processor {
+func ClusterRoleBinding() helmify.Processor {
 	return &clusterRoleBinding{}
 }
 
 type clusterRoleBinding struct {
 }
 
-func (r clusterRoleBinding) Process(obj *unstructured.Unstructured) (bool, context.Template, error) {
+func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleBindingGVC {
-		return false, nil,  nil
+		return false, nil, nil
 	}
 
-	rb:=rbacv1.ClusterRoleBinding{}
+	rb := rbacv1.ClusterRoleBinding{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &rb)
 	if err != nil {
-		return true, nil,  errors.Wrap(err, "unable to cast to RoleBinding")
-	}
-	var ns string
-	for _,s:=range rb.Subjects{
-		if s.Namespace!=""{
-			ns=s.Namespace
-			break
-		}
+		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
 	}
 
-	prefix := strings.TrimSuffix(ns, "system")
-	name := strings.TrimPrefix(obj.GetName(), prefix)
-	res := strings.ReplaceAll(clusterRoleBindingTempl, "<NAME>", name)
+	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
 
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name,prefix,`{{ include "<CHART_NAME>.fullname" . }}-`)
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name,prefix,`{{ include "<CHART_NAME>.fullname" . }}-`)
+	fullNameTempl := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.OperatorName, fullNameTempl)
 
-	rules, _ := yaml.Marshal(&rb.RoleRef)
-	rules = yamlformat.Indent(rules, 2)
-	rules = bytes.TrimRight(rules, "\n ")
-	res = res + string(rules) +"\nsubjects:\n"
-	for i,s:=range rb.Subjects{
-		s.Namespace="{{ .Release.Namespace }}"
-		s.Name=strings.ReplaceAll(s.Name,prefix,`{{ include "<CHART_NAME>.fullname" . }}-`)
-		rb.Subjects[i]=s
+	roleRef, _ := yaml.Marshal(&rb.RoleRef)
+	roleRef = yamlformat.Indent(roleRef, 2)
+	roleRef = bytes.TrimRight(roleRef, "\n ")
+
+	for i, s := range rb.Subjects {
+		s.Namespace = "{{ .Release.Namespace }}"
+		s.Name = strings.ReplaceAll(s.Name, info.OperatorName, fullNameTempl)
+		rb.Subjects[i] = s
 	}
 	subjects, _ := yaml.Marshal(&rb.Subjects)
 	subjects = yamlformat.Indent(subjects, 2)
 	subjects = bytes.TrimRight(subjects, "\n ")
-	res = res + string(subjects)
+	res := fmt.Sprintf(clusterRoleBindingTempl, info.ChartName, name, string(roleRef), string(subjects))
 
 	return true, &crbResult{
 		name: name,
 		data: []byte(res),
 	}, nil
 }
+
 type crbResult struct {
-	name      string
-	data      []byte
-	chartName string
+	name string
+	data []byte
 }
 
 func (r *crbResult) Filename() string {
 	return strings.TrimSuffix(r.name, "-rolebinding") + "-rbac.yaml"
 }
 
-func (r *crbResult) GVK() schema.GroupVersionKind {
-	return clusterRoleBindingGVC
-}
-
-func (r *crbResult) Values() context.Values {
-	return context.Values{}
+func (r *crbResult) Values() helmify.Values {
+	return helmify.Values{}
 }
 
 func (r *crbResult) Write(writer io.Writer) error {
-	_, err := writer.Write(bytes.ReplaceAll(r.data, []byte("<CHART_NAME>"), []byte(r.chartName)))
+	_, err := writer.Write(r.data)
 	return err
 }
 
-func (r *crbResult) PostProcess(data context.Data) {
-}
-
-func (r *crbResult) SetChartName(name string) {
-	r.chartName = name
+func (r *crbResult) PostProcess(helmify.Values) {
 }
