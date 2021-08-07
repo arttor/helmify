@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
-  name: ceph-limiter-operator-system
+  name: my-operator-system
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -308,14 +308,14 @@ status:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ceph-limiter-operator-controller-manager
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager
+  namespace: my-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: ceph-limiter-operator-leader-election-role
-  namespace: ceph-limiter-operator-system
+  name: my-operator-leader-election-role
+  namespace: my-operator-system
 rules:
 - apiGroups:
   - ""
@@ -353,7 +353,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: ceph-limiter-operator-manager-role
+  name: my-operator-manager-role
 rules:
 - apiGroups:
   - ""
@@ -439,7 +439,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: ceph-limiter-operator-metrics-reader
+  name: my-operator-metrics-reader
 rules:
 - nonResourceURLs:
   - /metrics
@@ -449,7 +449,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: ceph-limiter-operator-proxy-role
+  name: my-operator-proxy-role
 rules:
 - apiGroups:
   - authentication.k8s.io
@@ -467,42 +467,42 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: ceph-limiter-operator-leader-election-rolebinding
-  namespace: ceph-limiter-operator-system
+  name: my-operator-leader-election-rolebinding
+  namespace: my-operator-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: ceph-limiter-operator-leader-election-role
+  name: my-operator-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: ceph-limiter-operator-controller-manager
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager
+  namespace: my-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: ceph-limiter-operator-manager-rolebinding
+  name: my-operator-manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ceph-limiter-operator-manager-role
+  name: my-operator-manager-role
 subjects:
 - kind: ServiceAccount
-  name: ceph-limiter-operator-controller-manager
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager
+  namespace: my-operator-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: ceph-limiter-operator-proxy-rolebinding
+  name: my-operator-proxy-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: ceph-limiter-operator-proxy-role
+  name: my-operator-proxy-role
 subjects:
 - kind: ServiceAccount
-  name: ceph-limiter-operator-controller-manager
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager
+  namespace: my-operator-system
 ---
 apiVersion: v1
 data:
@@ -523,16 +523,16 @@ data:
       toolboxPodLabel: rook-ceph-tools
 kind: ConfigMap
 metadata:
-  name: ceph-limiter-operator-manager-config
-  namespace: ceph-limiter-operator-system
+  name: my-operator-manager-config
+  namespace: my-operator-system
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     control-plane: controller-manager
-  name: ceph-limiter-operator-controller-manager-metrics-service
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager-metrics-service
+  namespace: my-operator-system
 spec:
   ports:
   - name: https
@@ -546,8 +546,8 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-  name: ceph-limiter-operator-controller-manager
-  namespace: ceph-limiter-operator-system
+  name: my-operator-controller-manager
+  namespace: my-operator-system
 spec:
   replicas: 1
   selector:
@@ -600,14 +600,14 @@ spec:
           allowPrivilegeEscalation: false
       securityContext:
         runAsNonRoot: true
-      serviceAccountName: ceph-limiter-operator-controller-manager
+      serviceAccountName: my-operator-controller-manager
       terminationGracePeriodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ceph-limiter-operator-webhook-service
-  namespace: ceph-limiter-operator-system
+  name: my-operator-webhook-service
+  namespace: my-operator-system
 spec:
   ports:
   - port: 443
@@ -618,22 +618,22 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: ceph-limiter-operator-serving-cert
-  namespace: ceph-limiter-operator-system
+  name: my-operator-serving-cert
+  namespace: my-operator-system
 spec:
   dnsNames:
-  - ceph-limiter-operator-webhook-service.ceph-limiter-operator-system.svc
-  - ceph-limiter-operator-webhook-service.ceph-limiter-operator-system.svc.cluster.local
+  - my-operator-webhook-service.my-operator-system.svc
+  - my-operator-webhook-service.my-operator-system.svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: ceph-limiter-operator-selfsigned-issuer
+    name: my-operator-selfsigned-issuer
   secretName: webhook-server-cert
 ---
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
-  name: ceph-limiter-operator-selfsigned-issuer
-  namespace: ceph-limiter-operator-system
+  name: my-operator-selfsigned-issuer
+  namespace: my-operator-system
 spec:
   selfSigned: {}
 ---
@@ -641,16 +641,16 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: ceph-limiter-operator-system/ceph-limiter-operator-serving-cert
-  name: ceph-limiter-operator-validating-webhook-configuration
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
+  name: my-operator-validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
   - v1
   - v1beta1
   clientConfig:
     service:
-      name: ceph-limiter-operator-webhook-service
-      namespace: ceph-limiter-operator-system
+      name: my-operator-webhook-service
+      namespace: my-operator-system
       path: /validate-ceph-example-com-v1alpha1-volume
   failurePolicy: Fail
   name: vvolume.kb.io
