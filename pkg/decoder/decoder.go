@@ -37,15 +37,19 @@ func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstruc
 				return
 			}
 			obj, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode(rawObj.Raw, nil, nil)
+			if err != nil {
+				log.WithError(err).Error("unable to decode yaml")
+				return
+			}
 			unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 			if err != nil {
 				log.WithError(err).Error("unable to map yaml to k8s unstructured")
 				return
 			}
-			object:=&unstructured.Unstructured{Object: unstructuredMap}
+			object := &unstructured.Unstructured{Object: unstructuredMap}
 			log.WithFields(logrus.Fields{
-				"Kind":object.GetKind(),
-				"Name":object.GetName(),
+				"Kind": object.GetKind(),
+				"Name": object.GetName(),
 			}).Debug("decoded")
 			res <- object
 		}
