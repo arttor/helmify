@@ -66,7 +66,9 @@ func (c cert) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (b
 	}
 	issName = strings.ReplaceAll(issName, info.OperatorName, fullnameTempl)
 	err = unstructured.SetNestedField(obj.Object, issName, "spec", "issuerRef", "name")
-
+	if err != nil {
+		return true, nil, errors.Wrap(err, "unable set cert issuerRef")
+	}
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")

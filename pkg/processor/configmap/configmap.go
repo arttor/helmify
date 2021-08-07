@@ -2,7 +2,6 @@ package configmap
 
 import (
 	"bytes"
-	_ "embed"
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
