@@ -19,10 +19,10 @@ jobs:
         go-version: 1.16
 
     - name: Fmt
-      run: go fmt -v ./...
+      run: go fmt ./...
       
     - name: Vet
-      run: go vet -v ./...
+      run: go vet ./...
       
     - name: Build
       run: go build -v ./...
@@ -31,7 +31,7 @@ jobs:
       run: go test -v ./...
       
     - name: Run
-      run: cat test_data/kustomize.output | go run cmd/helmify/main.go mychart
+      run: cat test_data/kustomize.output | go run cmd/helmify/main.go -v mychart
          
     - name: Validate Helm
       uses: WyriHaximus/github-action-helm3@v2.0
