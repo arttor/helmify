@@ -679,7 +679,7 @@ type: opaque
 ---
 apiVersion: v1
 data:
-  foo2: YW5vdGhlcmR1bW15c2VjcmV0anVzdGluY2FzZQo=
+  ca.crt: YW5vdGhlcmR1bW15c2VjcmV0anVzdGluY2FzZQo=
 kind: Secret
 metadata:
   name: my-operator-secret-2
