@@ -53,14 +53,14 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if secret.Data != nil && len(secret.Data) != 0 {
 		subValues := helmify.Values{}
 		secretValues := helmify.Values{}
-		name = strings.ReplaceAll(name, "-", "_")
 		for key := range secret.Data {
-			key = strings.ReplaceAll(key, ".", "_")
-			secretValues[key] = ""
-			valName := fmt.Sprintf("secrets.%s.%s", name, key)
+			valueKey := strings.ReplaceAll(key, ".", "_")
+			secretValues[valueKey] = ""
+			valName := fmt.Sprintf("secrets.%s.%s", name, valueKey)
+			valName = strings.ReplaceAll(valName, "-", "_")
 			tmpl += fmt.Sprintf("  %s: {{ .Values.%s | b64enc }}\n", key, valName)
 		}
-		subValues[name] = secretValues
+		subValues[strings.ReplaceAll(name, "-", "_")] = secretValues
 		values["secrets"] = subValues
 	}
 	res := fmt.Sprintf(secretTempl, info.ChartName, name, tmpl)
