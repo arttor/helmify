@@ -53,6 +53,7 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if secret.Data != nil && len(secret.Data) != 0 {
 		subValues := helmify.Values{}
 		secretValues := helmify.Values{}
+		name = strings.ReplaceAll(name, "-", "_")
 		for key := range secret.Data {
 			key = strings.ReplaceAll(key, ".", "_")
 			secretValues[key] = ""
