@@ -576,6 +576,18 @@ spec:
         - --leader-elect
         command:
         - /manager
+        volumeMounts:
+        - mountPath: /controller_manager_config.yaml
+          name: manager-config
+          subPath: controller_manager_config.yaml
+        - name: secret-volume
+          mountPath: /my.ca
+        env:
+        - name: VAR1
+          valueFrom:
+            secretKeyRef:
+              name: my-operator-secret-vars
+              key: VAR1
         image: controller:latest
         livenessProbe:
           httpGet:
@@ -603,6 +615,14 @@ spec:
         runAsNonRoot: true
       serviceAccountName: my-operator-controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          name: my-operator-manager-config
+        name: manager-config
+      - name: secret-volume
+        secret:
+          secretName: my-operator-secret-ca
+
 ---
 apiVersion: v1
 kind: Service
@@ -669,27 +689,26 @@ webhooks:
 ---
 apiVersion: v1
 data:
-  foo: bXlkdW1teXNlY3JldAo=
-  foo1: bXlkdW1teXNlY3JldAo=
+  ca.crt: |
+    c3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9uZ3Rlc3RjcnQtc3
+    VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9uZ3Rlc3RjcnQtc3Vw
+    ZXJsb25ndGVzdGNydC0Kc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cG
+    VybG9uZ3Rlc3RjcnQtc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVy
+    bG9uZ3Rlc3RjcnQKc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG
+    9uZ3Rlc3RjcnQtc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9u
+    Z3Rlc3RjcnQ=
 kind: Secret
 metadata:
-  name: my-operator-secret
+  name: my-operator-secret-ca
   namespace: my-operator-system
 type: opaque
 ---
 apiVersion: v1
 data:
-  ca.crt: YW5vdGhlcmR1bW15c2VjcmV0anVzdGluY2FzZQo=
+  VAR1: bXlfc2VjcmV0X3Zhcl8x
+  VAR2: bXlfc2VjcmV0X3Zhcl8y
 kind: Secret
 metadata:
-  name: my-operator-secret-2
+  name: my-operator-secret-vars
   namespace: my-operator-system
 type: opaque
----
-apiVersion: v1
-data:
-  dummyconfigmapkey2: dummyconfigmapvalue2
-kind: ConfigMap
-metadata:
-  name: my-operator-custom-configmap
-  namespace: my-operator-system
