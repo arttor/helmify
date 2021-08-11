@@ -1,17 +1,14 @@
 package secret
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
-	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -51,15 +48,20 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 		return true, nil, errors.Wrap(err, "unable to cast to secret")
 	}
 	name := strings.TrimPrefix(secret.GetName(), info.OperatorName+"-")
-	var values helmify.Values
-	var data []byte
+	values := helmify.Values{}
+	tmpl := ""
 	if secret.Data != nil && len(secret.Data) != 0 {
-		data, _ = yaml.Marshal(secret.Data)
-		data = yamlformat.Indent(data, 2)
-		data = bytes.TrimRight(data, "\n ")
-		data = bytes.ReplaceAll(data, []byte("'"), []byte(""))
+		subValues := helmify.Values{}
+		secretValues := helmify.Values{}
+		for key := range secret.Data {
+			secretValues[key] = ""
+			valName := fmt.Sprintf("secrets.%s.%s", name, key)
+			tmpl += fmt.Sprintf("  %s: {{ .Values.%s | b64enc }}\n", key, valName)
+		}
+		subValues[name] = secretValues
+		values["secrets"] = subValues
 	}
-	res := fmt.Sprintf(secretTempl, info.ChartName, name, string(data))
+	res := fmt.Sprintf(secretTempl, info.ChartName, name, tmpl)
 
 	return true, &result{
 		name:   name + ".yaml",
