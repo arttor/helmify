@@ -54,6 +54,7 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 		subValues := helmify.Values{}
 		secretValues := helmify.Values{}
 		for key := range secret.Data {
+			key = strings.ReplaceAll(key, ".", "_")
 			secretValues[key] = ""
 			valName := fmt.Sprintf("secrets.%s.%s", name, key)
 			tmpl += fmt.Sprintf("  %s: {{ .Values.%s | b64enc }}\n", key, valName)
