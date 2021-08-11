@@ -1,14 +1,18 @@
 package secret
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
+	yamlformat "github.com/arttor/helmify/pkg/yaml"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -42,28 +46,27 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
-	secret := corev1.Secret{}
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &secret)
+	sec := corev1.Secret{}
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &sec)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to secret")
 	}
-	name := strings.TrimPrefix(secret.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(sec.GetName(), info.OperatorName+"-")
+	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
-	tmpl := ""
-	if secret.Data != nil && len(secret.Data) != 0 {
-		subValues := helmify.Values{}
-		secretValues := helmify.Values{}
-		for key := range secret.Data {
-			valueKey := strings.ReplaceAll(key, ".", "_")
-			secretValues[valueKey] = ""
-			valName := fmt.Sprintf("secrets.%s.%s", name, valueKey)
-			valName = strings.ReplaceAll(valName, "-", "_")
-			tmpl += fmt.Sprintf("  %s: {{ .Values.%s | b64enc }}\n", key, valName)
+	templatedData := map[string]string{}
+	for key, _ := range sec.Data {
+		keyCamelCase := strcase.ToLowerCamel(key)
+		err = unstructured.SetNestedField(values, "", nameCamelCase, keyCamelCase)
+		if err != nil {
+			return true, nil, errors.Wrap(err, "unable add secret to values")
 		}
-		subValues[strings.ReplaceAll(name, "-", "_")] = secretValues
-		values["secrets"] = subValues
+		templatedData[key] = fmt.Sprintf(`{{ required "secret %[1]s.%[2]s is required" .Values.%[1]s.%[2]s | b64enc }}`, nameCamelCase, keyCamelCase)
 	}
-	res := fmt.Sprintf(secretTempl, info.ChartName, name, tmpl)
+	data, _ := yaml.Marshal(templatedData)
+	data = yamlformat.Indent(data, 2)
+	data = bytes.TrimRight(data, "\n ")
+	res := fmt.Sprintf(secretTempl, info.ChartName, name, string(data))
 
 	return true, &result{
 		name:   name + ".yaml",
