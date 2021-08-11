@@ -10,6 +10,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor/crd"
 	"github.com/arttor/helmify/pkg/processor/deployment"
 	"github.com/arttor/helmify/pkg/processor/rbac"
+	"github.com/arttor/helmify/pkg/processor/secret"
 	"github.com/arttor/helmify/pkg/processor/service"
 	"github.com/arttor/helmify/pkg/processor/webhook"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,7 @@ func Start(input io.Reader, config config.Config) error {
 		rbac.ServiceAccount(),
 		webhook.Issuer(),
 		webhook.Certificate(),
+		secret.Secret(),
 		webhook.Webhook()).WithOutput(helm.NewOutput())
 
 	for obj := range objects {

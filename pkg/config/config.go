@@ -2,7 +2,7 @@ package config
 
 const DefaultChartName = "chart"
 
-var SupportedResources = map[string]struct{}{"crd": {}, "deployment": {}, "rbac": {}}
+var SupportedResources = map[string]struct{}{"crd": {}, "deployment": {}, "rbac": {}, "secret": {}}
 
 type Config struct {
 	ChartName   string
