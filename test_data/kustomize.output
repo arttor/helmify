@@ -670,6 +670,7 @@ webhooks:
 apiVersion: v1
 data:
   foo: bXlkdW1teXNlY3JldAo=
+  foo1: bXlkdW1teXNlY3JldAo=
 kind: Secret
 metadata:
   name: my-operator-secret
