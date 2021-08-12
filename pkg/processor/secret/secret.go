@@ -57,6 +57,9 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	templatedData := map[string]string{}
 	for key, _ := range sec.Data {
 		keyCamelCase := strcase.ToLowerCamel(key)
+		if key == strings.ToUpper(key) {
+			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
+		}
 		err = unstructured.SetNestedField(values, "", nameCamelCase, keyCamelCase)
 		if err != nil {
 			return true, nil, errors.Wrap(err, "unable add secret to values")
