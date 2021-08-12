@@ -95,6 +95,9 @@ func parseMapData(data map[string]string, configName string) (map[string]string,
 			continue
 		}
 		keyCamelCase := strcase.ToLowerCamel(key)
+		if key == strings.ToUpper(key) {
+			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
+		}
 		_ = unstructured.SetNestedField(values, value, configName, keyCamelCase)
 		data[key] = fmt.Sprintf(`{{ .Values.%[1]s.%[2]s }}`, configName, keyCamelCase)
 	}
