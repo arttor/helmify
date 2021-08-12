@@ -69,27 +69,49 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 		logrus.Warn("got deployment but not controller manager")
 		return false, nil, nil
 	}
+	name := info.OperatorName
+	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+
 	var repo, tag string
 	for i, c := range depl.Spec.Template.Spec.Containers {
-		if c.Name != "manager" {
-			continue
+		if c.Name == "manager" {
+			index := strings.LastIndex(c.Image, ":")
+			if index < 0 {
+				return true, nil, errors.New("wrong image format: " + c.Image)
+			}
+			repo = c.Image[:index]
+			tag = c.Image[index+1:]
+			c.Image = "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
 		}
-		index := strings.LastIndex(c.Image, ":")
-		if index < 0 {
-			return true, nil, errors.New("wrong image format: " + c.Image)
+		for j, e := range c.Env {
+			if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+				e.ValueFrom.SecretKeyRef.Name = strings.ReplaceAll(e.ValueFrom.SecretKeyRef.Name, name, fullNameTeml)
+				c.Env[j] = e
+			}
+			if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
+				e.ValueFrom.ConfigMapKeyRef.Name = strings.ReplaceAll(e.ValueFrom.ConfigMapKeyRef.Name, name, fullNameTeml)
+				c.Env[j] = e
+			}
 		}
-		repo = c.Image[:index]
-		tag = c.Image[index+1:]
-		c.Image = "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
+		for j, e := range c.EnvFrom {
+			if e.SecretRef != nil {
+				e.SecretRef.Name = strings.ReplaceAll(e.SecretRef.Name, name, fullNameTeml)
+				c.EnvFrom[j] = e
+			}
+			if e.ConfigMapRef != nil {
+				e.ConfigMapRef.Name = strings.ReplaceAll(e.ConfigMapRef.Name, name, fullNameTeml)
+				c.EnvFrom[j] = e
+			}
+		}
 		depl.Spec.Template.Spec.Containers[i] = c
 	}
-	name := info.OperatorName
-
-	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
 
 	for _, v := range depl.Spec.Template.Spec.Volumes {
 		if v.ConfigMap != nil {
 			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, fullNameTeml)
+		}
+		if v.Secret != nil {
+			v.Secret.SecretName = strings.ReplaceAll(v.Secret.SecretName, name, fullNameTeml)
 		}
 	}
 	depl.Spec.Template.Spec.ServiceAccountName = strings.ReplaceAll(depl.Spec.Template.Spec.ServiceAccountName, name, fullNameTeml)

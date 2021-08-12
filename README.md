@@ -52,7 +52,7 @@ Supported default operator resources:
 - deployment
 - service
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
-- configmap
+- configs (configmap, secret)
 - webhooks (cert, issuer, ValidatingWebhookConfiguration)
 
 

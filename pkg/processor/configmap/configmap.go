@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -53,10 +54,11 @@ func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructure
 		return true, nil, errors.Wrap(err, "unable to cast to configmap")
 	}
 	name := strings.TrimPrefix(cm.GetName(), info.OperatorName+"-")
+	nameCamelCase := strcase.ToLowerCamel(name)
 	var values helmify.Values
 	var data []byte
 	if cm.Data != nil && len(cm.Data) != 0 {
-		cm.Data, values = parseMapData(cm.Data)
+		cm.Data, values = parseMapData(cm.Data, nameCamelCase)
 		data, _ = yaml.Marshal(cm.Data)
 		data = yamlformat.Indent(data, 2)
 		data = bytes.TrimRight(data, "\n ")
@@ -71,25 +73,34 @@ func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructure
 	}, nil
 }
 
-func parseMapData(data map[string]string) (map[string]string, helmify.Values) {
-	configStr := data["controller_manager_config.yaml"]
+func parseMapData(data map[string]string, configName string) (map[string]string, helmify.Values) {
 	values := helmify.Values{}
-	if configStr == "" {
-		return data, values
+	if configStr, ok := data["controller_manager_config.yaml"]; ok {
+		config := map[string]interface{}{}
+		err := yaml.Unmarshal([]byte(configStr), &config)
+		if err != nil {
+			logrus.WithError(err).Warn("unable to unmarshal controller_manager_config.yaml")
+			return data, values
+		}
+		parseConfig(&config, &values, []string{configName})
+		confBytes, err := yaml.Marshal(config)
+		if err != nil {
+			logrus.WithError(err).Warn("unable to marshal controller_manager_config.yaml")
+			return data, helmify.Values{}
+		}
+		data["controller_manager_config.yaml"] = string(confBytes)
 	}
-	config := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(configStr), &config)
-	if err != nil {
-		logrus.WithError(err).Warn("unable to unmarshal controller_manager_config.yaml")
-		return data, values
+	for key, value := range data {
+		if key == "controller_manager_config.yaml" {
+			continue
+		}
+		keyCamelCase := strcase.ToLowerCamel(key)
+		if key == strings.ToUpper(key) {
+			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
+		}
+		_ = unstructured.SetNestedField(values, value, configName, keyCamelCase)
+		data[key] = fmt.Sprintf(`{{ .Values.%[1]s.%[2]s }}`, configName, keyCamelCase)
 	}
-	parseConfig(&config, &values, []string{"managerConfig"})
-	confBytes, err := yaml.Marshal(config)
-	if err != nil {
-		logrus.WithError(err).Warn("unable to marshal controller_manager_config.yaml")
-		return data, helmify.Values{}
-	}
-	data["controller_manager_config.yaml"] = string(confBytes)
 	return data, values
 }
 
