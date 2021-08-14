@@ -54,6 +54,7 @@ func commonPrefix(one, two string) string {
 	return string(runes1[:min])
 }
 
+// ExtractOperatorNamespace returns name if given object is a namespace
 func ExtractOperatorNamespace(obj *unstructured.Unstructured) string {
 	if obj.GroupVersionKind() != nsGVK {
 		return ""

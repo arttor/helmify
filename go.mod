@@ -9,7 +9,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.6.1
 	k8s.io/api v0.21.3
-	k8s.io/apiextensions-apiserver v0.21.3
 	k8s.io/apimachinery v0.21.3
 	sigs.k8s.io/yaml v1.2.0
 )

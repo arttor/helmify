@@ -17,14 +17,11 @@ type Context struct {
 	objects    []*unstructured.Unstructured
 }
 
-func (c *Context) WithProcessor(processor Processor) *Context {
-	c.processors = append(c.processors, processor)
-	return c
-}
 func (c *Context) WithOutput(output Output) *Context {
 	c.output = output
 	return c
 }
+
 func (c *Context) WithConfig(config config.Config) *Context {
 	c.config = config
 	c.info.ChartName = config.ChartName
@@ -38,6 +35,7 @@ func (c *Context) WithProcessors(processors ...Processor) *Context {
 
 // Add k8s object to helmify context
 func (c *Context) Add(obj *unstructured.Unstructured) {
+	// we need to add all objects before start processing only to define operator name and namespace.
 	if c.info.OperatorNamespace == "" {
 		c.info.OperatorNamespace = processor.ExtractOperatorNamespace(obj)
 	}
@@ -71,6 +69,11 @@ func (c *Context) process(obj *unstructured.Unstructured) (Template, error) {
 			if err != nil {
 				return nil, err
 			}
+			logrus.WithFields(logrus.Fields{
+				"ApiVersion": obj.GetAPIVersion(),
+				"Kind":       obj.GetKind(),
+				"Name":       obj.GetName(),
+			}).Debug("processed")
 			return result, nil
 		}
 	}

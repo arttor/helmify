@@ -14,42 +14,46 @@ const (
 	decoderResultChannelBufferSize = 1
 )
 
+// Decode - reads bytes stream of k8s objects in yaml format and decodes it to k8s unstructured objects.
+// Non-blocking function. Sends results into buffered channel. Closes channel on io.EOF.
 func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstructured {
 	decoder := yamlutil.NewYAMLOrJSONDecoder(reader, yamlDecoderBufferSize)
 	res := make(chan *unstructured.Unstructured, decoderResultChannelBufferSize)
 	go func(stop <-chan struct{}, reader io.Reader) {
 		defer close(res)
-		log := logrus.WithField("from", "decoder")
+		logrus.Debug("Start processing...")
 		for {
 			select {
 			case <-stop:
+				logrus.Debug("Exiting: received stop signal")
 				return
 			default:
 			}
 			var rawObj runtime.RawExtension
 			err := decoder.Decode(&rawObj)
 			if err == io.EOF {
-				log.Debug("EOF received. Finishing input objects decoding.")
+				logrus.Debug("EOF received. Finishing input objects decoding.")
 				return
 			}
 			if err != nil {
-				log.WithError(err).Error("unable to decode yaml from input")
+				logrus.WithError(err).Error("unable to decode yaml from input")
 				return
 			}
 			obj, _, err := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme).Decode(rawObj.Raw, nil, nil)
 			if err != nil {
-				log.WithError(err).Error("unable to decode yaml")
+				logrus.WithError(err).Error("unable to decode yaml")
 				return
 			}
 			unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 			if err != nil {
-				log.WithError(err).Error("unable to map yaml to k8s unstructured")
+				logrus.WithError(err).Error("unable to map yaml to k8s unstructured")
 				return
 			}
 			object := &unstructured.Unstructured{Object: unstructuredMap}
-			log.WithFields(logrus.Fields{
-				"Kind": object.GetKind(),
-				"Name": object.GetName(),
+			logrus.WithFields(logrus.Fields{
+				"ApiVersion": object.GetAPIVersion(),
+				"Kind":       object.GetKind(),
+				"Name":       object.GetName(),
 			}).Debug("decoded")
 			res <- object
 		}

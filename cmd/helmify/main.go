@@ -15,10 +15,10 @@ func main() {
 		os.Exit(1)
 	}
 	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		logrus.Warn("no data piped in stdin")
+		logrus.Error("no data piped in stdin")
 		os.Exit(1)
 	}
-	if err := app.Start(os.Stdin, conf); err != nil {
+	if err = app.Start(os.Stdin, conf); err != nil {
 		logrus.WithError(err).Error("helmify finished with error")
 		os.Exit(1)
 	}

@@ -20,10 +20,9 @@ import (
 	"syscall"
 )
 
+// Start point for application to process input to a Helm chart.
 func Start(input io.Reader, config config.Config) error {
-	if !config.Verbose {
-		logrus.SetLevel(logrus.ErrorLevel)
-	}
+	setLogLevel(config)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	done := make(chan os.Signal, 1)
@@ -53,4 +52,14 @@ func Start(input io.Reader, config config.Config) error {
 		helmifyContext.Add(obj)
 	}
 	return helmifyContext.CreateHelm(ctx.Done())
+}
+
+func setLogLevel(config config.Config) {
+	logrus.SetLevel(logrus.ErrorLevel)
+	if config.Verbose {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+	if config.VeryVerbose {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 }

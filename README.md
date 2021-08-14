@@ -18,7 +18,7 @@ Clone repo and execute command:
 cat test_data/kustomize.output | go run cmd/helmify/main.go mychart
 ```
 
-Will generate `mychart` Helm chart form file `test_data/kustomize.output` representing typical 
+Will generate `mychart` Helm chart form file `test_data/kustomize.output` representing typical operator 
 [kustomize](https://github.com/kubernetes-sigs/kustomize) output.
 
 ## Integrate to your Operator-SDK/Kubebuilder project
@@ -40,12 +40,13 @@ helm: manifests kustomize helmify
 Helmify takes a chart name for an argument.
 Usage:
 
-```helmify CHART_NAME [flags]```  -  `CHART_NAME` is optional. Default is 'chart'.
+```helmify [flags] CHART_NAME```  -  `CHART_NAME` is optional. Default is 'chart'.
 
 | flag | description | sample |
 | --- | --- | --- |
 | -h -help | Prints help | `helmify -h`|
-| -v | Enable verbose output. | `helmify -v`|
+| -v | Enable verbose output. Prints WARN and INFO. | `helmify -v`|
+| -vv | Enable very verbose output. Also prints DEBUG. | `helmify -vv`|
 
 ## Status
 Supported default operator resources:
@@ -55,9 +56,9 @@ Supported default operator resources:
 - configs (configmap, secret)
 - webhooks (cert, issuer, ValidatingWebhookConfiguration)
 
-
-
 ### Known issues
+- Helmify defines application (operator) name as the shortest common prefix of k8s objects names. 
+  It is possible because operator-sdk using operator name as prefix by default.
 - Helmify will not overwrite `Chart.yaml` file if presented. Done on purpose.
 - Helmify will not delete existing template file, only overwrite. So, if you delete CRD, re-run `kustomize | helmify` 
 crd file will still be in templates directory. (todo: add option for this)
