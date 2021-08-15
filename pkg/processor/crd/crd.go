@@ -36,13 +36,13 @@ var crdGVC = schema.GroupVersionKind{
 }
 
 func New() helmify.Processor {
-	return &deployment{}
+	return &crd{}
 }
 
-type deployment struct {
+type crd struct {
 }
 
-func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (c crd) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil
 	}

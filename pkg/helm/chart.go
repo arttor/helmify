@@ -17,20 +17,20 @@ func NewOutput() helmify.Output {
 
 type output struct{}
 
-// Create a helm chart in filesystem current directory:
+// Create a helm chart in the current directory:
 // chartName/
 //    ├── .helmignore   	# Contains patterns to ignore when packaging Helm charts.
 //    ├── Chart.yaml    	# Information about your chart
 //    ├── values.yaml   	# The default values for your templates
 //    └── templates/    	# The template files
 //        └── _helpers.tp   # Helm default template partials
-// Overwrites existing values.yaml and templates/
-func (o *output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template) error {
-	err := o.init(chartInfo.ChartName, chartInfo.OperatorName)
+// Overwrites existing values.yaml and templates in templates dir on every run.
+func (o output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template) error {
+	err := initChartDir(chartInfo.ChartName, chartInfo.OperatorName)
 	if err != nil {
 		return err
 	}
-	// combine templates into files
+	// group templates into files
 	files := map[string][]helmify.Template{}
 	values := helmify.Values{}
 	for _, template := range templates {
@@ -42,61 +42,53 @@ func (o *output) Create(chartInfo helmify.ChartInfo, templates []helmify.Templat
 			return err
 		}
 	}
-	// overwrite values.yaml
-	err = o.writeValues(chartInfo.ChartName, values)
-	if err != nil {
-		return err
-	}
-	logrus.Infof("'./%s/values.yaml' overwritten", chartInfo.ChartName)
-	// overwrite templates files
 	for filename, tpls := range files {
-		err = o.write(filename, chartInfo.ChartName, tpls)
+		err = overwriteTemplateFile(filename, chartInfo.ChartName, tpls)
 		if err != nil {
 			return err
 		}
 	}
+	err = overwriteValuesFile(chartInfo.ChartName, values)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (o *output) write(filename, chartName string, templates []helmify.Template) error {
+func overwriteTemplateFile(filename, chartName string, templates []helmify.Template) error {
 	file := filepath.Join(chartName, "templates", filename)
-	err := os.Remove(file)
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrap(err, "unable to remove previous template file")
-	}
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		return errors.Wrap(err, "unable to open template file")
+		return errors.Wrap(err, "unable to open "+file)
 	}
 	defer f.Close()
 	for i, t := range templates {
-		logrus.Debugf("writing a template into './%s/templates/%s'", chartName, filename)
+		logrus.WithField("file", file).Debug("writing a template into")
 		err = t.Write(f)
 		if err != nil {
-			return errors.Wrap(err, "unable to write into template file")
+			return errors.Wrap(err, "unable to write into "+file)
 		}
 		if i != len(templates)-1 {
 			_, err = f.Write([]byte("\n---\n"))
 			if err != nil {
-				return errors.Wrap(err, "unable to write into template file")
+				return errors.Wrap(err, "unable to write into "+file)
 			}
 		}
 	}
-	logrus.Infof("'./%s/templates/%s' overwritten", chartName, filename)
+	logrus.WithField("file", file).Info("overwritten")
 	return nil
 }
 
-func (o *output) writeValues(chartName string, values helmify.Values) error {
-	file := filepath.Join(chartName, "values.yaml")
-	if fi, err := os.Stat(file); err == nil && fi.Size() != 0 {
-		err = os.Remove(file)
-		if err != nil {
-			return err
-		}
-	}
+func overwriteValuesFile(chartName string, values helmify.Values) error {
 	res, err := yaml.Marshal(values)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
-	return ioutil.WriteFile(file, res, 0644)
+	file := filepath.Join(chartName, "values.yaml")
+	err = ioutil.WriteFile(file, res, 0644)
+	if err != nil {
+		return errors.Wrap(err, "unable to write values.yaml")
+	}
+	logrus.WithField("file", file).Info("overwritten")
+	return nil
 }
