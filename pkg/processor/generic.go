@@ -33,7 +33,7 @@ func ExtractOperatorName(obj *unstructured.Unstructured, prevName string) string
 		logrus.WithFields(logrus.Fields{
 			"prev": prevName,
 			"curr": obj.GetName(),
-		}).Error("unable to define operator name as common object name prefix")
+		}).Error("unable to define operator name as a common prefix of objects names")
 		return prevName
 	}
 	return strings.TrimSuffix(common, "-")

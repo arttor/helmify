@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-const defaultIgnore = `# Patterns to ignore when building packages.
+const helmIgnore = `# Patterns to ignore when building packages.
 # This supports shell glob matching, relative path matching, and
 # negation (prefixed with !). Only one pattern per line.
 .DS_Store
@@ -119,59 +120,17 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 const maxChartNameLength = 250
 
-// init Helm chart structure in chartName directory if not presented
-func (o *output) init(chartName, appName string) error {
+// initChartDir - creates Helm chart structure in chartName directory if not presented
+func initChartDir(chartName, appName string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}
 	_, err := os.Stat(filepath.Join(chartName, "Chart.yaml"))
 	if os.IsNotExist(err) {
-		return createSkeleton(chartName, appName)
+		return createCommonFiles(chartName, appName)
 	}
 	logrus.Info("Skip creating Chart skeleton: Chart.yaml already exists.")
 	return err
-}
-
-// createSkeleton - creates helm chart skeleton:
-//    chartName/
-//    ├── .helmignore   	# Contains patterns to ignore when packaging Helm charts.
-//    ├── Chart.yaml    	# Information about your chart
-//    └── templates/    	# The template files
-//        └── _helpers.tp   # Helm default template partials
-func createSkeleton(chartName, appName string) error {
-	logrus.Debug("Creating chart skeleton")
-	if _, err := os.Stat(filepath.Join(chartName)); os.IsNotExist(err) {
-		err = os.Mkdir(chartName, 0755)
-		if err != nil {
-			return errors.Wrap(err, "unable create chart dir")
-		}
-		logrus.Infof("Created './%s' chart directory", chartName)
-	}
-
-	err := os.WriteFile(filepath.Join(chartName, "Chart.yaml"), []byte(fmt.Sprintf(defaultChartfile, appName)), 0755)
-	if err != nil {
-		return errors.Wrap(err, "unable create Chart.yaml")
-	}
-	logrus.Infof("'./%s/Chart.yaml' created", chartName)
-
-	err = os.WriteFile(filepath.Join(chartName, ".helmignore"), []byte(defaultIgnore), 0755)
-	if err != nil {
-		return errors.Wrap(err, "unable create .helmignorer")
-	}
-	logrus.Infof("'./%s/.helmignore' created", chartName)
-
-	err = os.Mkdir(filepath.Join(chartName, "templates"), 0755)
-	if err != nil {
-		return errors.Wrap(err, "unable create templates dir")
-	}
-	logrus.Infof("'./%s/templates/' dir created", chartName)
-
-	err = os.WriteFile(filepath.Join(chartName, "templates", "_helpers.tpl"), []byte(strings.ReplaceAll(defaultHelpers, "<CHARTNAME>", chartName)), 0755)
-	if err != nil {
-		return errors.Wrap(err, "unable create _helpers.tpl")
-	}
-	logrus.Infof("'./%s/templates/_helpers.tpl' created", chartName)
-	return nil
 }
 
 func validateChartName(name string) error {
@@ -182,4 +141,33 @@ func validateChartName(name string) error {
 		return fmt.Errorf("chart name must match the regular expression %q", chartName.String())
 	}
 	return nil
+}
+
+func createCommonFiles(chartName, appName string) error {
+	err := os.MkdirAll(filepath.Join(chartName, "templates"), 0755)
+	if err != nil {
+		return errors.Wrap(err, "unable create chart dir")
+	}
+	createFile := func(content []byte, path ...string) {
+		if err != nil {
+			return
+		}
+		file := filepath.Join(path...)
+		err = ioutil.WriteFile(file, content, 0755)
+		if err == nil {
+			logrus.WithField("file", file).Info("created")
+		}
+	}
+	createFile(chartYAML(appName), chartName, "Chart.yaml")
+	createFile([]byte(helmIgnore), chartName, ".helmignore")
+	createFile(helpersYAML(chartName), chartName, "templates", "_helpers.tpl")
+	return err
+}
+
+func chartYAML(appName string) []byte {
+	return []byte(fmt.Sprintf(defaultChartfile, appName))
+}
+
+func helpersYAML(chartName string) []byte {
+	return []byte(strings.ReplaceAll(defaultHelpers, "<CHARTNAME>", chartName))
 }

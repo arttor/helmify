@@ -45,6 +45,11 @@ func (c *Context) Add(obj *unstructured.Unstructured) {
 
 // CreateHelm creates helm chart from context k8s objects
 func (c *Context) CreateHelm(stop <-chan struct{}) error {
+	logrus.WithFields(logrus.Fields{
+		"ChartName":         c.info.ChartName,
+		"OperatorName":      c.info.OperatorName,
+		"OperatorNamespace": c.info.OperatorNamespace,
+	}).Info("creating a chart")
 	var templates []Template
 	for _, obj := range c.objects {
 		template, err := c.process(obj)
@@ -80,6 +85,6 @@ func (c *Context) process(obj *unstructured.Unstructured) (Template, error) {
 	logrus.WithFields(logrus.Fields{
 		"Resource": obj.GetObjectKind().GroupVersionKind().String(),
 		"Name":     obj.GetName(),
-	}).Warn("skipped: no suitable processor found")
+	}).Warn("skip object: no processor defined")
 	return nil, nil
 }

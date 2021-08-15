@@ -1,0 +1,35 @@
+package secret
+
+import (
+	"github.com/arttor/helmify/internal"
+	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+const secretYaml = `apiVersion: v1
+data:
+  VAR1: bXlfc2VjcmV0X3Zhcl8x
+  VAR2: bXlfc2VjcmV0X3Zhcl8y
+kind: Secret
+metadata:
+  name: my-operator-secret-vars
+  namespace: my-operator-system
+type: opaque`
+
+func Test_secret_Process(t *testing.T) {
+	var testInstance secret
+
+	t.Run("processed", func(t *testing.T) {
+		obj := internal.GenerateObj(secretYaml)
+		processed, _, err := testInstance.Process(helmify.ChartInfo{}, obj)
+		assert.NoError(t, err)
+		assert.Equal(t, true, processed)
+	})
+	t.Run("skipped", func(t *testing.T) {
+		obj := internal.TestNs
+		processed, _, err := testInstance.Process(helmify.ChartInfo{}, obj)
+		assert.NoError(t, err)
+		assert.Equal(t, false, processed)
+	})
+}

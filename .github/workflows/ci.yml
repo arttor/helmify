@@ -26,17 +26,6 @@ jobs:
 
     - name: Test
       run: go test -v ./...
-      
-    - name: Run
-      run: cat test_data/kustomize.output | go run cmd/helmify/main.go -v mychart
-      
-    - name: get helm
-      uses: azure/setup-helm@v1
-      with:
-        version: 'v3.6.2'
-     
-    - name: helm lint
-      run: helm lint mychart --strict 
 
 #     - name: Create kind cluster
 #       uses: helm/kind-action@v1.0.0-alpha.3

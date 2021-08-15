@@ -65,3 +65,25 @@ crd file will still be in templates directory. (todo: add option for this)
 - Helmify overwrites templates and values files on every run. 
   This meas that all your manual changes in helm template files will be lost on the next run. 
   Use kustomize /config folder as a single source of true and make changes there.
+  
+## Develop
+To support a new type of k8s object template:
+1. Implement `helmify.Processor` interface. Place implementation in `pkg/processor`. The package contains 
+examples for most k8s objects.
+2. Register your processor in the `pkg/app/app.go`
+3. Add relevant input sample to `test_data/kustomize.output`.
+
+### Test
+For manual testing, run program with debug output:
+```shell
+cat test_data/kustomize.output | go run cmd/helmify/main.go -vv mychart
+```
+Then inspect logs and generated chart in `./mychart` directory.
+
+To execute tests, run:
+```shell
+go test ./...
+```
+Beside unit-tests, project contains e2e test `pkg/app/app_e2e_test.go`.
+It's a go test, which uses `test_data/kustomize.output` to generate a chart in temporary directory. 
+Then runs `helm lint --strict` to check if generated chart is valid.
