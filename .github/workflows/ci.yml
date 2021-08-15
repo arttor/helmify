@@ -27,14 +27,12 @@ jobs:
     - name: Test
       run: go test  -coverprofile c.out ./...
   
-    - name: Test & publish code coverage
-      uses: paambaati/codeclimate-action@v2.7.5
-      env:
-        CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
+    - name: Code Coverage 
+      uses: aktions/codeclimate-test-reporter@v1
+#       if: github.ref == 'refs/heads/master'
       with:
-        # The report file must be there, otherwise Code Climate won't find it
-        coverageCommand: go test  -coverprofile c.out ./...
-        coverageLocations: ${{github.workspace}}/c.out:gocov
+        codeclimate-test-reporter-id: ${{ secrets.CC_TEST_REPORTER_ID }}
+        command: after-build --prefix github.com/arttor/helmify/
 
 #     - name: Create kind cluster
 #       uses: helm/kind-action@v1.0.0-alpha.3
