@@ -17,6 +17,7 @@ metadata:
 
 var TestNs = GenerateObj(nsYaml)
 
+// GenerateObj generates unstructured form yaml string.
 func GenerateObj(objYaml string) *unstructured.Unstructured {
 	obj := unstructured.Unstructured{}
 	dec := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)

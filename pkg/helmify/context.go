@@ -17,17 +17,20 @@ type Context struct {
 	objects    []*unstructured.Unstructured
 }
 
+// WithOutput returns context with output set.
 func (c *Context) WithOutput(output Output) *Context {
 	c.output = output
 	return c
 }
 
+// WithConfig returns context with config set.
 func (c *Context) WithConfig(config config.Config) *Context {
 	c.config = config
 	c.info.ChartName = config.ChartName
 	return c
 }
 
+// WithProcessors  add processors to the context and returns it.
 func (c *Context) WithProcessors(processors ...Processor) *Context {
 	c.processors = append(c.processors, processors...)
 	return c

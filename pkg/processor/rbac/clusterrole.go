@@ -31,6 +31,7 @@ var (
 	}
 )
 
+// ClusterRole creates processor for k8s ClusterRole resource.
 func ClusterRole() helmify.Processor {
 	return &clusterRole{}
 }
@@ -38,6 +39,7 @@ func ClusterRole() helmify.Processor {
 type clusterRole struct {
 }
 
+// Process k8s ClusterRole object into template. Returns false if not capable of processing given resource type.
 func (r clusterRole) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleGVC {
 		return false, nil, nil

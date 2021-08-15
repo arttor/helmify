@@ -20,7 +20,7 @@ import (
 	"syscall"
 )
 
-// Start point for application to process input to a Helm chart.
+// Start - application entrypoint for processing input to a Helm chart.
 func Start(input io.Reader, config config.Config) error {
 	setLogLevel(config)
 	ctx, cancelFunc := context.WithCancel(context.Background())

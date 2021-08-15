@@ -49,6 +49,7 @@ spec:
     spec:
 %[2]s`
 
+// New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
 	return &deployment{}
 }
@@ -56,6 +57,7 @@ func New() helmify.Processor {
 type deployment struct {
 }
 
+// Process k8s Deployment object into template. Returns false if not capable of processing given resource type.
 func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != deploymentGVC {
 		return false, nil, nil

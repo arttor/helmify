@@ -36,6 +36,7 @@ var (
 	}
 )
 
+// RoleBinding creates processor for k8s RoleBinding resource.
 func RoleBinding() helmify.Processor {
 	return &roleBinding{}
 }
@@ -43,6 +44,7 @@ func RoleBinding() helmify.Processor {
 type roleBinding struct {
 }
 
+// Process k8s RoleBinding object into helm template. Returns false if not capable of processing given resource type.
 func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != roleBindingGVC {
 		return false, nil, nil

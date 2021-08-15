@@ -19,6 +19,7 @@ Usage:
 Flags:
 `
 
+// Read command-line flags into app config.
 func Read() config.Config {
 	result := config.Config{}
 	var h, help bool

@@ -37,6 +37,7 @@ var (
 	}
 )
 
+// New creates processor for k8s ConfigMap resource.
 func New() helmify.Processor {
 	return &configMap{}
 }
@@ -44,6 +45,7 @@ func New() helmify.Processor {
 type configMap struct {
 }
 
+// Process k8s ConfigMap object into template. Returns false if not capable of processing given resource type.
 func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil

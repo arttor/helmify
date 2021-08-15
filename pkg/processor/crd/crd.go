@@ -35,6 +35,7 @@ var crdGVC = schema.GroupVersionKind{
 	Kind:    "CustomResourceDefinition",
 }
 
+// New creates processor for k8s CustomResourceDefinition resource.
 func New() helmify.Processor {
 	return &crd{}
 }
@@ -42,6 +43,7 @@ func New() helmify.Processor {
 type crd struct {
 }
 
+// Process k8s CustomResourceDefinition object into template. Returns false if not capable of processing given resource type.
 func (c crd) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil

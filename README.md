@@ -4,6 +4,9 @@
 ![GitHub](https://img.shields.io/github/license/arttor/helmify)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/arttor/helmify)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arttor/helmify)](https://goreportcard.com/report/github.com/arttor/helmify)
+[![GoDoc](https://godoc.org/github.com/arttor/helmify?status.svg)](https://pkg.go.dev/github.com/arttor/helmify?tab=doc)
+[![Maintainability](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/maintainability)](https://codeclimate.com/github/arttor/helmify/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/test_coverage)](https://codeclimate.com/github/arttor/helmify/test_coverage)
 ![Works](https://img.shields.io/badge/works-on--my--machine-blueviolet)
 
 Helmify reads kubernetes resources from std.in and produces a [Helm](https://github.com/helm/helm) chart.
@@ -29,7 +32,7 @@ Tested with operator-sdk version: "v1.8.0".
 ```makefile
 HELMIFY = $(shell pwd)/bin/helmify
 helmify:
-	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.2.0)
+	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.2.2)
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)

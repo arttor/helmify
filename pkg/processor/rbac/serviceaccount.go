@@ -26,6 +26,7 @@ var (
 	}
 )
 
+// ServiceAccount creates processor for k8s ServiceAccount resource.
 func ServiceAccount() helmify.Processor {
 	return &serviceAccount{}
 }
@@ -33,6 +34,7 @@ func ServiceAccount() helmify.Processor {
 type serviceAccount struct {
 }
 
+// Process k8s ServiceAccount object into helm template. Returns false if not capable of processing given resource type.
 func (sa serviceAccount) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != serviceAccountGVC {
 		return false, nil, nil

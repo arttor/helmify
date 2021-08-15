@@ -31,6 +31,7 @@ var (
 	}
 )
 
+// Role creates processor for k8s Role resource.
 func Role() helmify.Processor {
 	return &role{}
 }
@@ -38,6 +39,7 @@ func Role() helmify.Processor {
 type role struct {
 }
 
+// Process k8s Role object into helm template. Returns false if not capable of processing given resource type.
 func (r role) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != roleGVC {
 		return false, nil, nil

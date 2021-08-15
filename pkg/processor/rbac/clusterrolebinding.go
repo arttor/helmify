@@ -36,6 +36,7 @@ var (
 	}
 )
 
+// ClusterRoleBinding creates processor for k8s ClusterRoleBinding resource.
 func ClusterRoleBinding() helmify.Processor {
 	return &clusterRoleBinding{}
 }
@@ -43,6 +44,7 @@ func ClusterRoleBinding() helmify.Processor {
 type clusterRoleBinding struct {
 }
 
+// Process k8s ClusterRoleBinding object into template. Returns false if not capable of processing given resource type.
 func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleBindingGVC {
 		return false, nil, nil
