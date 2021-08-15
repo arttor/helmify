@@ -29,10 +29,10 @@ jobs:
   
     - name: Code Coverage 
       uses: aktions/codeclimate-test-reporter@v1
-#       if: github.ref == 'refs/heads/master'
+      if: github.ref == 'refs/heads/master'
       with:
         codeclimate-test-reporter-id: ${{ secrets.CC_TEST_REPORTER_ID }}
-        command: after-build --prefix github.com/arttor/helmify/
+        command: after-build --prefix github.com/arttor/helmify/  --coverage-input-type gocov
 
 #     - name: Create kind cluster
 #       uses: helm/kind-action@v1.0.0-alpha.3
