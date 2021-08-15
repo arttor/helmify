@@ -25,7 +25,16 @@ jobs:
       run: go vet ./...
 
     - name: Test
-      run: go test -v ./...
+      run: go test  -coverprofile c.out ./...
+  
+    - name: Test & publish code coverage
+      uses: paambaati/codeclimate-action@v2.7.5
+      env:
+        CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
+      with:
+        # The report file must be there, otherwise Code Climate won't find it
+        coverageCommand: go test  -coverprofile c.out ./...
+        coverageLocations: ${{github.workspace}}/c.out:gocov
 
 #     - name: Create kind cluster
 #       uses: helm/kind-action@v1.0.0-alpha.3
