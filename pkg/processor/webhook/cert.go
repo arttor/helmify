@@ -32,6 +32,7 @@ var (
 	}
 )
 
+// Certificate creates processor for k8s Certificate resource.
 func Certificate() helmify.Processor {
 	return &cert{}
 }
@@ -39,6 +40,7 @@ func Certificate() helmify.Processor {
 type cert struct {
 }
 
+// Process k8s Certificate object into template. Returns false if not capable of processing given resource type.
 func (c cert) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != certGVC {
 		return false, nil, nil

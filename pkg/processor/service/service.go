@@ -43,6 +43,7 @@ var (
 	}
 )
 
+// New creates processor for k8s Service resource.
 func New() helmify.Processor {
 	return &svc{}
 }
@@ -50,6 +51,7 @@ func New() helmify.Processor {
 type svc struct {
 }
 
+// Process k8s Service object into template. Returns false if not capable of processing given resource type.
 func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != svcGVC {
 		return false, nil, nil

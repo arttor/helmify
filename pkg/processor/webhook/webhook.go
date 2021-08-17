@@ -35,6 +35,7 @@ var (
 	}
 )
 
+// Webhook creates processor for k8s ValidatingWebhookConfiguration resource.
 func Webhook() helmify.Processor {
 	return &wh{}
 }
@@ -42,6 +43,7 @@ func Webhook() helmify.Processor {
 type wh struct {
 }
 
+// Process k8s ValidatingWebhookConfiguration object into template. Returns false if not capable of processing given resource type.
 func (w wh) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != whGVK {
 		return false, nil, nil

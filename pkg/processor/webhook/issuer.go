@@ -31,6 +31,7 @@ var (
 	}
 )
 
+// Issuer creates processor for k8s Issuer resource.
 func Issuer() helmify.Processor {
 	return &issuer{}
 }
@@ -38,6 +39,7 @@ func Issuer() helmify.Processor {
 type issuer struct {
 }
 
+// Process k8s Issuer object into template. Returns false if not capable of processing given resource type.
 func (i issuer) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != issuerGVC {
 		return false, nil, nil

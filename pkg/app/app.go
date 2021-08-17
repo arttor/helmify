@@ -43,9 +43,9 @@ func Start(input io.Reader, config config.Config) error {
 		rbac.Role(),
 		rbac.RoleBinding(),
 		rbac.ServiceAccount(),
+		secret.New(),
 		webhook.Issuer(),
 		webhook.Certificate(),
-		secret.Secret(),
 		webhook.Webhook()).WithOutput(helm.NewOutput())
 
 	for obj := range objects {

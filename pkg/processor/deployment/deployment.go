@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"io"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -69,62 +71,17 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	}
 	if depl.Labels["control-plane"] != "controller-manager" {
 		logrus.Warn("got deployment but not controller manager")
-		return false, nil, nil
 	}
-	name := info.OperatorName
-	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
-
-	var repo, tag string
-	for i, c := range depl.Spec.Template.Spec.Containers {
-		if c.Name == "manager" {
-			index := strings.LastIndex(c.Image, ":")
-			if index < 0 {
-				return true, nil, errors.New("wrong image format: " + c.Image)
-			}
-			repo = c.Image[:index]
-			tag = c.Image[index+1:]
-			c.Image = "{{ .Values.manager.image.repository }}:{{ .Values.manager.image.tag | default .Chart.AppVersion }}"
-		}
-		for j, e := range c.Env {
-			if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-				e.ValueFrom.SecretKeyRef.Name = strings.ReplaceAll(e.ValueFrom.SecretKeyRef.Name, name, fullNameTeml)
-				c.Env[j] = e
-			}
-			if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
-				e.ValueFrom.ConfigMapKeyRef.Name = strings.ReplaceAll(e.ValueFrom.ConfigMapKeyRef.Name, name, fullNameTeml)
-				c.Env[j] = e
-			}
-		}
-		for j, e := range c.EnvFrom {
-			if e.SecretRef != nil {
-				e.SecretRef.Name = strings.ReplaceAll(e.SecretRef.Name, name, fullNameTeml)
-				c.EnvFrom[j] = e
-			}
-			if e.ConfigMapRef != nil {
-				e.ConfigMapRef.Name = strings.ReplaceAll(e.ConfigMapRef.Name, name, fullNameTeml)
-				c.EnvFrom[j] = e
-			}
-		}
-		depl.Spec.Template.Spec.Containers[i] = c
+	values, err := processPodSpec(info, &depl.Spec.Template.Spec)
+	if err != nil {
+		return true, nil, err
 	}
-
-	for _, v := range depl.Spec.Template.Spec.Volumes {
-		if v.ConfigMap != nil {
-			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, fullNameTeml)
-		}
-		if v.Secret != nil {
-			v.Secret.SecretName = strings.ReplaceAll(v.Secret.SecretName, name, fullNameTeml)
-		}
-	}
-	depl.Spec.Template.Spec.ServiceAccountName = strings.ReplaceAll(depl.Spec.Template.Spec.ServiceAccountName, name, fullNameTeml)
-
 	spec, _ := yaml.Marshal(depl.Spec.Template.Spec)
 	spec = yamlformat.Indent(spec, 6)
 	spec = bytes.TrimRight(spec, "\n ")
 
 	res := fmt.Sprintf(deploymentTempl, info.ChartName, string(spec))
 
-	values := helmify.Values{}
 	err = unstructured.SetNestedField(values, false, "autoscaling", "enabled")
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to set deployment value field")
@@ -137,18 +94,70 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to set deployment value field")
 	}
-	err = unstructured.SetNestedField(values, repo, "manager", "image", "repository")
-	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
-	}
-	err = unstructured.SetNestedField(values, tag, "manager", "image", "tag")
-	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
-	}
+
 	return true, &result{
 		values: values,
 		data:   []byte(res),
 	}, nil
+}
+
+func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values, error) {
+	name := info.OperatorName
+	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+	values := helmify.Values{}
+	for i, c := range pod.Containers {
+		processed, err := processPodContainer(name, templatedName, c, &values)
+		if err != nil {
+			return nil, err
+		}
+		pod.Containers[i] = processed
+	}
+	for _, v := range pod.Volumes {
+		if v.ConfigMap != nil {
+			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, templatedName)
+		}
+		if v.Secret != nil {
+			v.Secret.SecretName = strings.ReplaceAll(v.Secret.SecretName, name, templatedName)
+		}
+	}
+	pod.ServiceAccountName = strings.ReplaceAll(pod.ServiceAccountName, name, templatedName)
+	return values, nil
+}
+
+func processPodContainer(name, templatedName string, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
+	index := strings.LastIndex(c.Image, ":")
+	if index < 0 {
+		return c, errors.New("wrong image format: " + c.Image)
+	}
+	repo, tag := c.Image[:index], c.Image[index+1:]
+	nameCamel := strcase.ToLowerCamel(c.Name)
+	c.Image = fmt.Sprintf("{{ .Values.image.%[1]s.repository }}:{{ .Values.image.%[1]s.tag | default .Chart.AppVersion }}", nameCamel)
+
+	err := unstructured.SetNestedField(*values, repo, "image", nameCamel, "repository")
+	if err != nil {
+		return c, errors.Wrap(err, "unable to set deployment value field")
+	}
+	err = unstructured.SetNestedField(*values, tag, "image", nameCamel, "tag")
+	if err != nil {
+		return c, errors.Wrap(err, "unable to set deployment value field")
+	}
+	for _, e := range c.Env {
+		if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
+			e.ValueFrom.SecretKeyRef.Name = strings.ReplaceAll(e.ValueFrom.SecretKeyRef.Name, name, templatedName)
+		}
+		if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
+			e.ValueFrom.ConfigMapKeyRef.Name = strings.ReplaceAll(e.ValueFrom.ConfigMapKeyRef.Name, name, templatedName)
+		}
+	}
+	for _, e := range c.EnvFrom {
+		if e.SecretRef != nil {
+			e.SecretRef.Name = strings.ReplaceAll(e.SecretRef.Name, name, templatedName)
+		}
+		if e.ConfigMapRef != nil {
+			e.ConfigMapRef.Name = strings.ReplaceAll(e.ConfigMapRef.Name, name, templatedName)
+		}
+	}
+	return c, nil
 }
 
 type result struct {

@@ -35,13 +35,15 @@ var (
 	}
 )
 
-func Secret() helmify.Processor {
+// New creates processor for k8s Secret resource.
+func New() helmify.Processor {
 	return &secret{}
 }
 
 type secret struct {
 }
 
+// Process k8s Secret object into template. Returns false if not capable of processing given resource type.
 func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
@@ -55,7 +57,7 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
 	templatedData := map[string]string{}
-	for key, _ := range sec.Data {
+	for key := range sec.Data {
 		keyCamelCase := strcase.ToLowerCamel(key)
 		if key == strings.ToUpper(key) {
 			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))

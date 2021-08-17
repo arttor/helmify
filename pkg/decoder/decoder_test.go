@@ -68,7 +68,7 @@ func TestDecodeOk(t *testing.T) {
 	stop := make(chan struct{})
 	objects := Decode(stop, reader)
 	i := 0
-	for _ = range objects {
+	for range objects {
 		i++
 	}
 	assert.Equal(t, 2, i, "decoded two objects")
@@ -79,7 +79,7 @@ func TestDecodeEmptyObj(t *testing.T) {
 	stop := make(chan struct{})
 	objects := Decode(stop, reader)
 	i := 0
-	for _ = range objects {
+	for range objects {
 		i++
 	}
 	assert.Equal(t, 0, i, "decoded none objects")
@@ -90,7 +90,7 @@ func TestDecodeInvalidObj(t *testing.T) {
 	stop := make(chan struct{})
 	objects := Decode(stop, reader)
 	i := 0
-	for _ = range objects {
+	for range objects {
 		i++
 	}
 	assert.Equal(t, 2, i, "decoded 2 valid objects")
