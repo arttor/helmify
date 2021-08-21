@@ -8,10 +8,10 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/maintainability)](https://codeclimate.com/github/arttor/helmify/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/test_coverage)](https://codeclimate.com/github/arttor/helmify/test_coverage)
 
-Helmify reads kubernetes resources from std.in and produces a [Helm](https://github.com/helm/helm) chart.
+CLI that creates [Helm](https://github.com/helm/helm) charts from kubernetes yamls.
 
-Main [use-case](#integrate-to-your-operator-sdkkubebuilder-project) is to create Helm charts for kubernetes operators build with
-[Operator-SDK](https://github.com/operator-framework/operator-sdk) or [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
+Helmify reads a list of [supported k8s objects](#status) from stdin and converts it to a helm chart. Main [use-case](#integrate-to-your-operator-sdkkubebuilder-project) is to generate Helm charts for kubernetes operators build with
+[Operator-SDK](https://github.com/operator-framework/operator-sdk) or [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder). Submit issue if some features missing for your use-case.
 
 ## Run
 Clone repo and execute command: 
