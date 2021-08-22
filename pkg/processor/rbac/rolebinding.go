@@ -3,16 +3,17 @@ package rbac
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
-	"io"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -28,21 +29,18 @@ subjects:
 %[4]s`
 )
 
-var (
-	roleBindingGVC = schema.GroupVersionKind{
-		Group:   "rbac.authorization.k8s.io",
-		Version: "v1",
-		Kind:    "RoleBinding",
-	}
-)
+var roleBindingGVC = schema.GroupVersionKind{
+	Group:   "rbac.authorization.k8s.io",
+	Version: "v1",
+	Kind:    "RoleBinding",
+}
 
 // RoleBinding creates processor for k8s RoleBinding resource.
 func RoleBinding() helmify.Processor {
 	return &roleBinding{}
 }
 
-type roleBinding struct {
-}
+type roleBinding struct{}
 
 // Process k8s RoleBinding object into helm template. Returns false if not capable of processing given resource type.
 func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -50,7 +48,7 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 		return false, nil, nil
 	}
 
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 	rb := rbacv1.RoleBinding{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &rb)
 	if err != nil {
@@ -58,7 +56,7 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 	}
 	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
 
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.OperatorName, fullNameTeml)
+	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.ApplicationName, fullNameTeml)
 
 	roleRef, _ := yaml.Marshal(&rb.RoleRef)
 	roleRef = yamlformat.Indent(roleRef, 2)
@@ -66,7 +64,7 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 
 	for i, s := range rb.Subjects {
 		s.Namespace = "{{ .Release.Namespace }}"
-		s.Name = strings.ReplaceAll(s.Name, info.OperatorName, fullNameTeml)
+		s.Name = strings.ReplaceAll(s.Name, info.ApplicationName, fullNameTeml)
 		rb.Subjects[i] = s
 	}
 	subjects, _ := yaml.Marshal(&rb.Subjects)

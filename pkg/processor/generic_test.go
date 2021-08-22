@@ -1,9 +1,10 @@
 package processor
 
 import (
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"testing"
 )
 
 func Test_commonPrefix(t *testing.T) {

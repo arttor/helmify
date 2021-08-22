@@ -15,7 +15,7 @@ metadata:
 	TestNsName = "my-operator-system"
 )
 
-// TestNs k8s namespace object example
+// TestNs k8s namespace object example.
 var TestNs = GenerateObj(nsYaml)
 
 // GenerateObj generates unstructured form yaml string.

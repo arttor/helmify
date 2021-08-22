@@ -3,19 +3,20 @@ package deployment
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"io"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 var deploymentGVC = schema.GroupVersionKind{
@@ -56,8 +57,7 @@ func New() helmify.Processor {
 	return &deployment{}
 }
 
-type deployment struct {
-}
+type deployment struct{}
 
 // Process k8s Deployment object into template. Returns false if not capable of processing given resource type.
 func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -102,7 +102,7 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 }
 
 func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values, error) {
-	name := info.OperatorName
+	name := info.ApplicationName
 	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
 	values := helmify.Values{}
 	for i, c := range pod.Containers {

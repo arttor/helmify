@@ -1,10 +1,11 @@
 package rbac
 
 import (
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const clusterRoleBindingYaml = `apiVersion: rbac.authorization.k8s.io/v1

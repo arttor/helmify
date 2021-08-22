@@ -17,10 +17,10 @@ Helmify reads a list of [supported k8s objects](#status) from stdin and converts
 Clone repo and execute command: 
 
 ```shell
-cat test_data/kustomize.output | go run cmd/helmify/main.go mychart
+cat test_data/kustomize.output | go run ./cmd/helmify mychart
 ```
 
-Will generate `mychart` Helm chart form file `test_data/kustomize.output` representing typical operator 
+Will generate `mychart` Helm chart form file `test_data/k8s-operator-kustomize.output` representing typical operator 
 [kustomize](https://github.com/kubernetes-sigs/kustomize) output.
 
 ## Integrate to your Operator-SDK/Kubebuilder project
@@ -78,7 +78,7 @@ examples for most k8s objects.
 ### Test
 For manual testing, run program with debug output:
 ```shell
-cat test_data/kustomize.output | go run cmd/helmify/main.go -vv mychart
+cat test_data/kustomize.output | go run ./cmd/helmify -vv mychart
 ```
 Then inspect logs and generated chart in `./mychart` directory.
 

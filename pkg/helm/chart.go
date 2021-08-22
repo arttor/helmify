@@ -7,10 +7,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
 	"sigs.k8s.io/yaml"
 )
 
-// NewOutput creates interface to dump processed input to filesystem in Helm chart format
+// NewOutput creates interface to dump processed input to filesystem in Helm chart format.
 func NewOutput() helmify.Output {
 	return &output{}
 }
@@ -26,7 +27,7 @@ type output struct{}
 //        └── _helpers.tp   # Helm default template partials
 // Overwrites existing values.yaml and templates in templates dir on every run.
 func (o output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template) error {
-	err := initChartDir(chartInfo.ChartName, chartInfo.OperatorName)
+	err := initChartDir(chartInfo.ChartName, chartInfo.ApplicationName)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (o output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template
 
 func overwriteTemplateFile(filename, chartName string, templates []helmify.Template) error {
 	file := filepath.Join(chartName, "templates", filename)
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to open "+file)
 	}
@@ -85,7 +86,7 @@ func overwriteValuesFile(chartName string, values helmify.Values) error {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
 	file := filepath.Join(chartName, "values.yaml")
-	err = ioutil.WriteFile(file, res, 0644)
+	err = ioutil.WriteFile(file, res, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to write values.yaml")
 	}

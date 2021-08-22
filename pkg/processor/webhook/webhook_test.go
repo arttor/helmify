@@ -1,10 +1,11 @@
 package webhook
 
 import (
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const whYaml = `apiVersion: admissionregistration.k8s.io/v1

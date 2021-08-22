@@ -1,10 +1,11 @@
 package webhook
 
 import (
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const certYaml = `apiVersion: cert-manager.io/v1

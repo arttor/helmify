@@ -3,13 +3,14 @@ package rbac
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -23,28 +24,25 @@ rules:
 %[3]s`
 )
 
-var (
-	roleGVC = schema.GroupVersionKind{
-		Group:   "rbac.authorization.k8s.io",
-		Version: "v1",
-		Kind:    "Role",
-	}
-)
+var roleGVC = schema.GroupVersionKind{
+	Group:   "rbac.authorization.k8s.io",
+	Version: "v1",
+	Kind:    "Role",
+}
 
 // Role creates processor for k8s Role resource.
 func Role() helmify.Processor {
 	return &role{}
 }
 
-type role struct {
-}
+type role struct{}
 
 // Process k8s Role object into helm template. Returns false if not capable of processing given resource type.
 func (r role) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != roleGVC {
 		return false, nil, nil
 	}
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 
 	rules, _ := yaml.Marshal(obj.Object["rules"])
 	rules = yamlformat.Indent(rules, 2)

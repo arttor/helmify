@@ -3,18 +3,19 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -35,21 +36,18 @@ spec:
 	{{- .Values.%[1]s.ports | toYaml | nindent 2 -}}`
 )
 
-var (
-	svcGVC = schema.GroupVersionKind{
-		Group:   "",
-		Version: "v1",
-		Kind:    "Service",
-	}
-)
+var svcGVC = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "Service",
+}
 
 // New creates processor for k8s Service resource.
 func New() helmify.Processor {
 	return &svc{}
 }
 
-type svc struct {
-}
+type svc struct{}
 
 // Process k8s Service object into template. Returns false if not capable of processing given resource type.
 func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -62,7 +60,7 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		return true, nil, errors.Wrap(err, "unable to cast to service")
 	}
 
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
 	res := fmt.Sprintf(svcTemplMeta, info.ChartName, name)
@@ -83,8 +81,8 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		svcType = corev1.ServiceTypeClusterIP
 	}
 	_ = unstructured.SetNestedField(values, string(svcType), shortNameCamel, "type")
-	var ports []interface{}
-	for _, p := range service.Spec.Ports {
+	ports := make([]interface{}, len(service.Spec.Ports))
+	for i, p := range service.Spec.Ports {
 		pMap := map[string]interface{}{
 			"port": int64(p.Port),
 		}
@@ -102,7 +100,7 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		} else {
 			pMap["targetPort"] = p.TargetPort.StrVal
 		}
-		ports = append(ports, pMap)
+		ports[i] = pMap
 	}
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
 	res = res + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
@@ -114,10 +112,9 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 }
 
 type result struct {
-	name      string
-	data      string
-	values    helmify.Values
-	chartName string
+	name   string
+	data   string
+	values helmify.Values
 }
 
 func (r *result) Filename() string {

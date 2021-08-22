@@ -3,16 +3,17 @@ package rbac
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
-	"io"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -28,21 +29,18 @@ subjects:
 %[4]s`
 )
 
-var (
-	clusterRoleBindingGVC = schema.GroupVersionKind{
-		Group:   "rbac.authorization.k8s.io",
-		Version: "v1",
-		Kind:    "ClusterRoleBinding",
-	}
-)
+var clusterRoleBindingGVC = schema.GroupVersionKind{
+	Group:   "rbac.authorization.k8s.io",
+	Version: "v1",
+	Kind:    "ClusterRoleBinding",
+}
 
 // ClusterRoleBinding creates processor for k8s ClusterRoleBinding resource.
 func ClusterRoleBinding() helmify.Processor {
 	return &clusterRoleBinding{}
 }
 
-type clusterRoleBinding struct {
-}
+type clusterRoleBinding struct{}
 
 // Process k8s ClusterRoleBinding object into template. Returns false if not capable of processing given resource type.
 func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -56,10 +54,10 @@ func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Un
 		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
 	}
 
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 
 	fullNameTempl := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.OperatorName, fullNameTempl)
+	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.ApplicationName, fullNameTempl)
 
 	roleRef, _ := yaml.Marshal(&rb.RoleRef)
 	roleRef = yamlformat.Indent(roleRef, 2)
@@ -67,7 +65,7 @@ func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Un
 
 	for i, s := range rb.Subjects {
 		s.Namespace = "{{ .Release.Namespace }}"
-		s.Name = strings.ReplaceAll(s.Name, info.OperatorName, fullNameTempl)
+		s.Name = strings.ReplaceAll(s.Name, info.ApplicationName, fullNameTempl)
 		rb.Subjects[i] = s
 	}
 	subjects, _ := yaml.Marshal(&rb.Subjects)

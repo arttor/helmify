@@ -7,10 +7,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// Context helm processing context. Stores processed objects
+// Context helm processing context. Stores processed objects.
 type Context struct {
 	processors []Processor
-	templates  []Template
 	output     Output
 	config     config.Config
 	info       ChartInfo
@@ -36,22 +35,22 @@ func (c *Context) WithProcessors(processors ...Processor) *Context {
 	return c
 }
 
-// Add k8s object to helmify context
+// Add k8s object to helmify context.
 func (c *Context) Add(obj *unstructured.Unstructured) {
 	// we need to add all objects before start processing only to define operator name and namespace.
-	if c.info.OperatorNamespace == "" {
-		c.info.OperatorNamespace = processor.ExtractOperatorNamespace(obj)
+	if c.info.Namespace == "" {
+		c.info.Namespace = processor.ExtractOperatorNamespace(obj)
 	}
-	c.info.OperatorName = processor.ExtractOperatorName(obj, c.info.OperatorName)
+	c.info.ApplicationName = processor.ExtractOperatorName(obj, c.info.ApplicationName)
 	c.objects = append(c.objects, obj)
 }
 
-// CreateHelm creates helm chart from context k8s objects
+// CreateHelm creates helm chart from context k8s objects.
 func (c *Context) CreateHelm(stop <-chan struct{}) error {
 	logrus.WithFields(logrus.Fields{
-		"ChartName":         c.info.ChartName,
-		"OperatorName":      c.info.OperatorName,
-		"OperatorNamespace": c.info.OperatorNamespace,
+		"ChartName":       c.info.ChartName,
+		"ApplicationName": c.info.ApplicationName,
+		"Namespace":       c.info.Namespace,
 	}).Info("creating a chart")
 	var templates []Template
 	for _, obj := range c.objects {

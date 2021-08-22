@@ -1,0 +1,157 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: myapp
+  name: myapp
+  namespace: my-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: app
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --leader-elect
+          command:
+            - /manager
+          volumeMounts:
+            - mountPath: /my_config.yaml
+              name: manager-config
+              subPath: my_config.yaml
+            - mountPath: /my_config.properties
+              name: manager-config
+              subPath: my_config.properties
+            - name: secret-volume
+              mountPath: /my.ca
+            - name: props
+              mountPath: /etc/props
+          env:
+            - name: VAR1
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret-vars
+                  key: VAR1
+            - name: VAR2
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret-vars
+                  key: VAR2
+          image: controller:latest
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: proxy-sidecar
+          args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --v=10
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+          ports:
+            - containerPort: 8443
+              name: https
+      securityContext:
+        runAsNonRoot: true
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - configMap:
+            name: my-config
+          name: manager-config
+        - configMap:
+            name: my-config-props
+          name: props
+        - name: secret-volume
+          secret:
+            secretName: my-secret-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: myapp
+  name: myapp-service
+  namespace: my-ns
+spec:
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+  selector:
+    app: myapp
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret-ca
+  namespace: my-ns
+type: opaque
+data:
+  ca.crt: |
+    c3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9uZ3Rlc3RjcnQtc3
+    VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9uZ3Rlc3RjcnQtc3Vw
+    ZXJsb25ndGVzdGNydC0Kc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cG
+    VybG9uZ3Rlc3RjcnQtc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVy
+    bG9uZ3Rlc3RjcnQKc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG
+    9uZ3Rlc3RjcnQtc3VwZXJsb25ndGVzdGNydC1zdXBlcmxvbmd0ZXN0Y3J0LXN1cGVybG9u
+    Z3Rlc3RjcnQ=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret-vars
+  namespace: my-ns
+type: opaque
+data:
+  VAR1: bXlfc2VjcmV0X3Zhcl8x
+  VAR2: bXlfc2VjcmV0X3Zhcl8y
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+  namespace: my-ns
+data:
+  dummyconfigmapkey: dummyconfigmapvalue
+  my_config.yaml: |
+    health:
+      healthProbeBindAddress: :8081
+    metrics:
+      bindAddress: 127.0.0.1:8080
+  my_config.properties: |
+    health.healthProbeBindAddress=8081
+    metrics.bindAddress=127.0.0.1:8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config-props
+  namespace: my-ns
+data:
+  my.prop1: 1
+  my.prop2: "val 1"
+  my.prop3: true

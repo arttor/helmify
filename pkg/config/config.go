@@ -3,7 +3,7 @@ package config
 // DefaultChartName - default name for a helm chart directory.
 const DefaultChartName = "chart"
 
-// Config for Helmify application
+// Config for Helmify application.
 type Config struct {
 	// ChartName overrides DefaultChartName.
 	ChartName string

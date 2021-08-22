@@ -3,10 +3,11 @@ package crd
 import (
 	"bytes"
 	"fmt"
+	"io"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
@@ -40,8 +41,7 @@ func New() helmify.Processor {
 	return &crd{}
 }
 
-type crd struct {
-}
+type crd struct{}
 
 // Process k8s CustomResourceDefinition object into template. Returns false if not capable of processing given resource type.
 func (c crd) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {

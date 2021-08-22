@@ -3,13 +3,14 @@ package webhook
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -23,28 +24,25 @@ spec:
 %[3]s`
 )
 
-var (
-	issuerGVC = schema.GroupVersionKind{
-		Group:   "cert-manager.io",
-		Version: "v1",
-		Kind:    "Issuer",
-	}
-)
+var issuerGVC = schema.GroupVersionKind{
+	Group:   "cert-manager.io",
+	Version: "v1",
+	Kind:    "Issuer",
+}
 
 // Issuer creates processor for k8s Issuer resource.
 func Issuer() helmify.Processor {
 	return &issuer{}
 }
 
-type issuer struct {
-}
+type issuer struct{}
 
 // Process k8s Issuer object into template. Returns false if not capable of processing given resource type.
 func (i issuer) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != issuerGVC {
 		return false, nil, nil
 	}
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")

@@ -2,6 +2,11 @@ package app
 
 import (
 	"context"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/decoder"
 	"github.com/arttor/helmify/pkg/helm"
@@ -14,10 +19,6 @@ import (
 	"github.com/arttor/helmify/pkg/processor/service"
 	"github.com/arttor/helmify/pkg/processor/webhook"
 	"github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // Start - application entrypoint for processing input to a Helm chart.

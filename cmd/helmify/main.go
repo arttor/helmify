@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/arttor/helmify/pkg/app"
-	"github.com/arttor/helmify/pkg/flags"
-	"github.com/sirupsen/logrus"
 	"os"
+
+	"github.com/arttor/helmify/pkg/app"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	conf := flags.Read()
+	conf := ReadFlags()
 	stat, err := os.Stdin.Stat()
 	if err != nil {
 		logrus.WithError(err).Error("stdin error")

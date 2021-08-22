@@ -1,8 +1,6 @@
 package helmify
 
 import (
-	"github.com/imdario/mergo"
-	"github.com/pkg/errors"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -15,7 +13,7 @@ type Processor interface {
 	Process(chartInfo ChartInfo, unstructured *unstructured.Unstructured) (bool, Template, error)
 }
 
-// Template - represents Helm template in 'templates' directory
+// Template - represents Helm template in 'templates' directory.
 type Template interface {
 	// Filename - returns template filename
 	Filename() string
@@ -25,28 +23,17 @@ type Template interface {
 	Write(writer io.Writer) error
 }
 
-// Values - represents helm template values.yaml
-type Values map[string]interface{}
-
-// Merge given values with current instance.
-func (v *Values) Merge(values Values) error {
-	if err := mergo.Merge(v, values, mergo.WithAppendSlice); err != nil {
-		return errors.Wrap(err, "unable to merge helm values")
-	}
-	return nil
-}
-
-// Output - converts Template into helm chart on disk
+// Output - converts Template into helm chart on disk.
 type Output interface {
 	Create(chartInfo ChartInfo, templates []Template) error
 }
 
-// ChartInfo general chart information
+// ChartInfo general chart information.
 type ChartInfo struct {
 	// ChartName - name of the directory of the helm chart
 	ChartName string
-	// Name of the operator. Also equals to name in Chart.yaml
-	OperatorName string
-	// OperatorNamespace namespace of operator. Not used in resulted chart. Need only for correct templates processing.
-	OperatorNamespace string
+	// ApplicationName application name in Chart.yaml
+	ApplicationName string
+	// Namespace namespace of application. Not used in resulted chart. Need only for correct templates processing.
+	Namespace string
 }

@@ -1,10 +1,11 @@
 package processor
 
 import (
+	"strings"
+
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"strings"
 )
 
 var nsGVK = schema.GroupVersionKind{
@@ -20,7 +21,7 @@ var crdGVK = schema.GroupVersionKind{
 }
 
 // ExtractOperatorName - tries to define operator name as the longest common prefix across all objects names
-// except CRDs and namespaces
+// except CRDs and namespaces.
 func ExtractOperatorName(obj *unstructured.Unstructured, prevName string) string {
 	if obj.GroupVersionKind() == crdGVK || obj.GroupVersionKind() == nsGVK {
 		return prevName
@@ -54,7 +55,7 @@ func commonPrefix(one, two string) string {
 	return string(runes1[:min])
 }
 
-// ExtractOperatorNamespace returns name if given object is a namespace
+// ExtractOperatorNamespace returns name if given object is a namespace.
 func ExtractOperatorNamespace(obj *unstructured.Unstructured) string {
 	if obj.GroupVersionKind() != nsGVK {
 		return ""

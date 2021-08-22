@@ -2,11 +2,12 @@ package app
 
 import (
 	"bufio"
+	"os"
+	"testing"
+
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/action"
-	"os"
-	"testing"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 )
 
 func TestStart(t *testing.T) {
-	file, err := os.Open("../../test_data/kustomize.output")
+	file, err := os.Open("../../test_data/k8s-operator-kustomize.output")
 	assert.NoError(t, err)
 
 	objects := bufio.NewReader(file)

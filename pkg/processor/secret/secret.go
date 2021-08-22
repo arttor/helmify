@@ -3,17 +3,18 @@ package secret
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -27,21 +28,18 @@ data:
 %[3]s`
 )
 
-var (
-	configMapGVC = schema.GroupVersionKind{
-		Group:   "",
-		Version: "v1",
-		Kind:    "Secret",
-	}
-)
+var configMapGVC = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "Secret",
+}
 
 // New creates processor for k8s Secret resource.
 func New() helmify.Processor {
 	return &secret{}
 }
 
-type secret struct {
-}
+type secret struct{}
 
 // Process k8s Secret object into template. Returns false if not capable of processing given resource type.
 func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -53,7 +51,7 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to secret")
 	}
-	name := strings.TrimPrefix(sec.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(sec.GetName(), info.ApplicationName+"-")
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
 	templatedData := map[string]string{}

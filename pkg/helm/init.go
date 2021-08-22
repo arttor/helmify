@@ -2,13 +2,14 @@ package helm
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const helmIgnore = `# Patterns to ignore when building packages.
@@ -35,6 +36,7 @@ const helmIgnore = `# Patterns to ignore when building packages.
 *.tmproj
 .vscode/
 `
+
 const defaultHelpers = `{{/*
 Expand the name of the chart.
 */}}
@@ -93,6 +95,7 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 `
+
 const defaultChartfile = `apiVersion: v2
 name: %s
 description: A Helm chart for Kubernetes
@@ -120,7 +123,7 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 const maxChartNameLength = 250
 
-// initChartDir - creates Helm chart structure in chartName directory if not presented
+// initChartDir - creates Helm chart structure in chartName directory if not presented.
 func initChartDir(chartName, appName string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
@@ -144,7 +147,7 @@ func validateChartName(name string) error {
 }
 
 func createCommonFiles(chartName, appName string) error {
-	err := os.MkdirAll(filepath.Join(chartName, "templates"), 0755)
+	err := os.MkdirAll(filepath.Join(chartName, "templates"), 0750)
 	if err != nil {
 		return errors.Wrap(err, "unable create chart dir")
 	}
@@ -153,7 +156,7 @@ func createCommonFiles(chartName, appName string) error {
 			return
 		}
 		file := filepath.Join(path...)
-		err = ioutil.WriteFile(file, content, 0755)
+		err = ioutil.WriteFile(file, content, 0750)
 		if err == nil {
 			logrus.WithField("file", file).Info("created")
 		}

@@ -3,13 +3,14 @@ package rbac
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -23,21 +24,18 @@ rules:
 %[3]s`
 )
 
-var (
-	clusterRoleGVC = schema.GroupVersionKind{
-		Group:   "rbac.authorization.k8s.io",
-		Version: "v1",
-		Kind:    "ClusterRole",
-	}
-)
+var clusterRoleGVC = schema.GroupVersionKind{
+	Group:   "rbac.authorization.k8s.io",
+	Version: "v1",
+	Kind:    "ClusterRole",
+}
 
 // ClusterRole creates processor for k8s ClusterRole resource.
 func ClusterRole() helmify.Processor {
 	return &clusterRole{}
 }
 
-type clusterRole struct {
-}
+type clusterRole struct{}
 
 // Process k8s ClusterRole object into template. Returns false if not capable of processing given resource type.
 func (r clusterRole) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
@@ -47,7 +45,7 @@ func (r clusterRole) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 	rules, _ := yaml.Marshal(obj.Object["rules"])
 	rules = yamlformat.Indent(rules, 2)
 	rules = bytes.TrimRight(rules, "\n ")
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 	res := fmt.Sprintf(clusterRoleTempl, info.ChartName, name, string(rules))
 	return true, &crResult{
 		name: name,

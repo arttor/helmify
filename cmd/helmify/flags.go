@@ -1,10 +1,11 @@
-package flags
+package main
 
 import (
 	"flag"
 	"fmt"
-	"github.com/arttor/helmify/pkg/config"
 	"os"
+
+	"github.com/arttor/helmify/pkg/config"
 )
 
 const helpText = `Helmify parses kubernetes resources from std.in and converts it to a Helm chart.
@@ -19,18 +20,23 @@ Usage:
 Flags:
 `
 
-// Read command-line flags into app config.
-func Read() config.Config {
+// ReadFlags command-line flags into app config.
+func ReadFlags() config.Config {
 	result := config.Config{}
-	var h, help bool
+	var h, help, version bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
 	flag.BoolVar(&help, "help", false, "Print help. Example: helmify -help")
+	flag.BoolVar(&version, "version", false, "Print helmify version. Example: helmify -version")
 	flag.BoolVar(&result.Verbose, "v", false, "Enable verbose output (print WARN & INFO). Example: helmify -v")
 	flag.BoolVar(&result.VeryVerbose, "vv", false, "Enable very verbose output. Same as verbose but with DEBUG. Example: helmify -vv")
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)
 		flag.PrintDefaults()
+		os.Exit(0)
+	}
+	if version {
+		printVersion()
 		os.Exit(0)
 	}
 	result.ChartName = flag.Arg(0)
