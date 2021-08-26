@@ -14,13 +14,13 @@ kind: %[2]s
 metadata:
   name: %[3]s
   labels:
-  {{- include "%[2]s.labels" . | nindent 4 }}
-%[4]s
+  {{- include "%[4]s.labels" . | nindent 4 }}
 %[5]s
+%[6]s
 `
 
 // ProcessMetadata - returns object apiVersion, kind and metadata as helm template.
-func ProcessMetadata(info helmify.ChartInfo, obj *unstructured.Unstructured) (metaStr string, name string, err error) {
+func ProcessMetadata(info helmify.ChartInfo, obj *unstructured.Unstructured) (name string, metaStr string, err error) {
 	var labels, annotations string
 	if len(obj.GetLabels()) != 0 {
 		labels, err = yamlformat.Marshal(obj.GetLabels(), 4)
@@ -38,7 +38,7 @@ func ProcessMetadata(info helmify.ChartInfo, obj *unstructured.Unstructured) (me
 	name = strings.Trim(name, "-_. /")
 	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}-%s`, info.ChartName, name)
 	apiVersion, kind := obj.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	metaStr = fmt.Sprintf(metaTeml, apiVersion, kind, templatedName, labels, annotations)
+	metaStr = fmt.Sprintf(metaTeml, apiVersion, kind, templatedName, info.ChartName, labels, annotations)
 	metaStr = strings.Trim(metaStr, " \n") + "\n"
-	return metaStr, name, nil
+	return name, metaStr, nil
 }

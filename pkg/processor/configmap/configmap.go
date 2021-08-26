@@ -5,6 +5,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
+	"text/template"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
@@ -14,6 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
 )
+
+var configMapTempl, _ = template.New("configMap").Parse(
+	`{{- .Meta }}
+{{- .Immutable }}
+{{- .BinaryData }}
+{{- .Data }}`)
 
 var configMapGVC = schema.GroupVersionKind{
 	Group:   "",
@@ -33,40 +40,43 @@ func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructure
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
-	name, template, err := processor.ProcessMetadata(info, obj)
+	var meta, immutable, binaryData, data string
+	name, meta, err := processor.ProcessMetadata(info, obj)
 	if err != nil {
 		return true, nil, err
 	}
 
-	if immutable, exists, _ := unstructured.NestedBool(obj.Object, "immutable"); exists {
-		immutableStr, err := yamlformat.Marshal(map[string]interface{}{"immutable": immutable}, 0)
+	if field, exists, _ := unstructured.NestedBool(obj.Object, "immutable"); exists {
+		immutable, err = yamlformat.Marshal(map[string]interface{}{"immutable": field}, 0)
 		if err != nil {
 			return true, nil, err
 		}
-		template += immutableStr + "\n"
 	}
-	if binaryData, exists, _ := unstructured.NestedStringMap(obj.Object, "binaryData"); exists {
-		binaryDataStr, err := yamlformat.Marshal(map[string]interface{}{"binaryData": binaryData}, 0)
+	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "binaryData"); exists {
+		binaryData, err = yamlformat.Marshal(map[string]interface{}{"binaryData": field}, 0)
 		if err != nil {
 			return true, nil, err
 		}
-		template += binaryDataStr + "\n"
 	}
 
 	var values helmify.Values
-	if data, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
-		data, values = parseMapData(data, name)
-		dataStr, err := yamlformat.Marshal(map[string]interface{}{"data": data}, 0)
+	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
+		field, values = parseMapData(field, name)
+		data, err = yamlformat.Marshal(map[string]interface{}{"data": field}, 0)
 		if err != nil {
 			return true, nil, err
 		}
-		dataStr = strings.ReplaceAll(dataStr, "'", "")
-		template += dataStr
+		data = strings.ReplaceAll(data, "'", "")
 	}
 
 	return true, &result{
-		name:   name + ".yaml",
-		data:   []byte(template),
+		name: name + ".yaml",
+		data: struct {
+			Meta       string
+			Immutable  string
+			BinaryData string
+			Data       string
+		}{Meta: meta, Immutable: immutable, BinaryData: binaryData, Data: data},
 		values: values,
 	}, nil
 }
@@ -170,8 +180,13 @@ func parseConfig(config map[string]interface{}, values helmify.Values, path []st
 }
 
 type result struct {
-	name   string
-	data   []byte
+	name string
+	data struct {
+		Meta       string
+		Immutable  string
+		BinaryData string
+		Data       string
+	}
 	values helmify.Values
 }
 
@@ -184,6 +199,5 @@ func (r *result) Values() helmify.Values {
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(r.data)
-	return err
+	return configMapTempl.Execute(writer, r.data)
 }

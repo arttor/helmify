@@ -10,7 +10,6 @@ import (
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/decoder"
 	"github.com/arttor/helmify/pkg/helm"
-	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor/configmap"
 	"github.com/arttor/helmify/pkg/processor/crd"
 	"github.com/arttor/helmify/pkg/processor/deployment"
@@ -34,8 +33,8 @@ func Start(input io.Reader, config config.Config) error {
 		cancelFunc()
 	}()
 	objects := decoder.Decode(ctx.Done(), input)
-	helmifyContext := &helmify.Context{}
-	helmifyContext = helmifyContext.WithConfig(config).WithProcessors(configmap.New(),
+	appContext := &Context{}
+	appContext = appContext.WithConfig(config).WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
 		service.New(),
@@ -50,9 +49,9 @@ func Start(input io.Reader, config config.Config) error {
 		webhook.Webhook()).WithOutput(helm.NewOutput())
 
 	for obj := range objects {
-		helmifyContext.Add(obj)
+		appContext.Add(obj)
 	}
-	return helmifyContext.CreateHelm(ctx.Done())
+	return appContext.CreateHelm(ctx.Done())
 }
 
 func setLogLevel(config config.Config) {

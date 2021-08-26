@@ -1,7 +1,8 @@
-package helmify
+package app
 
 import (
 	"github.com/arttor/helmify/pkg/config"
+	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -9,15 +10,15 @@ import (
 
 // Context helm processing context. Stores processed objects.
 type Context struct {
-	processors []Processor
-	output     Output
+	processors []helmify.Processor
+	output     helmify.Output
 	config     config.Config
-	info       ChartInfo
+	info       helmify.ChartInfo
 	objects    []*unstructured.Unstructured
 }
 
 // WithOutput returns context with output set.
-func (c *Context) WithOutput(output Output) *Context {
+func (c *Context) WithOutput(output helmify.Output) *Context {
 	c.output = output
 	return c
 }
@@ -30,7 +31,7 @@ func (c *Context) WithConfig(config config.Config) *Context {
 }
 
 // WithProcessors  add processors to the context and returns it.
-func (c *Context) WithProcessors(processors ...Processor) *Context {
+func (c *Context) WithProcessors(processors ...helmify.Processor) *Context {
 	c.processors = append(c.processors, processors...)
 	return c
 }
@@ -52,7 +53,7 @@ func (c *Context) CreateHelm(stop <-chan struct{}) error {
 		"ApplicationName": c.info.ApplicationName,
 		"Namespace":       c.info.Namespace,
 	}).Info("creating a chart")
-	var templates []Template
+	var templates []helmify.Template
 	for _, obj := range c.objects {
 		template, err := c.process(obj)
 		if err != nil {
@@ -70,7 +71,7 @@ func (c *Context) CreateHelm(stop <-chan struct{}) error {
 	return c.output.Create(c.info, templates)
 }
 
-func (c *Context) process(obj *unstructured.Unstructured) (Template, error) {
+func (c *Context) process(obj *unstructured.Unstructured) (helmify.Template, error) {
 	for _, p := range c.processors {
 		if processed, result, err := p.Process(c.info, obj); processed {
 			if err != nil {
