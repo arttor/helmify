@@ -44,7 +44,7 @@ func New() helmify.Processor {
 type svc struct{}
 
 // Process k8s Service object into template. Returns false if not capable of processing given resource type.
-func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != svcGVC {
 		return false, nil, nil
 	}
@@ -54,10 +54,12 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		return true, nil, errors.Wrap(err, "unable to cast to service")
 	}
 
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
+
+	name := appMeta.TrimName(obj.GetName())
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
 
@@ -93,7 +95,7 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		ports[i] = pMap
 	}
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
-	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
+	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName())
 	return true, &result{
 		name:   shortName,
 		data:   res,

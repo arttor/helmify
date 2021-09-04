@@ -35,7 +35,7 @@ func New() helmify.Processor {
 type secret struct{}
 
 // Process k8s Secret object into template. Returns false if not capable of processing given resource type.
-func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
@@ -44,11 +44,12 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to secret")
 	}
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
 
+	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
 	templatedData := map[string]string{}

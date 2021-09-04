@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	operatorChartName = "my_test_operator_chart"
-	appChartName      = "my_test_app_chart"
+	operatorChartName = "test-operator"
+	appChartName      = "test-app"
 )
 
 func TestOperator(t *testing.T) {

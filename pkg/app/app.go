@@ -22,6 +22,10 @@ import (
 
 // Start - application entrypoint for processing input to a Helm chart.
 func Start(input io.Reader, config config.Config) error {
+	err := config.Validate()
+	if err != nil {
+		return err
+	}
 	setLogLevel(config)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -33,8 +37,8 @@ func Start(input io.Reader, config config.Config) error {
 		cancelFunc()
 	}()
 	objects := decoder.Decode(ctx.Done(), input)
-	appContext := &Context{}
-	appContext = appContext.WithConfig(config).WithProcessors(configmap.New(),
+	appCtx := New(config, helm.NewOutput())
+	appCtx = appCtx.WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
 		service.New(),
@@ -45,12 +49,11 @@ func Start(input io.Reader, config config.Config) error {
 		secret.New(),
 		webhook.Issuer(),
 		webhook.Certificate(),
-		webhook.Webhook()).WithOutput(helm.NewOutput())
-
+		webhook.Webhook())
 	for obj := range objects {
-		appContext.Add(obj)
+		appCtx.Add(obj)
 	}
-	return appContext.CreateHelm(ctx.Done())
+	return appCtx.CreateHelm(ctx.Done())
 }
 
 func setLogLevel(config config.Config) {

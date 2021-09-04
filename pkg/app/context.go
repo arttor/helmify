@@ -3,55 +3,47 @@ package app
 import (
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/arttor/helmify/pkg/processor"
+	"github.com/arttor/helmify/pkg/metadata"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// Context helm processing context. Stores processed objects.
-type Context struct {
+// appContext helm processing context. Stores processed objects.
+type appContext struct {
 	processors []helmify.Processor
 	output     helmify.Output
 	config     config.Config
-	info       helmify.ChartInfo
+	appMeta    *metadata.Service
 	objects    []*unstructured.Unstructured
 }
 
-// WithOutput returns context with output set.
-func (c *Context) WithOutput(output helmify.Output) *Context {
-	c.output = output
-	return c
-}
-
-// WithConfig returns context with config set.
-func (c *Context) WithConfig(config config.Config) *Context {
-	c.config = config
-	c.info.ChartName = config.ChartName
-	return c
+// New returns context with config set.
+func New(config config.Config, output helmify.Output) *appContext {
+	return &appContext{
+		config:  config,
+		appMeta: metadata.New(config.ChartName),
+		output:  output,
+	}
 }
 
 // WithProcessors  add processors to the context and returns it.
-func (c *Context) WithProcessors(processors ...helmify.Processor) *Context {
+func (c *appContext) WithProcessors(processors ...helmify.Processor) *appContext {
 	c.processors = append(c.processors, processors...)
 	return c
 }
 
-// Add k8s object to helmify context.
-func (c *Context) Add(obj *unstructured.Unstructured) {
+// Add k8s object to app context.
+func (c *appContext) Add(obj *unstructured.Unstructured) {
 	// we need to add all objects before start processing only to define operator name and namespace.
-	if c.info.Namespace == "" {
-		c.info.Namespace = processor.ExtractOperatorNamespace(obj)
-	}
-	c.info.ApplicationName = processor.ExtractOperatorName(obj, c.info.ApplicationName)
+	c.appMeta.Load(obj)
 	c.objects = append(c.objects, obj)
 }
 
 // CreateHelm creates helm chart from context k8s objects.
-func (c *Context) CreateHelm(stop <-chan struct{}) error {
+func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 	logrus.WithFields(logrus.Fields{
-		"ChartName":       c.info.ChartName,
-		"ApplicationName": c.info.ApplicationName,
-		"Namespace":       c.info.Namespace,
+		"ChartName": c.appMeta.ChartName(),
+		"Namespace": c.appMeta.Namespace(),
 	}).Info("creating a chart")
 	var templates []helmify.Template
 	for _, obj := range c.objects {
@@ -68,12 +60,12 @@ func (c *Context) CreateHelm(stop <-chan struct{}) error {
 		default:
 		}
 	}
-	return c.output.Create(c.info, templates)
+	return c.output.Create(c.appMeta.ChartName(), templates)
 }
 
-func (c *Context) process(obj *unstructured.Unstructured) (helmify.Template, error) {
+func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, error) {
 	for _, p := range c.processors {
-		if processed, result, err := p.Process(c.info, obj); processed {
+		if processed, result, err := p.Process(c.appMeta, obj); processed {
 			if err != nil {
 				return nil, err
 			}

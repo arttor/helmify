@@ -35,12 +35,12 @@ func Role() helmify.Processor {
 type role struct{}
 
 // Process k8s ClusterRole object into template. Returns false if not capable of processing given resource type.
-func (r role) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleGVC && obj.GroupVersionKind() != roleGVC {
 		return false, nil, nil
 	}
 
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
@@ -51,7 +51,7 @@ func (r role) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (b
 	}
 
 	return true, &crResult{
-		name: name,
+		name: appMeta.TrimName(obj.GetName()),
 		data: struct {
 			Meta  string
 			Rules string

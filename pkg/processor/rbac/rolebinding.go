@@ -1,7 +1,6 @@
 package rbac
 
 import (
-	"fmt"
 	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
@@ -35,24 +34,21 @@ func RoleBinding() helmify.Processor {
 type roleBinding struct{}
 
 // Process k8s RoleBinding object into helm template. Returns false if not capable of processing given resource type.
-func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (r roleBinding) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != roleBindingGVC {
 		return false, nil, nil
 	}
-
-	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
 	rb := rbacv1.RoleBinding{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &rb)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
 	}
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
-	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
 
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.ApplicationName, fullNameTeml)
+	rb.RoleRef.Name = appMeta.TemplatedName(rb.RoleRef.Name)
 
 	roleRef, err := yamlformat.Marshal(map[string]interface{}{"roleRef": &rb.RoleRef}, 0)
 	if err != nil {
@@ -61,7 +57,7 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 
 	for i, s := range rb.Subjects {
 		s.Namespace = "{{ .Release.Namespace }}"
-		s.Name = strings.ReplaceAll(s.Name, info.ApplicationName, fullNameTeml)
+		s.Name = appMeta.TemplatedName(s.Name)
 		rb.Subjects[i] = s
 	}
 	subjects, err := yamlformat.Marshal(map[string]interface{}{"subjects": &rb.Subjects}, 0)
@@ -70,7 +66,7 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 	}
 
 	return true, &rbResult{
-		name: name,
+		name: appMeta.TrimName(obj.GetName()),
 		data: struct {
 			Meta     string
 			RoleRef  string

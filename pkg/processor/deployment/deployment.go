@@ -50,7 +50,7 @@ func New() helmify.Processor {
 type deployment struct{}
 
 // Process k8s Deployment object into template. Returns false if not capable of processing given resource type.
-func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != deploymentGVC {
 		return false, nil, nil
 	}
@@ -59,13 +59,14 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to deployment")
 	}
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
 
 	values := helmify.Values{}
 
+	name := appMeta.TrimName(obj.GetName())
 	replicas, err := values.Add(int64(*depl.Spec.Replicas), name, "replicas")
 	if err != nil {
 		return true, nil, err
@@ -82,7 +83,7 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 			return true, nil, err
 		}
 	}
-	selector := fmt.Sprintf(selectorTempl, matchLabels, info.ChartName, matchExpr)
+	selector := fmt.Sprintf(selectorTempl, matchLabels, appMeta.ChartName(), matchExpr)
 	selector = strings.Trim(selector, " \n")
 	selector = string(yamlformat.Indent([]byte(selector), 4))
 
@@ -90,7 +91,7 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	if err != nil {
 		return true, nil, err
 	}
-	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", info.ChartName)
+	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
 	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
@@ -101,7 +102,7 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	}
 
 	// TODO: postprocess container resources
-	podValues, err := processPodSpec(info, &depl.Spec.Template.Spec)
+	podValues, err := processPodSpec(appMeta, &depl.Spec.Template.Spec)
 	if err != nil {
 		return true, nil, err
 	}
@@ -134,12 +135,10 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	}, nil
 }
 
-func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values, error) {
-	name := info.ApplicationName
-	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+func processPodSpec(appMeta helmify.AppMetadata, pod *corev1.PodSpec) (helmify.Values, error) {
 	values := helmify.Values{}
 	for i, c := range pod.Containers {
-		processed, err := processPodContainer(name, templatedName, c, &values)
+		processed, err := processPodContainer(appMeta, c, &values)
 		if err != nil {
 			return nil, err
 		}
@@ -147,17 +146,17 @@ func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values
 	}
 	for _, v := range pod.Volumes {
 		if v.ConfigMap != nil {
-			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, templatedName)
+			v.ConfigMap.Name = appMeta.TemplatedName(v.ConfigMap.Name)
 		}
 		if v.Secret != nil {
-			v.Secret.SecretName = strings.ReplaceAll(v.Secret.SecretName, name, templatedName)
+			v.Secret.SecretName = appMeta.TemplatedName(v.Secret.SecretName)
 		}
 	}
-	pod.ServiceAccountName = strings.ReplaceAll(pod.ServiceAccountName, name, templatedName)
+	pod.ServiceAccountName = appMeta.TemplatedName(pod.ServiceAccountName)
 	return values, nil
 }
 
-func processPodContainer(name, templatedName string, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
+func processPodContainer(appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
 	index := strings.LastIndex(c.Image, ":")
 	if index < 0 {
 		return c, errors.New("wrong image format: " + c.Image)
@@ -176,18 +175,18 @@ func processPodContainer(name, templatedName string, c corev1.Container, values 
 	}
 	for _, e := range c.Env {
 		if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-			e.ValueFrom.SecretKeyRef.Name = strings.ReplaceAll(e.ValueFrom.SecretKeyRef.Name, name, templatedName)
+			e.ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.SecretKeyRef.Name)
 		}
 		if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
-			e.ValueFrom.ConfigMapKeyRef.Name = strings.ReplaceAll(e.ValueFrom.ConfigMapKeyRef.Name, name, templatedName)
+			e.ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.ConfigMapKeyRef.Name)
 		}
 	}
 	for _, e := range c.EnvFrom {
 		if e.SecretRef != nil {
-			e.SecretRef.Name = strings.ReplaceAll(e.SecretRef.Name, name, templatedName)
+			e.SecretRef.Name = appMeta.TemplatedName(e.SecretRef.Name)
 		}
 		if e.ConfigMapRef != nil {
-			e.ConfigMapRef.Name = strings.ReplaceAll(e.ConfigMapRef.Name, name, templatedName)
+			e.ConfigMapRef.Name = appMeta.TemplatedName(e.ConfigMapRef.Name)
 		}
 	}
 	return c, nil

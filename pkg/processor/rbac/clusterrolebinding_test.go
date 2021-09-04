@@ -1,10 +1,10 @@
 package rbac
 
 import (
+	"github.com/arttor/helmify/pkg/metadata"
 	"testing"
 
 	"github.com/arttor/helmify/internal"
-	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,13 +26,13 @@ func Test_clusterRoleBinding_Process(t *testing.T) {
 
 	t.Run("processed", func(t *testing.T) {
 		obj := internal.GenerateObj(clusterRoleBindingYaml)
-		processed, _, err := testInstance.Process(helmify.ChartInfo{}, obj)
+		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, true, processed)
 	})
 	t.Run("skipped", func(t *testing.T) {
 		obj := internal.TestNs
-		processed, _, err := testInstance.Process(helmify.ChartInfo{}, obj)
+		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, false, processed)
 	})

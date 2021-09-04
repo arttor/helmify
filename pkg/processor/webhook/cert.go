@@ -39,20 +39,19 @@ func Certificate() helmify.Processor {
 type cert struct{}
 
 // Process k8s Certificate object into template. Returns false if not capable of processing given resource type.
-func (c cert) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != certGVC {
 		return false, nil, nil
 	}
-	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
-	fullnameTempl := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+	name := appMeta.TrimName(obj.GetName())
 
 	dnsNames, _, err := unstructured.NestedSlice(obj.Object, "spec", "dnsNames")
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable get cert dnsNames")
 	}
 	for i, dns := range dnsNames {
-		dns = strings.ReplaceAll(dns.(string), info.Namespace, "{{ .Release.Namespace }}")
-		dns = strings.ReplaceAll(dns.(string), info.ApplicationName, fullnameTempl)
+		dns = appMeta.TemplatedName(dns.(string))
+		dns = strings.ReplaceAll(dns.(string), appMeta.Namespace(), "{{ .Release.Namespace }}")
 		dnsNames[i] = dns
 	}
 	err = unstructured.SetNestedSlice(obj.Object, dnsNames, "spec", "dnsNames")
@@ -64,7 +63,7 @@ func (c cert) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (b
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable get cert issuerRef")
 	}
-	issName = strings.ReplaceAll(issName, info.ApplicationName, fullnameTempl)
+	issName = appMeta.TemplatedName(issName)
 	err = unstructured.SetNestedField(obj.Object, issName, "spec", "issuerRef", "name")
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable set cert issuerRef")
@@ -72,7 +71,7 @@ func (c cert) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (b
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")
-	res := fmt.Sprintf(certTempl, info.ChartName, name, string(spec))
+	res := fmt.Sprintf(certTempl, appMeta.ChartName(), name, string(spec))
 	return true, &certResult{
 		name: name,
 		data: []byte(res),

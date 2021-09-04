@@ -44,7 +44,7 @@ func New() helmify.Processor {
 type crd struct{}
 
 // Process k8s CustomResourceDefinition object into template. Returns false if not capable of processing given resource type.
-func (c crd) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil
 	}
@@ -56,7 +56,7 @@ func (c crd) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 	versions = yamlformat.Indent(versions, 2)
 	versions = bytes.TrimRight(versions, "\n ")
 
-	res := fmt.Sprintf(crdTeml, obj.GetName(), info.ChartName, string(versions))
+	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(versions))
 	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")

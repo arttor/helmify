@@ -26,8 +26,8 @@ type output struct{}
 //    └── templates/    	# The template files
 //        └── _helpers.tp   # Helm default template partials
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template) error {
-	err := initChartDir(chartInfo.ChartName, chartInfo.ApplicationName)
+func (o output) Create(chartName string, templates []helmify.Template) error {
+	err := initChartDir(chartName)
 	if err != nil {
 		return err
 	}
@@ -44,12 +44,12 @@ func (o output) Create(chartInfo helmify.ChartInfo, templates []helmify.Template
 		}
 	}
 	for filename, tpls := range files {
-		err = overwriteTemplateFile(filename, chartInfo.ChartName, tpls)
+		err = overwriteTemplateFile(filename, chartName, tpls)
 		if err != nil {
 			return err
 		}
 	}
-	err = overwriteValuesFile(chartInfo.ChartName, values)
+	err = overwriteValuesFile(chartName, values)
 	if err != nil {
 		return err
 	}

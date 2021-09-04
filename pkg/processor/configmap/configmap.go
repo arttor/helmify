@@ -36,12 +36,12 @@ func New() helmify.Processor {
 type configMap struct{}
 
 // Process k8s ConfigMap object into template. Returns false if not capable of processing given resource type.
-func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
 	var meta, immutable, binaryData, data string
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
@@ -59,6 +59,7 @@ func (d configMap) Process(info helmify.ChartInfo, obj *unstructured.Unstructure
 		}
 	}
 
+	name := appMeta.TrimName(obj.GetName())
 	var values helmify.Values
 	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
 		field, values = parseMapData(field, name)

@@ -1,7 +1,6 @@
 package rbac
 
 import (
-	"fmt"
 	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
@@ -35,7 +34,7 @@ func ClusterRoleBinding() helmify.Processor {
 type clusterRoleBinding struct{}
 
 // Process k8s ClusterRoleBinding object into template. Returns false if not capable of processing given resource type.
-func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (r clusterRoleBinding) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != clusterRoleBindingGVC {
 		return false, nil, nil
 	}
@@ -46,13 +45,12 @@ func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Un
 		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
 	}
 
-	name, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
 
-	fullNameTempl := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
-	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.ApplicationName, fullNameTempl)
+	rb.RoleRef.Name = appMeta.TemplatedName(rb.RoleRef.Name)
 
 	roleRef, err := yamlformat.Marshal(map[string]interface{}{"roleRef": &rb.RoleRef}, 0)
 	if err != nil {
@@ -61,7 +59,7 @@ func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Un
 
 	for i, s := range rb.Subjects {
 		s.Namespace = "{{ .Release.Namespace }}"
-		s.Name = strings.ReplaceAll(s.Name, info.ApplicationName, fullNameTempl)
+		s.Name = appMeta.TemplatedName(s.Name)
 		rb.Subjects[i] = s
 	}
 	subjects, err := yamlformat.Marshal(map[string]interface{}{"subjects": &rb.Subjects}, 0)
@@ -70,7 +68,7 @@ func (r clusterRoleBinding) Process(info helmify.ChartInfo, obj *unstructured.Un
 	}
 
 	return true, &crbResult{
-		name: name,
+		name: appMeta.TrimName(obj.GetName()),
 		data: struct {
 			Meta     string
 			RoleRef  string

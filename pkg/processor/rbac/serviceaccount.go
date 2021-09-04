@@ -22,11 +22,11 @@ func ServiceAccount() helmify.Processor {
 type serviceAccount struct{}
 
 // Process k8s ServiceAccount object into helm template. Returns false if not capable of processing given resource type.
-func (sa serviceAccount) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (sa serviceAccount) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != serviceAccountGVC {
 		return false, nil, nil
 	}
-	_, meta, err := processor.ProcessMetadata(info, obj)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
