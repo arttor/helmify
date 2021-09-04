@@ -16,6 +16,7 @@ Helmify reads a list of [supported k8s objects](#status) from stdin and converts
 TODO:
 - clean up
 - tests
+- regress
 - release
 - install guide
 
