@@ -14,9 +14,10 @@ Helmify reads a list of [supported k8s objects](#status) from stdin and converts
 [Operator-SDK](https://github.com/operator-framework/operator-sdk) or [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder). Submit issue if some features missing for your use-case.
 
 TODO:
-- handle names
 - clean up
 - tests
+- release
+- install guide
 
 ## Run
 Clone repo and execute command: 
