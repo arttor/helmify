@@ -152,6 +152,6 @@ metadata:
   name: my-config-props
   namespace: my-ns
 data:
-  my.prop1: 1
+  my.prop1: "1"
   my.prop2: "val 1"
-  my.prop3: true
+  my.prop3: "true"
