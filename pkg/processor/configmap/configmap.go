@@ -17,10 +17,10 @@ import (
 )
 
 var configMapTempl, _ = template.New("configMap").Parse(
-	`{{- .Meta }}
-{{- .Immutable }}
-{{- .BinaryData }}
-{{- .Data }}`)
+	`{{ .Meta }}
+{{ .Immutable -}}
+{{ .BinaryData -}}
+{{ .Data -}}`)
 
 var configMapGVC = schema.GroupVersionKind{
 	Group:   "",
@@ -103,7 +103,7 @@ func parseMapData(data map[string]string, configName string) (map[string]string,
 			data[key] = templated
 			continue
 		}
-		templatedVal, err := values.Add(value, valuesNamePath)
+		templatedVal, err := values.Add(value, valuesNamePath...)
 		if err != nil {
 			logrus.WithError(err).Errorf("unable to process configmap data: %v", valuesNamePath)
 			continue
@@ -136,7 +136,7 @@ func parseProperties(properties string, path []string, values helmify.Values) (s
 		}
 		propName, propVal := prop[0], prop[1]
 		propNamePath := strings.Split(propName, ".")
-		templatedVal, err := values.Add(propVal, append(path, propNamePath...))
+		templatedVal, err := values.Add(propVal, append(path, propNamePath...)...)
 		if err != nil {
 			return "", err
 		}
@@ -155,7 +155,7 @@ func parseConfig(config map[string]interface{}, values helmify.Values, path []st
 			if k == "kind" || k == "apiVersion" {
 				continue
 			}
-			templated, err := values.Add(v, append(path, k))
+			templated, err := values.Add(v, append(path, k)...)
 			if err != nil {
 				logrus.WithError(err).Error()
 				continue

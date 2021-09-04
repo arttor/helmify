@@ -15,8 +15,6 @@ Helmify reads a list of [supported k8s objects](#status) from stdin and converts
 
 TODO:
 - test sample-app.yaml
-- use ProcessMetadata for all processors
-- use go templates in processors
 - add default processor
 - tests
 

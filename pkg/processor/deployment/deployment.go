@@ -1,22 +1,21 @@
 package deployment
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
+	"text/template"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
 )
 
 var deploymentGVC = schema.GroupVersionKind{
@@ -25,32 +24,23 @@ var deploymentGVC = schema.GroupVersionKind{
 	Kind:    "Deployment",
 }
 
-const deploymentTempl = `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-controller-manager
-  labels:
-    control-plane: controller-manager
-  {{- include "%[1]s.labels" . | nindent 4 }}
+var deploymentTempl, _ = template.New("deployment").Parse(
+	`{{- .Meta }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: {{ .Replicas }}
   selector:
-    matchLabels:
-      control-plane: controller-manager
-  {{- include "%[1]s.selectorLabels" . | nindent 6 }}
+{{ .Selector }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-      {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        control-plane: controller-manager
-    {{- include "%[1]s.selectorLabels" . | nindent 8 }}
+{{ .PodLabels }}
+{{- .PodAnnotations }}
     spec:
-%[2]s`
+{{ .Spec }}`)
+
+const selectorTempl = `%[1]s
+{{- include "%[2]s.selectorLabels" . | nindent 8 }}
+%[3]s`
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
@@ -69,35 +59,78 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to deployment")
 	}
-	if depl.Labels["control-plane"] != "controller-manager" {
-		logrus.Warn("got deployment but not controller manager")
-	}
-	values, err := processPodSpec(info, &depl.Spec.Template.Spec)
+	name, meta, err := processor.ProcessMetadata(info, obj)
 	if err != nil {
 		return true, nil, err
 	}
-	spec, _ := yaml.Marshal(depl.Spec.Template.Spec)
-	spec = yamlformat.Indent(spec, 6)
-	spec = bytes.TrimRight(spec, "\n ")
 
-	res := fmt.Sprintf(deploymentTempl, info.ChartName, string(spec))
+	values := helmify.Values{}
 
-	err = unstructured.SetNestedField(values, false, "autoscaling", "enabled")
+	replicas, err := values.Add(int64(*depl.Spec.Replicas), name, "replicas")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
 	}
-	err = unstructured.SetNestedField(values, int64(*depl.Spec.Replicas), "replicaCount")
+
+	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": depl.Spec.Selector.MatchLabels}, 2)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
 	}
-	err = unstructured.SetNestedStringMap(values, depl.Spec.Template.ObjectMeta.Annotations, "podAnnotations")
+	matchExpr := ""
+	if depl.Spec.Selector.MatchExpressions != nil {
+		matchExpr, err = yamlformat.Marshal(map[string]interface{}{"matchExpressions": depl.Spec.Selector.MatchExpressions}, 0)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+	selector := fmt.Sprintf(selectorTempl, matchLabels, info.ChartName, matchExpr)
+	selector = strings.Trim(selector, " \n")
+	selector = string(yamlformat.Indent([]byte(selector), 4))
+
+	podLabels, err := yamlformat.Marshal(depl.Spec.Template.ObjectMeta.Labels, 8)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
+	}
+	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", info.ChartName)
+
+	podAnnotations := ""
+	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
+		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+
+	// TODO: postprocess container resources
+	podValues, err := processPodSpec(info, &depl.Spec.Template.Spec)
+	if err != nil {
+		return true, nil, err
+	}
+	err = values.Merge(podValues)
+	if err != nil {
+		return true, nil, err
+	}
+	spec, err := yamlformat.Marshal(depl.Spec.Template.Spec, 6)
+	if err != nil {
+		return true, nil, err
 	}
 
 	return true, &result{
 		values: values,
-		data:   []byte(res),
+		data: struct {
+			Meta           string
+			Replicas       string
+			Selector       string
+			PodLabels      string
+			PodAnnotations string
+			Spec           string
+		}{
+			Meta:           meta,
+			Replicas:       replicas,
+			Selector:       selector,
+			PodLabels:      podLabels,
+			PodAnnotations: podAnnotations,
+			Spec:           spec,
+		},
 	}, nil
 }
 
@@ -161,7 +194,14 @@ func processPodContainer(name, templatedName string, c corev1.Container, values 
 }
 
 type result struct {
-	data   []byte
+	data struct {
+		Meta           string
+		Replicas       string
+		Selector       string
+		PodLabels      string
+		PodAnnotations string
+		Spec           string
+	}
 	values helmify.Values
 }
 
@@ -174,6 +214,5 @@ func (r *result) Values() helmify.Values {
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(r.data)
-	return err
+	return deploymentTempl.Execute(writer, r.data)
 }

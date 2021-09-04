@@ -8,26 +8,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const roleYaml = `apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+const clusterRoleYaml = `apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: my-operator-leader-election-role
-  namespace: my-operator-system
+  creationTimestamp: null
+  name: my-operator-manager-role
 rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
+  - pods
   verbs:
   - get
-  - list
-  - watch`
+  - list`
 
-func Test_role_Process(t *testing.T) {
+func Test_clusterRole_Process(t *testing.T) {
 	var testInstance role
 
 	t.Run("processed", func(t *testing.T) {
-		obj := internal.GenerateObj(roleYaml)
+		obj := internal.GenerateObj(clusterRoleYaml)
 		processed, _, err := testInstance.Process(helmify.ChartInfo{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, true, processed)

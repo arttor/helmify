@@ -38,7 +38,6 @@ func Start(input io.Reader, config config.Config) error {
 		crd.New(),
 		deployment.New(),
 		service.New(),
-		rbac.ClusterRole(),
 		rbac.ClusterRoleBinding(),
 		rbac.Role(),
 		rbac.RoleBinding(),

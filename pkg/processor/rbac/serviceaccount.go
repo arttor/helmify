@@ -1,22 +1,11 @@
 package rbac
 
 import (
-	"fmt"
-	"io"
-	"strings"
-
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
+	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	serviceAccountTempl = `apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}`
 )
 
 var serviceAccountGVC = schema.GroupVersionKind{
@@ -37,10 +26,12 @@ func (sa serviceAccount) Process(info helmify.ChartInfo, obj *unstructured.Unstr
 	if obj.GroupVersionKind() != serviceAccountGVC {
 		return false, nil, nil
 	}
-	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
-	res := fmt.Sprintf(serviceAccountTempl, info.ChartName, name)
+	_, meta, err := processor.ProcessMetadata(info, obj)
+	if err != nil {
+		return true, nil, err
+	}
 	return true, &saResult{
-		data: []byte(res),
+		data: []byte(meta),
 	}, nil
 }
 

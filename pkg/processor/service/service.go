@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
 
@@ -19,13 +20,6 @@ import (
 )
 
 const (
-	svcTemplMeta = `apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-`
 	svcTempSpec = `
 spec:
   type: {{ .Values.%[1]s.type }}
@@ -60,16 +54,12 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		return true, nil, errors.Wrap(err, "unable to cast to service")
 	}
 
-	name := strings.TrimPrefix(obj.GetName(), info.ApplicationName+"-")
+	name, meta, err := processor.ProcessMetadata(info, obj)
+	if err != nil {
+		return true, nil, err
+	}
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
-	res := fmt.Sprintf(svcTemplMeta, info.ChartName, name)
-	if len(obj.GetLabels()) > 0 {
-		labels, _ := yaml.Marshal(obj.GetLabels())
-		labels = yamlformat.Indent(labels, 4)
-		labels = bytes.TrimRight(labels, "\n ")
-		res = res + string(labels)
-	}
 
 	selector, _ := yaml.Marshal(service.Spec.Selector)
 	selector = yamlformat.Indent(selector, 4)
@@ -103,7 +93,7 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		ports[i] = pMap
 	}
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
-	res = res + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
+	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
 	return true, &result{
 		name:   shortName,
 		data:   res,

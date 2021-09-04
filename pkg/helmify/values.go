@@ -21,7 +21,7 @@ func (v *Values) Merge(values Values) error {
 }
 
 // Add - adds given value to values and returns its helm template representation {{ .Values.<valueName> }}
-func (v *Values) Add(value interface{}, name []string) (string, error) {
+func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	name = toCamelCase(name)
 	val, isString := parseValue(value)
 	err := unstructured.SetNestedField(*v, val, name...)

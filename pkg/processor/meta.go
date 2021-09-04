@@ -16,8 +16,7 @@ metadata:
   labels:
   {{- include "%[4]s.labels" . | nindent 4 }}
 %[5]s
-%[6]s
-`
+%[6]s`
 
 // ProcessMetadata - returns object apiVersion, kind and metadata as helm template.
 func ProcessMetadata(info helmify.ChartInfo, obj *unstructured.Unstructured) (name string, metaStr string, err error) {
@@ -39,6 +38,6 @@ func ProcessMetadata(info helmify.ChartInfo, obj *unstructured.Unstructured) (na
 	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}-%s`, info.ChartName, name)
 	apiVersion, kind := obj.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	metaStr = fmt.Sprintf(metaTeml, apiVersion, kind, templatedName, info.ChartName, labels, annotations)
-	metaStr = strings.Trim(metaStr, " \n") + "\n"
+	metaStr = strings.Trim(metaStr, " \n")
 	return name, metaStr, nil
 }

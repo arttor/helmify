@@ -1,10 +1,11 @@
 package rbac
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
+	"text/template"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
@@ -13,21 +14,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
 )
 
-const (
-	roleBindingTempl = `apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-roleRef:
-%[3]s
-subjects:
-%[4]s`
-)
+var roleBindingTempl, _ = template.New("roleBinding").Parse(
+	`{{- .Meta }}
+{{ .RoleRef }}
+{{ .Subjects }}`)
 
 var roleBindingGVC = schema.GroupVersionKind{
 	Group:   "rbac.authorization.k8s.io",
@@ -54,33 +46,50 @@ func (r roleBinding) Process(info helmify.ChartInfo, obj *unstructured.Unstructu
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
 	}
+	name, meta, err := processor.ProcessMetadata(info, obj)
+	if err != nil {
+		return true, nil, err
+	}
 	fullNameTeml := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
 
 	rb.RoleRef.Name = strings.ReplaceAll(rb.RoleRef.Name, info.ApplicationName, fullNameTeml)
 
-	roleRef, _ := yaml.Marshal(&rb.RoleRef)
-	roleRef = yamlformat.Indent(roleRef, 2)
-	roleRef = bytes.TrimRight(roleRef, "\n ")
+	roleRef, err := yamlformat.Marshal(map[string]interface{}{"roleRef": &rb.RoleRef}, 0)
+	if err != nil {
+		return true, nil, err
+	}
 
 	for i, s := range rb.Subjects {
 		s.Namespace = "{{ .Release.Namespace }}"
 		s.Name = strings.ReplaceAll(s.Name, info.ApplicationName, fullNameTeml)
 		rb.Subjects[i] = s
 	}
-	subjects, _ := yaml.Marshal(&rb.Subjects)
-	subjects = yamlformat.Indent(subjects, 2)
-	subjects = bytes.TrimRight(subjects, "\n ")
-	res := fmt.Sprintf(roleBindingTempl, info.ChartName, name, string(roleRef), string(subjects))
+	subjects, err := yamlformat.Marshal(map[string]interface{}{"subjects": &rb.Subjects}, 0)
+	if err != nil {
+		return true, nil, err
+	}
 
 	return true, &rbResult{
 		name: name,
-		data: []byte(res),
+		data: struct {
+			Meta     string
+			RoleRef  string
+			Subjects string
+		}{
+			Meta:     meta,
+			RoleRef:  roleRef,
+			Subjects: subjects,
+		},
 	}, nil
 }
 
 type rbResult struct {
 	name string
-	data []byte
+	data struct {
+		Meta     string
+		RoleRef  string
+		Subjects string
+	}
 }
 
 func (r *rbResult) Filename() string {
@@ -92,6 +101,5 @@ func (r *rbResult) Values() helmify.Values {
 }
 
 func (r *rbResult) Write(writer io.Writer) error {
-	_, err := writer.Write(r.data)
-	return err
+	return roleBindingTempl.Execute(writer, r.data)
 }
