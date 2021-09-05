@@ -2,10 +2,15 @@ package app
 
 import (
 	"context"
+	"github.com/arttor/helmify/pkg/processor"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/decoder"
 	"github.com/arttor/helmify/pkg/helm"
-	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor/configmap"
 	"github.com/arttor/helmify/pkg/processor/crd"
 	"github.com/arttor/helmify/pkg/processor/deployment"
@@ -14,14 +19,14 @@ import (
 	"github.com/arttor/helmify/pkg/processor/service"
 	"github.com/arttor/helmify/pkg/processor/webhook"
 	"github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // Start - application entrypoint for processing input to a Helm chart.
 func Start(input io.Reader, config config.Config) error {
+	err := config.Validate()
+	if err != nil {
+		return err
+	}
 	setLogLevel(config)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -33,12 +38,11 @@ func Start(input io.Reader, config config.Config) error {
 		cancelFunc()
 	}()
 	objects := decoder.Decode(ctx.Done(), input)
-	helmifyContext := &helmify.Context{}
-	helmifyContext = helmifyContext.WithConfig(config).WithProcessors(configmap.New(),
+	appCtx := New(config, helm.NewOutput())
+	appCtx = appCtx.WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
 		service.New(),
-		rbac.ClusterRole(),
 		rbac.ClusterRoleBinding(),
 		rbac.Role(),
 		rbac.RoleBinding(),
@@ -46,12 +50,11 @@ func Start(input io.Reader, config config.Config) error {
 		secret.New(),
 		webhook.Issuer(),
 		webhook.Certificate(),
-		webhook.Webhook()).WithOutput(helm.NewOutput())
-
+		webhook.Webhook()).WithDefaultProcessor(processor.Default())
 	for obj := range objects {
-		helmifyContext.Add(obj)
+		appCtx.Add(obj)
 	}
-	return helmifyContext.CreateHelm(ctx.Done())
+	return appCtx.CreateHelm(ctx.Done())
 }
 
 func setLogLevel(config config.Config) {

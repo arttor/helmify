@@ -1,8 +1,6 @@
 package helmify
 
 import (
-	"github.com/imdario/mergo"
-	"github.com/pkg/errors"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -12,10 +10,10 @@ import (
 type Processor interface {
 	// Process - converts k8s object to Helm template.
 	// return false if not able to process given object type.
-	Process(chartInfo ChartInfo, unstructured *unstructured.Unstructured) (bool, Template, error)
+	Process(appMeta AppMetadata, unstructured *unstructured.Unstructured) (bool, Template, error)
 }
 
-// Template - represents Helm template in 'templates' directory
+// Template - represents Helm template in 'templates' directory.
 type Template interface {
 	// Filename - returns template filename
 	Filename() string
@@ -25,28 +23,23 @@ type Template interface {
 	Write(writer io.Writer) error
 }
 
-// Values - represents helm template values.yaml
-type Values map[string]interface{}
-
-// Merge given values with current instance.
-func (v *Values) Merge(values Values) error {
-	if err := mergo.Merge(v, values, mergo.WithAppendSlice); err != nil {
-		return errors.Wrap(err, "unable to merge helm values")
-	}
-	return nil
-}
-
-// Output - converts Template into helm chart on disk
+// Output - converts Template into helm chart on disk.
 type Output interface {
-	Create(chartInfo ChartInfo, templates []Template) error
+	Create(chartName string, templates []Template) error
 }
 
-// ChartInfo general chart information
-type ChartInfo struct {
-	// ChartName - name of the directory of the helm chart
-	ChartName string
-	// Name of the operator. Also equals to name in Chart.yaml
-	OperatorName string
-	// OperatorNamespace namespace of operator. Not used in resulted chart. Need only for correct templates processing.
-	OperatorNamespace string
+// AppMetadata handle common information about K8s objects in the chart.
+type AppMetadata interface {
+	// Namespace returns app namespace.
+	Namespace() string
+	// ChartName returns chart name
+	ChartName() string
+	// TemplatedName converts object name to templated Helm name.
+	// Example: 	"my-app-service1"	-> "{{ include "chart.fullname" . }}-service1"
+	//				"my-app-secret"		-> "{{ include "chart.fullname" . }}-secret"
+	//				etc...
+	TemplatedName(objName string) string
+	// TrimName trims common prefix from object name if exists.
+	// We trim common prefix because helm already using release for this purpose.
+	TrimName(objName string) string
 }

@@ -3,15 +3,16 @@ package webhook
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/pkg/errors"
-	"io"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
@@ -27,28 +28,25 @@ webhooks:
 %[4]s`
 )
 
-var (
-	whGVK = schema.GroupVersionKind{
-		Group:   "admissionregistration.k8s.io",
-		Version: "v1",
-		Kind:    "ValidatingWebhookConfiguration",
-	}
-)
+var whGVK = schema.GroupVersionKind{
+	Group:   "admissionregistration.k8s.io",
+	Version: "v1",
+	Kind:    "ValidatingWebhookConfiguration",
+}
 
 // Webhook creates processor for k8s ValidatingWebhookConfiguration resource.
 func Webhook() helmify.Processor {
 	return &wh{}
 }
 
-type wh struct {
-}
+type wh struct{}
 
 // Process k8s ValidatingWebhookConfiguration object into template. Returns false if not capable of processing given resource type.
-func (w wh) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (w wh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != whGVK {
 		return false, nil, nil
 	}
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	name := appMeta.TrimName(obj.GetName())
 
 	whConf := v1.ValidatingWebhookConfiguration{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &whConf)
@@ -56,8 +54,8 @@ func (w wh) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (boo
 		return true, nil, errors.Wrap(err, "unable to cast to ValidatingWebhookConfiguration")
 	}
 	for i, whc := range whConf.Webhooks {
-		whc.ClientConfig.Service.Name = strings.ReplaceAll(whc.ClientConfig.Service.Name, info.OperatorName, fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName))
-		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, info.OperatorNamespace, `{{ .Release.Namespace }}`)
+		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
+		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
 		whConf.Webhooks[i] = whc
 	}
 	webhooks, _ := yaml.Marshal(whConf.Webhooks)
@@ -66,8 +64,8 @@ func (w wh) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (boo
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable get webhook certName")
 	}
-	certName = strings.TrimPrefix(certName, info.OperatorNamespace+"/"+info.OperatorName+"-")
-	res := fmt.Sprintf(whTempl, info.ChartName, name, certName, string(webhooks))
+	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.Namespace()+"-")
+	res := fmt.Sprintf(whTempl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &whResult{
 		name: name,
 		data: []byte(res),

@@ -1,8 +1,10 @@
 package decoder
 
 import (
-	"github.com/sirupsen/logrus"
+	"errors"
 	"io"
+
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -19,7 +21,7 @@ const (
 func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstructured {
 	decoder := yamlutil.NewYAMLOrJSONDecoder(reader, yamlDecoderBufferSize)
 	res := make(chan *unstructured.Unstructured, decoderResultChannelBufferSize)
-	go func(stop <-chan struct{}, reader io.Reader) {
+	go func() {
 		defer close(res)
 		logrus.Debug("Start processing...")
 		for {
@@ -31,7 +33,7 @@ func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstruc
 			}
 			var rawObj runtime.RawExtension
 			err := decoder.Decode(&rawObj)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				logrus.Debug("EOF received. Finishing input objects decoding.")
 				return
 			}
@@ -57,6 +59,6 @@ func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstruc
 			}).Debug("decoded")
 			res <- object
 		}
-	}(stop, reader)
+	}()
 	return res
 }

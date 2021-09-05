@@ -3,28 +3,23 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
+	"io"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 const (
-	svcTemplMeta = `apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-`
 	svcTempSpec = `
 spec:
   type: {{ .Values.%[1]s.type }}
@@ -35,24 +30,21 @@ spec:
 	{{- .Values.%[1]s.ports | toYaml | nindent 2 -}}`
 )
 
-var (
-	svcGVC = schema.GroupVersionKind{
-		Group:   "",
-		Version: "v1",
-		Kind:    "Service",
-	}
-)
+var svcGVC = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "Service",
+}
 
 // New creates processor for k8s Service resource.
 func New() helmify.Processor {
 	return &svc{}
 }
 
-type svc struct {
-}
+type svc struct{}
 
 // Process k8s Service object into template. Returns false if not capable of processing given resource type.
-func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != svcGVC {
 		return false, nil, nil
 	}
@@ -62,16 +54,14 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		return true, nil, errors.Wrap(err, "unable to cast to service")
 	}
 
-	name := strings.TrimPrefix(obj.GetName(), info.OperatorName+"-")
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
+	if err != nil {
+		return true, nil, err
+	}
+
+	name := appMeta.TrimName(obj.GetName())
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
-	res := fmt.Sprintf(svcTemplMeta, info.ChartName, name)
-	if len(obj.GetLabels()) > 0 {
-		labels, _ := yaml.Marshal(obj.GetLabels())
-		labels = yamlformat.Indent(labels, 4)
-		labels = bytes.TrimRight(labels, "\n ")
-		res = res + string(labels)
-	}
 
 	selector, _ := yaml.Marshal(service.Spec.Selector)
 	selector = yamlformat.Indent(selector, 4)
@@ -83,8 +73,8 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		svcType = corev1.ServiceTypeClusterIP
 	}
 	_ = unstructured.SetNestedField(values, string(svcType), shortNameCamel, "type")
-	var ports []interface{}
-	for _, p := range service.Spec.Ports {
+	ports := make([]interface{}, len(service.Spec.Ports))
+	for i, p := range service.Spec.Ports {
 		pMap := map[string]interface{}{
 			"port": int64(p.Port),
 		}
@@ -102,10 +92,10 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 		} else {
 			pMap["targetPort"] = p.TargetPort.StrVal
 		}
-		ports = append(ports, pMap)
+		ports[i] = pMap
 	}
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
-	res = res + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, info.ChartName)
+	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName())
 	return true, &result{
 		name:   shortName,
 		data:   res,
@@ -114,10 +104,9 @@ func (r svc) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bo
 }
 
 type result struct {
-	name      string
-	data      string
-	values    helmify.Values
-	chartName string
+	name   string
+	data   string
+	values helmify.Values
 }
 
 func (r *result) Filename() string {

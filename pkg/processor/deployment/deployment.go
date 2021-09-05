@@ -1,21 +1,21 @@
 package deployment
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
+	"io"
+	"strings"
+	"text/template"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"io"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 var deploymentGVC = schema.GroupVersionKind{
@@ -24,43 +24,33 @@ var deploymentGVC = schema.GroupVersionKind{
 	Kind:    "Deployment",
 }
 
-const deploymentTempl = `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-controller-manager
-  labels:
-    control-plane: controller-manager
-  {{- include "%[1]s.labels" . | nindent 4 }}
+var deploymentTempl, _ = template.New("deployment").Parse(
+	`{{- .Meta }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
+  replicas: {{ .Replicas }}
   selector:
-    matchLabels:
-      control-plane: controller-manager
-  {{- include "%[1]s.selectorLabels" . | nindent 6 }}
+{{ .Selector }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-      {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
-        control-plane: controller-manager
-    {{- include "%[1]s.selectorLabels" . | nindent 8 }}
+{{ .PodLabels }}
+{{- .PodAnnotations }}
     spec:
-%[2]s`
+{{ .Spec }}`)
+
+const selectorTempl = `%[1]s
+{{- include "%[2]s.selectorLabels" . | nindent 6 }}
+%[3]s`
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
 	return &deployment{}
 }
 
-type deployment struct {
-}
+type deployment struct{}
 
 // Process k8s Deployment object into template. Returns false if not capable of processing given resource type.
-func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != deploymentGVC {
 		return false, nil, nil
 	}
@@ -69,44 +59,114 @@ func (d deployment) Process(info helmify.ChartInfo, obj *unstructured.Unstructur
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to deployment")
 	}
-	if depl.Labels["control-plane"] != "controller-manager" {
-		logrus.Warn("got deployment but not controller manager")
-	}
-	values, err := processPodSpec(info, &depl.Spec.Template.Spec)
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
-	spec, _ := yaml.Marshal(depl.Spec.Template.Spec)
-	spec = yamlformat.Indent(spec, 6)
-	spec = bytes.TrimRight(spec, "\n ")
 
-	res := fmt.Sprintf(deploymentTempl, info.ChartName, string(spec))
+	values := helmify.Values{}
 
-	err = unstructured.SetNestedField(values, false, "autoscaling", "enabled")
+	name := appMeta.TrimName(obj.GetName())
+	replicas, err := values.Add(int64(*depl.Spec.Replicas), name, "replicas")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
 	}
-	err = unstructured.SetNestedField(values, int64(*depl.Spec.Replicas), "replicaCount")
+
+	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": depl.Spec.Selector.MatchLabels}, 0)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
 	}
-	err = unstructured.SetNestedStringMap(values, depl.Spec.Template.ObjectMeta.Annotations, "podAnnotations")
+	matchExpr := ""
+	if depl.Spec.Selector.MatchExpressions != nil {
+		matchExpr, err = yamlformat.Marshal(map[string]interface{}{"matchExpressions": depl.Spec.Selector.MatchExpressions}, 0)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+	selector := fmt.Sprintf(selectorTempl, matchLabels, appMeta.ChartName(), matchExpr)
+	selector = strings.Trim(selector, " \n")
+	selector = string(yamlformat.Indent([]byte(selector), 4))
+
+	podLabels, err := yamlformat.Marshal(depl.Spec.Template.ObjectMeta.Labels, 8)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to set deployment value field")
+		return true, nil, err
 	}
+	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
+
+	podAnnotations := ""
+	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
+		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+
+	nameCamel := strcase.ToLowerCamel(name)
+	podValues, err := processPodSpec(nameCamel, appMeta, &depl.Spec.Template.Spec)
+	if err != nil {
+		return true, nil, err
+	}
+	err = values.Merge(podValues)
+	if err != nil {
+		return true, nil, err
+	}
+	// replace container resources with template to values.
+	specMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&depl.Spec.Template.Spec)
+	if err != nil {
+		return true, nil, err
+	}
+	containers, _, err := unstructured.NestedSlice(specMap, "containers")
+	if err != nil {
+		return true, nil, err
+	}
+	for i := range containers {
+		containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
+		res, exists, err := unstructured.NestedMap(values, nameCamel, containerName, "resources")
+		if err != nil {
+			return true, nil, err
+		}
+		if !exists || len(res) == 0 {
+			continue
+		}
+		err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, nameCamel, containerName), "resources")
+		if err != nil {
+			return true, nil, err
+		}
+	}
+	err = unstructured.SetNestedSlice(specMap, containers, "containers")
+	if err != nil {
+		return true, nil, err
+	}
+	spec, err := yamlformat.Marshal(specMap, 6)
+	if err != nil {
+		return true, nil, err
+	}
+	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{
 		values: values,
-		data:   []byte(res),
+		data: struct {
+			Meta           string
+			Replicas       string
+			Selector       string
+			PodLabels      string
+			PodAnnotations string
+			Spec           string
+		}{
+			Meta:           meta,
+			Replicas:       replicas,
+			Selector:       selector,
+			PodLabels:      podLabels,
+			PodAnnotations: podAnnotations,
+			Spec:           spec,
+		},
 	}, nil
 }
 
-func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values, error) {
-	name := info.OperatorName
-	templatedName := fmt.Sprintf(`{{ include "%s.fullname" . }}`, info.ChartName)
+func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpec) (helmify.Values, error) {
 	values := helmify.Values{}
 	for i, c := range pod.Containers {
-		processed, err := processPodContainer(name, templatedName, c, &values)
+		processed, err := processPodContainer(name, appMeta, c, &values)
 		if err != nil {
 			return nil, err
 		}
@@ -114,54 +174,73 @@ func processPodSpec(info helmify.ChartInfo, pod *corev1.PodSpec) (helmify.Values
 	}
 	for _, v := range pod.Volumes {
 		if v.ConfigMap != nil {
-			v.ConfigMap.Name = strings.ReplaceAll(v.ConfigMap.Name, name, templatedName)
+			v.ConfigMap.Name = appMeta.TemplatedName(v.ConfigMap.Name)
 		}
 		if v.Secret != nil {
-			v.Secret.SecretName = strings.ReplaceAll(v.Secret.SecretName, name, templatedName)
+			v.Secret.SecretName = appMeta.TemplatedName(v.Secret.SecretName)
 		}
 	}
-	pod.ServiceAccountName = strings.ReplaceAll(pod.ServiceAccountName, name, templatedName)
+	pod.ServiceAccountName = appMeta.TemplatedName(pod.ServiceAccountName)
 	return values, nil
 }
 
-func processPodContainer(name, templatedName string, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
+func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
 	index := strings.LastIndex(c.Image, ":")
 	if index < 0 {
 		return c, errors.New("wrong image format: " + c.Image)
 	}
 	repo, tag := c.Image[:index], c.Image[index+1:]
-	nameCamel := strcase.ToLowerCamel(c.Name)
-	c.Image = fmt.Sprintf("{{ .Values.image.%[1]s.repository }}:{{ .Values.image.%[1]s.tag | default .Chart.AppVersion }}", nameCamel)
+	containerName := strcase.ToLowerCamel(c.Name)
+	c.Image = fmt.Sprintf("{{ .Values.image.%[1]s.repository }}:{{ .Values.image.%[1]s.tag | default .Chart.AppVersion }}", containerName)
 
-	err := unstructured.SetNestedField(*values, repo, "image", nameCamel, "repository")
+	err := unstructured.SetNestedField(*values, repo, "image", containerName, "repository")
 	if err != nil {
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
-	err = unstructured.SetNestedField(*values, tag, "image", nameCamel, "tag")
+	err = unstructured.SetNestedField(*values, tag, "image", containerName, "tag")
 	if err != nil {
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
 	for _, e := range c.Env {
 		if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-			e.ValueFrom.SecretKeyRef.Name = strings.ReplaceAll(e.ValueFrom.SecretKeyRef.Name, name, templatedName)
+			e.ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.SecretKeyRef.Name)
 		}
 		if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
-			e.ValueFrom.ConfigMapKeyRef.Name = strings.ReplaceAll(e.ValueFrom.ConfigMapKeyRef.Name, name, templatedName)
+			e.ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.ConfigMapKeyRef.Name)
 		}
 	}
 	for _, e := range c.EnvFrom {
 		if e.SecretRef != nil {
-			e.SecretRef.Name = strings.ReplaceAll(e.SecretRef.Name, name, templatedName)
+			e.SecretRef.Name = appMeta.TemplatedName(e.SecretRef.Name)
 		}
 		if e.ConfigMapRef != nil {
-			e.ConfigMapRef.Name = strings.ReplaceAll(e.ConfigMapRef.Name, name, templatedName)
+			e.ConfigMapRef.Name = appMeta.TemplatedName(e.ConfigMapRef.Name)
+		}
+	}
+	for k, v := range c.Resources.Requests {
+		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "requests", k.String())
+		if err != nil {
+			return c, errors.Wrap(err, "unable to set container resources value")
+		}
+	}
+	for k, v := range c.Resources.Limits {
+		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "limits", k.String())
+		if err != nil {
+			return c, errors.Wrap(err, "unable to set container resources value")
 		}
 	}
 	return c, nil
 }
 
 type result struct {
-	data   []byte
+	data struct {
+		Meta           string
+		Replicas       string
+		Selector       string
+		PodLabels      string
+		PodAnnotations string
+		Spec           string
+	}
 	values helmify.Values
 }
 
@@ -174,6 +253,5 @@ func (r *result) Values() helmify.Values {
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(r.data)
-	return err
+	return deploymentTempl.Execute(writer, r.data)
 }

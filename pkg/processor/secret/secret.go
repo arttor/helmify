@@ -1,50 +1,41 @@
 package secret
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor"
+	"io"
+	"strings"
+	"text/template"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
-	"strings"
 )
 
-const (
-	secretTempl = `apiVersion: v1
-kind: Secret
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-data:
-%[3]s`
-)
+var secretTempl, _ = template.New("secret").Parse(
+	`{{ .Meta }}
+{{ .Data }}`)
 
-var (
-	configMapGVC = schema.GroupVersionKind{
-		Group:   "",
-		Version: "v1",
-		Kind:    "Secret",
-	}
-)
+var configMapGVC = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "Secret",
+}
 
 // New creates processor for k8s Secret resource.
 func New() helmify.Processor {
 	return &secret{}
 }
 
-type secret struct {
-}
+type secret struct{}
 
 // Process k8s Secret object into template. Returns false if not capable of processing given resource type.
-func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != configMapGVC {
 		return false, nil, nil
 	}
@@ -53,7 +44,12 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to secret")
 	}
-	name := strings.TrimPrefix(sec.GetName(), info.OperatorName+"-")
+	meta, err := processor.ProcessObjMeta(appMeta, obj)
+	if err != nil {
+		return true, nil, err
+	}
+
+	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
 	templatedData := map[string]string{}
@@ -68,21 +64,28 @@ func (d secret) Process(info helmify.ChartInfo, obj *unstructured.Unstructured) 
 		}
 		templatedData[key] = fmt.Sprintf(`{{ required "secret %[1]s.%[2]s is required" .Values.%[1]s.%[2]s | b64enc }}`, nameCamelCase, keyCamelCase)
 	}
-	data, _ := yaml.Marshal(templatedData)
-	data = yamlformat.Indent(data, 2)
-	data = bytes.TrimRight(data, "\n ")
-	res := fmt.Sprintf(secretTempl, info.ChartName, name, string(data))
+
+	data, err := yamlformat.Marshal(map[string]interface{}{"data": templatedData}, 0)
+	if err != nil {
+		return true, nil, err
+	}
 
 	return true, &result{
-		name:   name + ".yaml",
-		data:   []byte(res),
+		name: name + ".yaml",
+		data: struct {
+			Meta string
+			Data string
+		}{Meta: meta, Data: data},
 		values: values,
 	}, nil
 }
 
 type result struct {
-	name   string
-	data   []byte
+	name string
+	data struct {
+		Meta string
+		Data string
+	}
 	values helmify.Values
 }
 
@@ -95,6 +98,5 @@ func (r *result) Values() helmify.Values {
 }
 
 func (r *result) Write(writer io.Writer) error {
-	_, err := writer.Write(r.data)
-	return err
+	return secretTempl.Execute(writer, r.data)
 }
