@@ -45,8 +45,5 @@ func ReadFlags() config.Config {
 		os.Exit(0)
 	}
 	result.ChartName = flag.Arg(0)
-	if result.ChartName == "" {
-		result.ChartName = config.DefaultChartName
-	}
 	return result
 }

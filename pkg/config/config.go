@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-// DefaultChartName - default name for a helm chart directory.
-const DefaultChartName = "chart"
+// defaultChartName - default name for a helm chart directory.
+const defaultChartName = "chart"
 
 // Config for Helmify application.
 type Config struct {
@@ -19,7 +19,11 @@ type Config struct {
 	VeryVerbose bool
 }
 
-func (c Config) Validate() error {
+func (c *Config) Validate() error {
+	if c.ChartName == "" {
+		logrus.Infof("Chart name is not set. Using default name '%s", defaultChartName)
+		c.ChartName = defaultChartName
+	}
 	err := validation.IsDNS1123Subdomain(c.ChartName)
 	if err != nil {
 		for _, e := range err {

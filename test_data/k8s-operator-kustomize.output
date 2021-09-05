@@ -712,3 +712,15 @@ metadata:
   name: my-operator-secret-vars
   namespace: my-operator-system
 type: opaque
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-operator-pvc-lim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: cust1-mypool-lim

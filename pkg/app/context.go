@@ -10,11 +10,12 @@ import (
 
 // appContext helm processing context. Stores processed objects.
 type appContext struct {
-	processors []helmify.Processor
-	output     helmify.Output
-	config     config.Config
-	appMeta    *metadata.Service
-	objects    []*unstructured.Unstructured
+	processors       []helmify.Processor
+	defaultProcessor helmify.Processor
+	output           helmify.Output
+	config           config.Config
+	appMeta          *metadata.Service
+	objects          []*unstructured.Unstructured
 }
 
 // New returns context with config set.
@@ -32,9 +33,15 @@ func (c *appContext) WithProcessors(processors ...helmify.Processor) *appContext
 	return c
 }
 
+// WithDefaultProcessor  add defaultProcessor for unknown resources to the context and returns it.
+func (c *appContext) WithDefaultProcessor(processor helmify.Processor) *appContext {
+	c.defaultProcessor = processor
+	return c
+}
+
 // Add k8s object to app context.
 func (c *appContext) Add(obj *unstructured.Unstructured) {
-	// we need to add all objects before start processing only to define operator name and namespace.
+	// we need to add all objects before start processing only to define app metadata.
 	c.appMeta.Load(obj)
 	c.objects = append(c.objects, obj)
 }
@@ -77,9 +84,14 @@ func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, 
 			return result, nil
 		}
 	}
-	logrus.WithFields(logrus.Fields{
-		"Resource": obj.GetObjectKind().GroupVersionKind().String(),
-		"Name":     obj.GetName(),
-	}).Warn("skip object: no processor defined")
-	return nil, nil
+	if c.defaultProcessor == nil {
+		logrus.WithFields(logrus.Fields{
+			"ApiVersion": obj.GetAPIVersion(),
+			"Kind":       obj.GetKind(),
+			"Name":       obj.GetName(),
+		}).Warn("Skipping: no suitable processor for resource.")
+		return nil, nil
+	}
+	_, t, err := c.defaultProcessor.Process(c.appMeta, obj)
+	return t, err
 }

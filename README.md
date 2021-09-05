@@ -10,25 +10,17 @@
 
 CLI that creates [Helm](https://github.com/helm/helm) charts from kubernetes yamls.
 
-Helmify reads a list of [supported k8s objects](#status) from stdin and converts it to a helm chart. Main [use-case](#integrate-to-your-operator-sdkkubebuilder-project) is to generate Helm charts for kubernetes operators build with
-[Operator-SDK](https://github.com/operator-framework/operator-sdk) or [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder). Submit issue if some features missing for your use-case.
+Helmify reads a list of [supported k8s objects](#status) from stdin and converts it to a helm chart. 
+[One of use-cases](#integrate-to-your-operator-sdkkubebuilder-project) is to generate Helm charts for kubernetes operators build with
+[Operator-SDK](https://github.com/operator-framework/operator-sdk) or [Kubebuilder](https://github.com/kubernetes-sigs/kubebuilder). 
+
+Submit issue if some features missing for your use-case.
 
 TODO:
-- clean up
-- tests
 - regress
+- tests
 - release
 - install guide
-
-## Run
-Clone repo and execute command: 
-
-```shell
-cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify mychart
-```
-
-Will generate `mychart` Helm chart form file `test_data/k8s-operator-kustomize.output` representing typical operator 
-[kustomize](https://github.com/kubernetes-sigs/kustomize) output.
 
 ## Usage
 
@@ -55,6 +47,10 @@ helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)
 ```
 3. Run `make helm` in project root. It will generate helm chart with name 'chart' in 'chart' directory.
+
+## Install
+
+TODO:
 
 ## Available options
 Helmify takes a chart name for an argument.
@@ -93,6 +89,17 @@ To support a new type of k8s object template:
 examples for most k8s objects.
 2. Register your processor in the `pkg/app/app.go`
 3. Add relevant input sample to `test_data/kustomize.output`.
+
+
+### Run
+Clone repo and execute command:
+
+```shell
+cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify mychart
+```
+
+Will generate `mychart` Helm chart form file `test_data/k8s-operator-kustomize.output` representing typical operator
+[kustomize](https://github.com/kubernetes-sigs/kustomize) output.
 
 ### Test
 For manual testing, run program with debug output:
