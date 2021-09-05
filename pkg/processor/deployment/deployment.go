@@ -39,7 +39,7 @@ spec:
 {{ .Spec }}`)
 
 const selectorTempl = `%[1]s
-{{- include "%[2]s.selectorLabels" . | nindent 8 }}
+{{- include "%[2]s.selectorLabels" . | nindent 6 }}
 %[3]s`
 
 // New creates processor for k8s Deployment resource.
@@ -72,7 +72,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": depl.Spec.Selector.MatchLabels}, 2)
+	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": depl.Spec.Selector.MatchLabels}, 0)
 	if err != nil {
 		return true, nil, err
 	}
