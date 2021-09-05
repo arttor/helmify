@@ -28,8 +28,6 @@ jobs:
         run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date) >> ${GITHUB_ENV}
-      - name: Environment Printer
-        uses: managedkaos/print-env@v1.0
 
       - uses: wangyoucao577/go-release-action@v1.20
         with:
