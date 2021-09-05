@@ -129,8 +129,14 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 			continue
 		}
 		err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, nameCamel, containerName), "resources")
+		if err != nil {
+			return true, nil, err
+		}
 	}
 	err = unstructured.SetNestedSlice(specMap, containers, "containers")
+	if err != nil {
+		return true, nil, err
+	}
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {
 		return true, nil, err
