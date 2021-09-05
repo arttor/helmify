@@ -5,7 +5,6 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strconv"
 	"strings"
 )
 
@@ -23,11 +22,11 @@ func (v *Values) Merge(values Values) error {
 // Add - adds given value to values and returns its helm template representation {{ .Values.<valueName> }}
 func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	name = toCamelCase(name)
-	val, isString := parseValue(value)
-	err := unstructured.SetNestedField(*v, val, name...)
+	err := unstructured.SetNestedField(*v, value, name...)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to set value: %v", name)
 	}
+	_, isString := value.(string)
 	if isString {
 		return "{{ .Values." + strings.Join(name, ".") + " | quote }}", nil
 	}
@@ -43,25 +42,4 @@ func toCamelCase(name []string) []string {
 		name[i] = camelCase
 	}
 	return name
-}
-
-func parseValue(value interface{}) (val interface{}, isString bool) {
-	str, ok := value.(string)
-	if !ok {
-		return value, false
-	}
-	str = strings.Trim(str, "\"")
-	i, err := strconv.ParseInt(str, 10, 64)
-	if err == nil {
-		return i, false
-	}
-	f, err := strconv.ParseFloat(str, 64)
-	if err == nil {
-		return f, false
-	}
-	b, err := strconv.ParseBool(str)
-	if err == nil {
-		return b, false
-	}
-	return str, true
 }

@@ -18,7 +18,6 @@ Submit issue if some features missing for your use-case.
 
 TODO:
 - regress
-- tests
 - release
 - install guide
 
