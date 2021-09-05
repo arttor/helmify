@@ -16,11 +16,6 @@ Helmify reads a list of [supported k8s objects](#status) from stdin and converts
 
 Submit issue if some features missing for your use-case.
 
-TODO:
-- regress
-- release
-- install guide
-
 ## Usage
 
 Example 1: `cat my-app.yaml | helmify mychart`
@@ -40,7 +35,7 @@ Tested with operator-sdk version: "v1.8.0".
 ```makefile
 HELMIFY = $(shell pwd)/bin/helmify
 helmify:
-	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.2.2)
+	$(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.3.0)
 
 helm: manifests kustomize helmify
 	$(KUSTOMIZE) build config/default | $(HELMIFY)
@@ -49,7 +44,9 @@ helm: manifests kustomize helmify
 
 ## Install
 
-TODO:
+Download suitable for your system binary from [the Releases page](https://github.com/arttor/helmify/releases/latest).
+
+Unpack the helmify binary and add it to your PATH and you are good to go!
 
 ## Available options
 Helmify takes a chart name for an argument.
