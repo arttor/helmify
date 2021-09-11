@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-
-	"helm.sh/helm/v3/pkg/time"
 )
 
 // these information will be collected when build, by `-ldflags "-X main.appVersion=0.1"`.
 var (
 	appVersion = "development"
-	buildTime  = time.Now().Format("2006 Jan 02 15:04:05")
+	buildTime  = "not set"
 	gitCommit  = "not set"
 	gitRef     = "not set"
 )
