@@ -22,7 +22,7 @@ cat my-app.yaml | helmify mychart
 ```
 - Will create 'mychart' directory with Helm chart from yaml file with k8s objects.
     <details>
-    <summary>Show sample input taml:</summary>
+    <summary>Show sample input yaml</summary>
   
     ```yaml
     apiVersion: apps/v1
@@ -136,7 +136,7 @@ cat my-app.yaml | helmify mychart
 
     </details>
     <details>
-    <summary>Show resulted helm chart:</summary>
+    <summary>Show resulted helm chart</summary>
     mychart Helm chart directory with following structure: 
   
     ```
