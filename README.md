@@ -17,7 +17,7 @@ Submit issue if some features missing for your use-case.
 
 ## Usage
 
-1) With yaml file: `cat my-app.yaml | helmify mychart`
+1) From file: `cat my-app.yaml | helmify mychart`
     
     Will create 'mychart' directory with Helm chart from yaml file with k8s objects.
     <details>
