@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}-app
+  labels:
+    app: myapp
+  {{- include "app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: myapp
+    {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: myapp
+      {{- include "app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        env:
+        - name: VAR1
+          valueFrom:
+            secretKeyRef:
+              key: VAR1
+              name: {{ include "app.fullname" . }}-secret-vars
+        - name: VAR2
+          valueFrom:
+            secretKeyRef:
+              key: VAR2
+              name: {{ include "app.fullname" . }}-secret-vars
+        image: {{ .Values.image.app.repository }}:{{ .Values.image.app.tag | default .Chart.AppVersion
+          }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: app
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources: {{- toYaml .Values.app.app.resources | nindent 10 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - mountPath: /my_config.yaml
+          name: manager-config
+          subPath: my_config.yaml
+        - mountPath: /my_config.properties
+          name: manager-config
+          subPath: my_config.properties
+        - mountPath: /my.ca
+          name: secret-volume
+        - mountPath: /etc/props
+          name: props
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --v=10
+        image: {{ .Values.image.proxySidecar.repository }}:{{ .Values.image.proxySidecar.tag
+          | default .Chart.AppVersion }}
+        name: proxy-sidecar
+        ports:
+        - containerPort: 8443
+          name: https
+        resources: {}
+      securityContext:
+        runAsNonRoot: true
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          name: {{ include "app.fullname" . }}-config
+        name: manager-config
+      - configMap:
+          name: {{ include "app.fullname" . }}-config-props
+        name: props
+      - name: secret-volume
+        secret:
+          secretName: {{ include "app.fullname" . }}-secret-ca

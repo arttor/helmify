@@ -1,0 +1,44 @@
+app:
+  app:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 30Mi
+      requests:
+        cpu: 100m
+        memory: 20Mi
+  replicas: 3
+appService:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  type: ClusterIP
+config:
+  dummyconfigmapkey: dummyconfigmapvalue
+  myConfigProperties:
+    health:
+      healthProbeBindAddress: "8081"
+    metrics:
+      bindAddress: 127.0.0.1:8080
+  myConfigYaml:
+    health:
+      healthProbeBindAddress: :8081
+    metrics:
+      bindAddress: 127.0.0.1:8080
+configProps:
+  myProp1: "1"
+  myProp2: val 1
+  myProp3: "true"
+image:
+  app:
+    repository: controller
+    tag: latest
+  proxySidecar:
+    repository: gcr.io/kubebuilder/kube-rbac-proxy
+    tag: v0.8.0
+secretCa:
+  caCrt: ""
+secretVars:
+  var1: ""
+  var2: ""
