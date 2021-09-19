@@ -40,5 +40,6 @@ image:
 secretCa:
   caCrt: ""
 secretVars:
+  str: ""
   var1: ""
   var2: ""

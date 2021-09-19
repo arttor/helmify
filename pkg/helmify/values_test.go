@@ -67,3 +67,17 @@ func TestValues_Add(t *testing.T) {
 		assert.Contains(t, res, camel)
 	})
 }
+func TestValues_AddSecret(t *testing.T) {
+	t.Run("add base64 enc secret", func(t *testing.T) {
+		testVal := Values{}
+		res, err := testVal.AddSecret(true, "a", "b")
+		assert.NoError(t, err)
+		assert.Contains(t, res, "b64enc")
+	})
+	t.Run("add not encoded secret", func(t *testing.T) {
+		testVal := Values{}
+		res, err := testVal.AddSecret(false, "a", "b")
+		assert.NoError(t, err)
+		assert.NotContains(t, res, "b64enc")
+	})
+}

@@ -129,12 +129,17 @@ type: opaque
 data:
   VAR1: bXlfc2VjcmV0X3Zhcl8x
   VAR2: bXlfc2VjcmV0X3Zhcl8y
+stringData:
+  str: |
+    some big not so secret string with
+    multiple lines
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: my-config
   namespace: my-ns
+immutable: true
 data:
   dummyconfigmapkey: dummyconfigmapvalue
   my_config.yaml: |

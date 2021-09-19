@@ -1,7 +1,6 @@
 package secret
 
 import (
-	"fmt"
 	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
@@ -19,7 +18,12 @@ import (
 
 var secretTempl, _ = template.New("secret").Parse(
 	`{{ .Meta }}
-{{ .Data }}`)
+{{- if .Data }}
+{{ .Data }}
+{{- end }}
+{{- if .StringData }}
+{{ .StringData }}
+{{- end }}`)
 
 var configMapGVC = schema.GroupVersionKind{
 	Group:   "",
@@ -52,30 +56,54 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
+	var data, stringData string
 	templatedData := map[string]string{}
 	for key := range sec.Data {
 		keyCamelCase := strcase.ToLowerCamel(key)
 		if key == strings.ToUpper(key) {
 			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
 		}
-		err = unstructured.SetNestedField(values, "", nameCamelCase, keyCamelCase)
+		templatedName, err := values.AddSecret(true, nameCamelCase, keyCamelCase)
 		if err != nil {
 			return true, nil, errors.Wrap(err, "unable add secret to values")
 		}
-		templatedData[key] = fmt.Sprintf(`{{ required "secret %[1]s.%[2]s is required" .Values.%[1]s.%[2]s | b64enc }}`, nameCamelCase, keyCamelCase)
+		templatedData[key] = templatedName
+	}
+	if len(templatedData) != 0 {
+		data, err = yamlformat.Marshal(map[string]interface{}{"data": templatedData}, 0)
+		if err != nil {
+			return true, nil, err
+		}
+		data = strings.ReplaceAll(data, "'", "")
 	}
 
-	data, err := yamlformat.Marshal(map[string]interface{}{"data": templatedData}, 0)
-	if err != nil {
-		return true, nil, err
+	templatedData = map[string]string{}
+	for key := range sec.StringData {
+		keyCamelCase := strcase.ToLowerCamel(key)
+		if key == strings.ToUpper(key) {
+			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
+		}
+		templatedName, err := values.AddSecret(false, nameCamelCase, keyCamelCase)
+		if err != nil {
+			return true, nil, errors.Wrap(err, "unable add secret to values")
+		}
+		templatedData[key] = templatedName
+	}
+	if len(templatedData) != 0 {
+		stringData, err = yamlformat.Marshal(map[string]interface{}{"stringData": templatedData}, 0)
+		if err != nil {
+			return true, nil, err
+		}
+		stringData = strings.ReplaceAll(stringData, "'", "")
 	}
 
 	return true, &result{
 		name: name + ".yaml",
 		data: struct {
-			Meta string
-			Data string
-		}{Meta: meta, Data: data},
+			Meta       string
+			Data       string
+			StringData string
+		}{Meta: meta, Data: data, StringData: stringData},
 		values: values,
 	}, nil
 }
@@ -83,8 +111,9 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 type result struct {
 	name string
 	data struct {
-		Meta string
-		Data string
+		Meta       string
+		Data       string
+		StringData string
 	}
 	values helmify.Values
 }

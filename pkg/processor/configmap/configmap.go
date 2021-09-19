@@ -18,9 +18,15 @@ import (
 
 var configMapTempl, _ = template.New("configMap").Parse(
 	`{{ .Meta }}
-{{ .Immutable -}}
-{{ .BinaryData -}}
-{{ .Data -}}`)
+{{- if .Immutable }}
+{{ .Immutable }}
+{{- end }}
+{{- if .BinaryData }}
+{{ .BinaryData }}
+{{- end }}
+{{- if .Data }}
+{{ .Data }}
+{{- end }}`)
 
 var configMapGVC = schema.GroupVersionKind{
 	Group:   "",

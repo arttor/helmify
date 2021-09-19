@@ -12,6 +12,8 @@ const secretYaml = `apiVersion: v1
 data:
   VAR1: bXlfc2VjcmV0X3Zhcl8x
   VAR2: bXlfc2VjcmV0X3Zhcl8y
+stringData:
+  VAR3: string secret
 kind: Secret
 metadata:
   name: my-operator-secret-vars

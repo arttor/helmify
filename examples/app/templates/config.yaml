@@ -4,6 +4,7 @@ metadata:
   name: {{ include "app.fullname" . }}-config
   labels:
   {{- include "app.labels" . | nindent 4 }}
+immutable: true
 data:
   dummyconfigmapkey: {{ .Values.config.dummyconfigmapkey | quote }}
   my_config.properties: |

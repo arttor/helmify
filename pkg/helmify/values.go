@@ -1,6 +1,7 @@
 package helmify
 
 import (
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
@@ -31,6 +32,22 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 		return "{{ .Values." + strings.Join(name, ".") + " | quote }}", nil
 	}
 	return "{{ .Values." + strings.Join(name, ".") + " }}", nil
+}
+
+// AddSecret - adds empty value to values and returns its helm template representation {{ required "<valueName>" .Values.<valueName> }}.
+// Set toBase64=true for Secret data to be base64 encoded and set false for Secret stringData.
+func (v *Values) AddSecret(toBase64 bool, name ...string) (string, error) {
+	name = toCamelCase(name)
+	nameStr := strings.Join(name, ".")
+	err := unstructured.SetNestedField(*v, "", name...)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to set value: %v", nameStr)
+	}
+	res := fmt.Sprintf(`{{ required "%[1]s is required" .Values.%[1]s`, nameStr)
+	if toBase64 {
+		res += " | b64enc"
+	}
+	return res + " | quote }}", err
 }
 
 func toCamelCase(name []string) []string {
