@@ -1,8 +1,9 @@
 name: Release Go Binaries
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - '*'
 
 jobs:
   goreleaser:
