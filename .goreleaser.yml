@@ -1,0 +1,57 @@
+project_name: helmify
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - main: ./cmd/helmify
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+archives:
+  -
+    replacements:
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+      386: 32-bit
+      amd64: 64-bit
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - none*
+checksum:
+  name_template: 'checksums.txt'
+brews:
+  -
+    tap:
+      owner: arttor
+      name: homebrew-tap
+    commit_author:
+      name: arttor
+      email: torubarov-a-a@yandex.ru
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    folder: Formula
+    homepage: "https://github.com/arttor/helmify"
+    description: "Creates Helm chart from Kubernetes yaml."
+    license: "MIT"
+    test: |
+      system "#{bin}/helmify --version"
+    install: |
+      bin.install "helmify"
+release:
+  github:
+    owner: arttor
+    name: helmify

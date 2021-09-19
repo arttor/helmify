@@ -5,35 +5,17 @@ on:
     types: [created]
 
 jobs:
-  releases-matrix:
-    name: Release Matrix
+  goreleaser:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [ linux, windows, darwin ]
-        goarch: [ amd64, arm, arm64, 386 ]
-        exclude:
-          - goarch: arm
-            goos: darwin
-          - goarch: 386
-            goos: darwin
-          - goarch: arm
-            goos: windows
-          - goarch: arm64
-            goos: windows
     steps:
       - uses: actions/checkout@v2
-
-      - name: Set APP_VERSION env
-        run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
-      - name: Set BUILD_TIME env
-        run: echo BUILD_TIME=$(date) >> ${GITHUB_ENV}
-
-      - uses: wangyoucao577/go-release-action@v1.20
+      - uses: actions/setup-go@v2
         with:
-          github_token: ${{ secrets.RELEASE_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          goversion: 1.16
-          project_path: ./cmd/helmify
-          ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
+          go-version: 1.17
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }
