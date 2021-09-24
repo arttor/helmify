@@ -2,10 +2,11 @@ package deployment
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/processor"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
@@ -191,13 +192,13 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	}
 	repo, tag := c.Image[:index], c.Image[index+1:]
 	containerName := strcase.ToLowerCamel(c.Name)
-	c.Image = fmt.Sprintf("{{ .Values.image.%[1]s.repository }}:{{ .Values.image.%[1]s.tag | default .Chart.AppVersion }}", containerName)
+	c.Image = fmt.Sprintf("{{ .Values.%[1]s.%[2]s.image.repository }}:{{ .Values.%[1]s.%[2]s.image.tag | default .Chart.AppVersion }}", name, containerName)
 
-	err := unstructured.SetNestedField(*values, repo, "image", containerName, "repository")
+	err := unstructured.SetNestedField(*values, repo, name, containerName, "image", "repository")
 	if err != nil {
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
-	err = unstructured.SetNestedField(*values, tag, "image", containerName, "tag")
+	err = unstructured.SetNestedField(*values, tag, name, containerName, "image", "tag")
 	if err != nil {
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}

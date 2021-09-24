@@ -2,10 +2,11 @@ package metadata
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"testing"
 )
 
 const res = `apiVersion: v1

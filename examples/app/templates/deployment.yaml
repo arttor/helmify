@@ -35,8 +35,8 @@ spec:
             secretKeyRef:
               key: VAR2
               name: {{ include "app.fullname" . }}-secret-vars
-        image: {{ .Values.image.app.repository }}:{{ .Values.image.app.tag | default .Chart.AppVersion
-          }}
+        image: {{ .Values.app.app.image.repository }}:{{ .Values.app.app.image.tag | default
+          .Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -67,7 +67,7 @@ spec:
       - args:
         - --secure-listen-address=0.0.0.0:8443
         - --v=10
-        image: {{ .Values.image.proxySidecar.repository }}:{{ .Values.image.proxySidecar.tag
+        image: {{ .Values.app.proxySidecar.image.repository }}:{{ .Values.app.proxySidecar.image.tag
           | default .Chart.AppVersion }}
         name: proxy-sidecar
         ports:

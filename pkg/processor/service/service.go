@@ -3,9 +3,10 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
+
+	"github.com/arttor/helmify/pkg/processor"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"

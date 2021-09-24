@@ -2,6 +2,7 @@ package helmify
 
 import (
 	"io"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -25,7 +26,7 @@ type Template interface {
 
 // Output - converts Template into helm chart on disk.
 type Output interface {
-	Create(chartName string, templates []Template) error
+	Create(chartName, chartDir string, templates []Template) error
 }
 
 // AppMetadata handle common information about K8s objects in the chart.

@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/arttor/helmify/pkg/metadata"
 	"testing"
+
+	"github.com/arttor/helmify/pkg/metadata"
 
 	"github.com/arttor/helmify/internal"
 	"github.com/stretchr/testify/assert"

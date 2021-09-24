@@ -1,12 +1,13 @@
 package helm
 
 import (
-	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
 )
@@ -26,8 +27,8 @@ type output struct{}
 //    └── templates/    	# The template files
 //        └── _helpers.tp   # Helm default template partials
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartName string, templates []helmify.Template) error {
-	err := initChartDir(chartName)
+func (o output) Create(chartDir, chartName string, templates []helmify.Template) error {
+	err := initChartDir(chartDir, chartName)
 	if err != nil {
 		return err
 	}
@@ -43,21 +44,22 @@ func (o output) Create(chartName string, templates []helmify.Template) error {
 			return err
 		}
 	}
+	cDir := filepath.Join(chartDir, chartName)
 	for filename, tpls := range files {
-		err = overwriteTemplateFile(filename, chartName, tpls)
+		err = overwriteTemplateFile(filename, cDir, tpls)
 		if err != nil {
 			return err
 		}
 	}
-	err = overwriteValuesFile(chartName, values)
+	err = overwriteValuesFile(cDir, values)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func overwriteTemplateFile(filename, chartName string, templates []helmify.Template) error {
-	file := filepath.Join(chartName, "templates", filename)
+func overwriteTemplateFile(filename, chartDir string, templates []helmify.Template) error {
+	file := filepath.Join(chartDir, "templates", filename)
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to open "+file)
@@ -80,12 +82,12 @@ func overwriteTemplateFile(filename, chartName string, templates []helmify.Templ
 	return nil
 }
 
-func overwriteValuesFile(chartName string, values helmify.Values) error {
+func overwriteValuesFile(chartDir string, values helmify.Values) error {
 	res, err := yaml.Marshal(values)
 	if err != nil {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
-	file := filepath.Join(chartName, "values.yaml")
+	file := filepath.Join(chartDir, "values.yaml")
 	err = ioutil.WriteFile(file, res, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to write values.yaml")

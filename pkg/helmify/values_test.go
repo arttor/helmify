@@ -1,8 +1,9 @@
 package helmify
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValues_Add(t *testing.T) {

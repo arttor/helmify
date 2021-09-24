@@ -1,5 +1,12 @@
 controllerManager:
+  kubeRbacProxy:
+    image:
+      repository: gcr.io/kubebuilder/kube-rbac-proxy
+      tag: v0.8.0
   manager:
+    image:
+      repository: controller
+      tag: latest
     resources:
       limits:
         cpu: 100m
@@ -8,13 +15,6 @@ controllerManager:
         cpu: 100m
         memory: 20Mi
   replicas: 1
-image:
-  kubeRbacProxy:
-    repository: gcr.io/kubebuilder/kube-rbac-proxy
-    tag: v0.8.0
-  manager:
-    repository: controller
-    tag: latest
 managerConfig:
   controllerManagerConfigYaml:
     health:

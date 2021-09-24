@@ -45,7 +45,7 @@ Tested with operator-sdk version: "v1.8.0".
     ```makefile
     HELMIFY = $(shell pwd)/bin/helmify
     helmify:
-        $(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.3.0)
+        $(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.3.2)
     
     helm: manifests kustomize helmify
         $(KUSTOMIZE) build config/default | $(HELMIFY)
@@ -63,7 +63,7 @@ Unpack the helmify binary and add it to your PATH and you are good to go!
 Helmify takes a chart name for an argument.
 Usage:
 
-```helmify [flags] CHART_NAME```  -  `CHART_NAME` is optional. Default is 'chart'.
+```helmify [flags] CHART_NAME```  -  `CHART_NAME` is optional. Default is 'chart'. Can be a directory, e.g. 'deploy/charts/mychart'.
 
 | flag | description | sample |
 | --- | --- | --- |

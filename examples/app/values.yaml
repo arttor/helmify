@@ -1,5 +1,8 @@
 app:
   app:
+    image:
+      repository: controller
+      tag: latest
     resources:
       limits:
         cpu: 100m
@@ -7,6 +10,10 @@ app:
       requests:
         cpu: 100m
         memory: 20Mi
+  proxySidecar:
+    image:
+      repository: gcr.io/kubebuilder/kube-rbac-proxy
+      tag: v0.8.0
   replicas: 3
 appService:
   ports:
@@ -30,13 +37,6 @@ configProps:
   myProp1: "1"
   myProp2: val 1
   myProp3: "true"
-image:
-  app:
-    repository: controller
-    tag: latest
-  proxySidecar:
-    repository: gcr.io/kubebuilder/kube-rbac-proxy
-    tag: v0.8.0
 secretCa:
   caCrt: ""
 secretVars:

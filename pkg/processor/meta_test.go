@@ -1,10 +1,11 @@
 package processor
 
 import (
+	"testing"
+
 	"github.com/arttor/helmify/internal"
 	"github.com/arttor/helmify/pkg/metadata"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestProcessObjMeta(t *testing.T) {

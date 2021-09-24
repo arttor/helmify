@@ -124,13 +124,14 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 const maxChartNameLength = 250
 
 // initChartDir - creates Helm chart structure in chartName directory if not presented.
-func initChartDir(chartName string) error {
+func initChartDir(chartDir, chartName string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}
-	_, err := os.Stat(filepath.Join(chartName, "Chart.yaml"))
+	cDir := filepath.Join(chartDir, chartName)
+	_, err := os.Stat(filepath.Join(cDir, "Chart.yaml"))
 	if os.IsNotExist(err) {
-		return createCommonFiles(chartName)
+		return createCommonFiles(chartDir, chartName)
 	}
 	logrus.Info("Skip creating Chart skeleton: Chart.yaml already exists.")
 	return err
@@ -146,8 +147,9 @@ func validateChartName(name string) error {
 	return nil
 }
 
-func createCommonFiles(chartName string) error {
-	err := os.MkdirAll(filepath.Join(chartName, "templates"), 0750)
+func createCommonFiles(chartDir, chartName string) error {
+	cDir := filepath.Join(chartDir, chartName)
+	err := os.MkdirAll(filepath.Join(cDir, "templates"), 0750)
 	if err != nil {
 		return errors.Wrap(err, "unable create chart dir")
 	}
@@ -161,9 +163,9 @@ func createCommonFiles(chartName string) error {
 			logrus.WithField("file", file).Info("created")
 		}
 	}
-	createFile(chartYAML(chartName), chartName, "Chart.yaml")
-	createFile([]byte(helmIgnore), chartName, ".helmignore")
-	createFile(helpersYAML(chartName), chartName, "templates", "_helpers.tpl")
+	createFile(chartYAML(chartName), cDir, "Chart.yaml")
+	createFile([]byte(helmIgnore), cDir, ".helmignore")
+	createFile(helpersYAML(chartName), cDir, "templates", "_helpers.tpl")
 	return err
 }
 

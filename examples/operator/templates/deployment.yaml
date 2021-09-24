@@ -30,7 +30,7 @@ spec:
         - --upstream=http://127.0.0.1:8080/
         - --logtostderr=true
         - --v=10
-        image: {{ .Values.image.kubeRbacProxy.repository }}:{{ .Values.image.kubeRbacProxy.tag
+        image: {{ .Values.controllerManager.kubeRbacProxy.image.repository }}:{{ .Values.controllerManager.kubeRbacProxy.image.tag
           | default .Chart.AppVersion }}
         name: kube-rbac-proxy
         ports:
@@ -49,8 +49,8 @@ spec:
             secretKeyRef:
               key: VAR1
               name: {{ include "operator.fullname" . }}-secret-vars
-        image: {{ .Values.image.manager.repository }}:{{ .Values.image.manager.tag | default
-          .Chart.AppVersion }}
+        image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
+          | default .Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz

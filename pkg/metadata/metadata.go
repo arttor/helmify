@@ -2,11 +2,12 @@ package metadata
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"strings"
 )
 
 const nameTeml = `{{ include "%s.fullname" . }}-%s`

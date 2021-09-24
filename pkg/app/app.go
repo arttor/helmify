@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/arttor/helmify/pkg/processor"
 
 	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/decoder"

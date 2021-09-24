@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/arttor/helmify/pkg/config"
 )
@@ -20,7 +21,7 @@ Example 3: 'awk 'FNR==1 && NR!=1  {print "---"}{print}' /my_directory/*.yaml | h
   - will create 'mychart' directory with Helm chart from all yaml files in my_directory directory.
 
 Usage:
-  helmify [flags] CHART_NAME  -  CHART_NAME is optional. Default is 'chart'.
+  helmify [flags] CHART_NAME  -  CHART_NAME is optional. Default is 'chart'. Can be a directory, e.g. 'deploy/charts/mychart'.
 
 Flags:
 `
@@ -44,6 +45,11 @@ func ReadFlags() config.Config {
 		printVersion()
 		os.Exit(0)
 	}
-	result.ChartName = flag.Arg(0)
+	name := flag.Arg(0)
+	if name != "" {
+		result.ChartName = filepath.Base(name)
+		result.ChartDir = filepath.Dir(name)
+	}
+
 	return result
 }

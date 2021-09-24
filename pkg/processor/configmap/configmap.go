@@ -2,10 +2,11 @@ package configmap
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/processor"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"

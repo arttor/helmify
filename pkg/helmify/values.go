@@ -2,11 +2,12 @@ package helmify
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/iancoleman/strcase"
 	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strings"
 )
 
 // Values - represents helm template values.yaml.

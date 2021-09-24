@@ -11,8 +11,10 @@ const defaultChartName = "chart"
 
 // Config for Helmify application.
 type Config struct {
-	// ChartName overrides DefaultChartName.
+	// ChartName name of the Helm chart and its base directory where Chart.yaml is located.
 	ChartName string
+	// ChartDir - optional path to chart dir. Full chart path will be: ChartDir/ChartName/Chart.yaml.
+	ChartDir string
 	// Verbose set true to see WARN and INFO logs.
 	Verbose bool
 	// VeryVerbose set true to see WARN, INFO, and DEBUG logs.
