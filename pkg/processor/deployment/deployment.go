@@ -28,7 +28,9 @@ var deploymentGVC = schema.GroupVersionKind{
 var deploymentTempl, _ = template.New("deployment").Parse(
 	`{{- .Meta }}
 spec:
-  replicas: {{ .Replicas }}
+{{- if .Replicas }}
+{{ .Replicas }}
+{{- end }}
   selector:
 {{ .Selector }}
   template:
@@ -68,7 +70,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	values := helmify.Values{}
 
 	name := appMeta.TrimName(obj.GetName())
-	replicas, err := values.Add(int64(*depl.Spec.Replicas), name, "replicas")
+	replicas, err := processReplicas(name, &depl, &values)
 	if err != nil {
 		return true, nil, err
 	}
@@ -162,6 +164,22 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 			Spec:           spec,
 		},
 	}, nil
+}
+
+func processReplicas(name string, deployment *appsv1.Deployment, values *helmify.Values) (string, error) {
+	if deployment.Spec.Replicas == nil {
+		return "", nil
+	}
+	replicasTpl, err := values.Add(int64(*deployment.Spec.Replicas), name, "replicas")
+	if err != nil {
+		return "", err
+	}
+	replicas, err := yamlformat.Marshal(map[string]interface{}{"replicas": replicasTpl}, 2)
+	if err != nil {
+		return "", err
+	}
+	replicas = strings.ReplaceAll(replicas, "'", "")
+	return replicas, nil
 }
 
 func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpec) (helmify.Values, error) {
