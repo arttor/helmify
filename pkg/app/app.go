@@ -44,6 +44,7 @@ func Start(input io.Reader, config config.Config) error {
 		crd.New(),
 		deployment.New(),
 		service.New(),
+		service.NewIngress(),
 		rbac.ClusterRoleBinding(),
 		rbac.Role(),
 		rbac.RoleBinding(),
