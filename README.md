@@ -45,7 +45,7 @@ Tested with operator-sdk version: "v1.8.0".
     ```makefile
     HELMIFY = $(shell pwd)/bin/helmify
     helmify:
-        $(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.3.2)
+        $(call go-get-tool,$(HELMIFY),github.com/arttor/helmify/cmd/helmify@v0.3.4)
     
     helm: manifests kustomize helmify
         $(KUSTOMIZE) build config/default | $(HELMIFY)
@@ -73,9 +73,9 @@ Usage:
 | -version | Print helmify version. | `helmify -version`|
 
 ## Status
-Supported default operator resources:
+Supported k8s resources:
 - deployment
-- service
+- service, Ingress
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
 - configs (configmap, secret)
 - webhooks (cert, issuer, ValidatingWebhookConfiguration)
