@@ -54,7 +54,8 @@ metadata:
   labels:
     control-plane: controller-manager
   name: my-operator-system
----apiVersion: v1
+---
+apiVersion: v1
 metadata:
   labels:
 `
