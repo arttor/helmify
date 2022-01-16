@@ -34,6 +34,8 @@ spec:
               mountPath: /my.ca
             - name: props
               mountPath: /etc/props
+            - name: sample-pv-storage
+              mountPath: "/usr/share/nginx/html"
           env:
             - name: VAR1
               valueFrom:
@@ -88,6 +90,23 @@ spec:
         - name: secret-volume
           secret:
             secretName: my-secret-ca
+        - name: sample-pv-storage
+          persistentVolumeClaim:
+            claimName: my-sample-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-sample-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+    limits:
+      storage: 5Gi
 ---
 apiVersion: v1
 kind: Service

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/arttor/helmify/pkg/processor/storage"
 	"io"
 	"os"
 	"os/signal"
@@ -43,6 +44,7 @@ func Start(input io.Reader, config config.Config) error {
 	appCtx = appCtx.WithProcessors(configmap.New(),
 		crd.New(),
 		deployment.New(),
+		storage.New(),
 		service.New(),
 		service.NewIngress(),
 		rbac.ClusterRoleBinding(),
