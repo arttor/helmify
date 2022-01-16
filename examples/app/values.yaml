@@ -37,6 +37,11 @@ configProps:
   myProp1: "1"
   myProp2: val 1
   myProp3: "true"
+pvc:
+  samplePvClaim:
+    storageClass: manual
+    storageLimit: 5Gi
+    storageRequest: 3Gi
 secretCa:
   caCrt: ""
 secretVars:

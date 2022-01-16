@@ -64,6 +64,8 @@ spec:
           name: secret-volume
         - mountPath: /etc/props
           name: props
+        - mountPath: /usr/share/nginx/html
+          name: sample-pv-storage
       - args:
         - --secure-listen-address=0.0.0.0:8443
         - --v=10
@@ -87,3 +89,6 @@ spec:
       - name: secret-volume
         secret:
           secretName: {{ include "app.fullname" . }}-secret-ca
+      - name: sample-pv-storage
+        persistentVolumeClaim:
+          claimName: {{ include "app.fullname" . }}-sample-pv-claim

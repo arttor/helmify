@@ -113,6 +113,17 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	if err != nil {
 		return true, nil, err
 	}
+
+	// replace PVC to templated name
+	for i := 0; i < len(depl.Spec.Template.Spec.Volumes); i++ {
+		vol := depl.Spec.Template.Spec.Volumes[i]
+		if vol.PersistentVolumeClaim == nil {
+			continue
+		}
+		tempPVCName := appMeta.TemplatedName(vol.PersistentVolumeClaim.ClaimName)
+		depl.Spec.Template.Spec.Volumes[i].PersistentVolumeClaim.ClaimName = tempPVCName
+	}
+
 	// replace container resources with template to values.
 	specMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&depl.Spec.Template.Spec)
 	if err != nil {

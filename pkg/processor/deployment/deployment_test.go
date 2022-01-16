@@ -50,6 +50,8 @@ spec:
           subPath: controller_manager_config.yaml
         - name: secret-volume
           mountPath: /my.ca
+        - name: sample-pv-storage
+          mountPath: "/usr/share/nginx/html"
         env:
         - name: VAR1
           valueFrom:
@@ -90,6 +92,9 @@ spec:
       - name: secret-volume
         secret:
           secretName: my-operator-secret-ca
+      - name: sample-pv-storage
+        persistentVolumeClaim:
+          claimName: my-sample-pv-claim
 `
 )
 
