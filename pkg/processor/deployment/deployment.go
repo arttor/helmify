@@ -39,8 +39,7 @@ spec:
 {{ .PodLabels }}
 {{ .PodAnnotations }}
     spec:
-{{ .Spec }}
-`)
+{{ .Spec }}`)
 
 const selectorTempl = `%[1]s
 {{- include "%[2]s.selectorLabels" . | nindent 6 }}
