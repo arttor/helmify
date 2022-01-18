@@ -662,7 +662,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
+    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
   name: my-operator-validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
@@ -724,3 +724,31 @@ spec:
     requests:
       storage: 2Gi
   storageClassName: cust1-mypool-lim
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
+  name: my-operator-mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: my-operator-webhook-service
+      namespace: my-operator-system
+      path: /mutate-ceph-example-com-v1-mycluster
+  failurePolicy: Fail
+  name: mmycluster.kb.io
+  rules:
+  - apiGroups:
+    - test.example.com
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - myclusters
+  sideEffects: None
