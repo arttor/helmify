@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const whYaml = `apiVersion: admissionregistration.k8s.io/v1
+const vwhYaml = `apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
@@ -38,11 +38,11 @@ webhooks:
     - volumes
   sideEffects: None`
 
-func Test_wh_Process(t *testing.T) {
-	var testInstance wh
+func Test_vwh_Process(t *testing.T) {
+	var testInstance vwh
 
 	t.Run("processed", func(t *testing.T) {
-		obj := internal.GenerateObj(whYaml)
+		obj := internal.GenerateObj(vwhYaml)
 		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, true, processed)

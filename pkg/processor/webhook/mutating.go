@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	whTempl = `apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+	mwhTempl = `apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
 metadata:
   name: {{ include "%[1]s.fullname" . }}-%[2]s
   annotations:
@@ -28,30 +28,30 @@ webhooks:
 %[4]s`
 )
 
-var whGVK = schema.GroupVersionKind{
+var mwhGVK = schema.GroupVersionKind{
 	Group:   "admissionregistration.k8s.io",
 	Version: "v1",
-	Kind:    "ValidatingWebhookConfiguration",
+	Kind:    "MutatingWebhookConfiguration",
 }
 
-// Webhook creates processor for k8s ValidatingWebhookConfiguration resource.
-func Webhook() helmify.Processor {
-	return &wh{}
+// MutatingWebhook creates processor for k8s MutatingWebhookConfiguration resource.
+func MutatingWebhook() helmify.Processor {
+	return &mwh{}
 }
 
-type wh struct{}
+type mwh struct{}
 
-// Process k8s ValidatingWebhookConfiguration object into template. Returns false if not capable of processing given resource type.
-func (w wh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
-	if obj.GroupVersionKind() != whGVK {
+// Process k8s MutatingWebhookConfiguration object into template. Returns false if not capable of processing given resource type.
+func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+	if obj.GroupVersionKind() != mwhGVK {
 		return false, nil, nil
 	}
 	name := appMeta.TrimName(obj.GetName())
 
-	whConf := v1.ValidatingWebhookConfiguration{}
+	whConf := v1.MutatingWebhookConfiguration{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &whConf)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to ValidatingWebhookConfiguration")
+		return true, nil, errors.Wrap(err, "unable to cast to MutatingWebhookConfiguration")
 	}
 	for i, whc := range whConf.Webhooks {
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
@@ -65,7 +65,7 @@ func (w wh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured)
 		return true, nil, errors.Wrap(err, "unable get webhook certName")
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.ChartName()+"-")
-	res := fmt.Sprintf(whTempl, appMeta.ChartName(), name, certName, string(webhooks))
+	res := fmt.Sprintf(mwhTempl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &whResult{
 		name: name,
 		data: []byte(res),
