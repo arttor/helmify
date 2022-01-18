@@ -66,26 +66,26 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.ChartName()+"-")
 	res := fmt.Sprintf(mwhTempl, appMeta.ChartName(), name, certName, string(webhooks))
-	return true, &whResult{
+	return true, &mwhResult{
 		name: name,
 		data: []byte(res),
 	}, nil
 }
 
-type whResult struct {
+type mwhResult struct {
 	name string
 	data []byte
 }
 
-func (r *whResult) Filename() string {
+func (r *mwhResult) Filename() string {
 	return r.name + ".yaml"
 }
 
-func (r *whResult) Values() helmify.Values {
+func (r *mwhResult) Values() helmify.Values {
 	return helmify.Values{}
 }
 
-func (r *whResult) Write(writer io.Writer) error {
+func (r *mwhResult) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
 }
