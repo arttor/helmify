@@ -66,7 +66,7 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.ChartName()+"-")
 	res := fmt.Sprintf(vwhTempl, appMeta.ChartName(), name, certName, string(webhooks))
-	return true, &whResult{
+	return true, &vwhResult{
 		name: name,
 		data: []byte(res),
 	}, nil
