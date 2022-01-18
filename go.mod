@@ -1,7 +1,5 @@
 module github.com/arttor/helmify
 
-replace github.com/arttor/helmify => github.com/yxd-ym/helmify v0.3.6-0.20220118035442-54033b0e334b
-
 go 1.17
 
 require (
