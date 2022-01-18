@@ -1,7 +1,7 @@
 apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+kind: MutatingWebhookConfiguration
 metadata:
-  name: {{ include "operator.fullname" . }}-validating-webhook-configuration
+  name: {{ include "operator.fullname" . }}-mutating-webhook-configuration
   annotations:
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "operator.fullname" . }}-serving-cert
   labels:
@@ -9,22 +9,21 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: '{{ include "operator.fullname" . }}-webhook-service'
       namespace: '{{ .Release.Namespace }}'
-      path: /validate-ceph-example-com-v1alpha1-volume
+      path: /mutate-ceph-example-com-v1-mycluster
   failurePolicy: Fail
-  name: vvolume.kb.io
+  name: mmycluster.kb.io
   rules:
   - apiGroups:
     - test.example.com
     apiVersions:
-    - v1alpha1
+    - v1
     operations:
     - CREATE
     - UPDATE
     resources:
-    - volumes
+    - myclusters
   sideEffects: None
