@@ -37,7 +37,7 @@ spec:
     metadata:
       labels:
 {{ .PodLabels }}
-{{- .PodAnnotations }}
+{{ .PodAnnotations }}
     spec:
 {{ .Spec }}`)
 
