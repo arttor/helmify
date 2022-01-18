@@ -25,7 +25,8 @@ metadata:
   labels:
   {{- include "%[1]s.labels" . | nindent 4 }}
 webhooks:
-%[4]s`
+%[4]s
+`
 )
 
 var whGVK = schema.GroupVersionKind{
