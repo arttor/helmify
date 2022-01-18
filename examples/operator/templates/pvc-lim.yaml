@@ -9,5 +9,5 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
-  storageClassName: cust1-mypool-lim
+      storage: {{ .Values.pvc.pvcLim.storageRequest | quote }}
+  storageClassName: {{ .Values.pvc.pvcLim.storageClass | quote }}

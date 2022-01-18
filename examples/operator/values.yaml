@@ -36,6 +36,10 @@ metricsService:
     port: 8443
     targetPort: https
   type: ClusterIP
+pvc:
+  pvcLim:
+    storageClass: cust1-mypool-lim
+    storageRequest: 2Gi
 secretCa:
   caCrt: ""
 secretVars:
