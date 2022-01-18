@@ -37,7 +37,7 @@ spec:
     metadata:
       labels:
 {{ .PodLabels }}
-{{ .PodAnnotations }}
+{{- .PodAnnotations }}
     spec:
 {{ .Spec }}`)
 
@@ -102,6 +102,8 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		if err != nil {
 			return true, nil, err
 		}
+
+		podAnnotations = "\n" + podAnnotations
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
