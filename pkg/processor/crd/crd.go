@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
+
+	"github.com/pkg/errors"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/yaml"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
 )
 
 const crdTeml = `apiVersion: apiextensions.k8s.io/v1
@@ -52,7 +56,25 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")
 	}
-	versions, _ := yaml.Marshal(specUnstr)
+
+	spec := v1.CustomResourceDefinitionSpec{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(specUnstr, &spec)
+	if err != nil {
+		return true, nil, errors.Wrap(err, "unable to cast to crd spec")
+	}
+
+	if spec.Conversion != nil {
+		conv := spec.Conversion
+		if conv.Strategy == v1.WebhookConverter {
+			wh := conv.Webhook
+			if wh != nil {
+				wh.ClientConfig.Service.Name = appMeta.TemplatedName(wh.ClientConfig.Service.Name)
+				wh.ClientConfig.Service.Namespace = strings.ReplaceAll(wh.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+			}
+		}
+	}
+
+	versions, _ := yaml.Marshal(spec)
 	versions = yamlformat.Indent(versions, 2)
 	versions = bytes.TrimRight(versions, "\n ")
 
