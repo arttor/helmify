@@ -79,7 +79,8 @@ func (a *Service) ChartName() string {
 func (a *Service) TemplatedName(name string) string {
 	_, contains := a.names[name]
 	if !contains {
-		logrus.Warnf("Templating non-app object name: %s", name)
+		// template only app objects
+		return name
 	}
 	name = a.TrimName(name)
 	return fmt.Sprintf(nameTeml, a.chartName, name)
