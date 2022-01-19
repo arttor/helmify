@@ -6,8 +6,8 @@ metadata:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
   dnsNames:
-  - my-operator-webhook-service.{{ .Release.Namespace }}.svc
-  - my-operator-webhook-service.{{ .Release.Namespace }}.svc.cluster.local
+  - '{{ include "operator.fullname" . }}-webhook-service.{{ .Release.Namespace }}.svc'
+  - '{{ include "operator.fullname" . }}-webhook-service.{{ .Release.Namespace }}.svc.cluster.local'
   issuerRef:
     kind: Issuer
     name: '{{ include "operator.fullname" . }}-selfsigned-issuer'
