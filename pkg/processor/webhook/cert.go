@@ -9,7 +9,6 @@ import (
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
@@ -54,11 +53,8 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	processedDnsNames := []interface{}{}
 	for _, dnsName := range dnsNames {
 		dns := dnsName.(string)
-		logrus.Infof("dns: %s", dns)
 		templatedDns := appMeta.TemplatedName(dns)
-		logrus.Infof("templatedDns: %s", templatedDns)
 		processedDns := strings.ReplaceAll(templatedDns, appMeta.Namespace(), "{{ .Release.Namespace }}")
-		logrus.Infof("processedDns: %s", processedDns)
 		processedDnsNames = append(processedDnsNames, processedDns)
 	}
 	err = unstructured.SetNestedSlice(obj.Object, processedDnsNames, "spec", "dnsNames")
