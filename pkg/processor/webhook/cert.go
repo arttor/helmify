@@ -49,12 +49,15 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable get cert dnsNames")
 	}
-	for i, dns := range dnsNames {
-		templatedDns := appMeta.TemplatedName(dns.(string))
+
+	processedDnsNames := []interface{}{}
+	for _, dnsName := range dnsNames {
+		dns := dnsName.(string)
+		templatedDns := appMeta.TemplatedName(dns)
 		processedDns := strings.ReplaceAll(templatedDns, appMeta.Namespace(), "{{ .Release.Namespace }}")
-		dnsNames[i] = processedDns
+		processedDnsNames = append(processedDnsNames, processedDns)
 	}
-	err = unstructured.SetNestedSlice(obj.Object, dnsNames, "spec", "dnsNames")
+	err = unstructured.SetNestedSlice(obj.Object, processedDnsNames, "spec", "dnsNames")
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable set cert dnsNames")
 	}
