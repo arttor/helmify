@@ -40,6 +40,8 @@ type AppMetadata interface {
 	//				"my-app-secret"		-> "{{ include "chart.fullname" . }}-secret"
 	//				etc...
 	TemplatedName(objName string) string
+	// TemplatedString converts a string to templated string with chart name.
+	TemplatedString(str string) string
 	// TrimName trims common prefix from object name if exists.
 	// We trim common prefix because helm already using release for this purpose.
 	TrimName(objName string) string
