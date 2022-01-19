@@ -7,6 +7,16 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: '{{ include "operator.fullname" . }}-webhook-service'
+          namespace: '{{ .Release.Namespace }}'
+          path: /convert
+      conversionReviewVersions:
+      - v1
   group: test.example.com
   names:
     kind: ManifestCephVolume
