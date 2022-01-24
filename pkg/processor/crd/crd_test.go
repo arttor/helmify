@@ -14,6 +14,7 @@ const (
 kind: CustomResourceDefinition
 metadata:
   annotations:
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
     controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: cephvolumes.test.example.com

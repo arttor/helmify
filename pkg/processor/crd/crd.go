@@ -22,6 +22,7 @@ kind: CustomResourceDefinition
 metadata:
   name: %[1]s
   annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "%[2]s.fullname" . }}-%[4]s
     controller-gen.kubebuilder.io/version: v0.7.0
   labels:
   {{- include "%[2]s.labels" . | nindent 4 }}
@@ -52,6 +53,13 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil
 	}
+
+	certName, _, err := unstructured.NestedString(obj.Object, "metadata", "annotations", "cert-manager.io/inject-ca-from")
+	if err != nil {
+		return true, nil, errors.Wrap(err, "unable get crd certName")
+	}
+	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.ChartName()+"-")
+
 	specUnstr, ok, err := unstructured.NestedMap(obj.Object, "spec")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")
@@ -78,7 +86,7 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	versions = yamlformat.Indent(versions, 2)
 	versions = bytes.TrimRight(versions, "\n ")
 
-	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(versions))
+	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(versions), certName)
 	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")
