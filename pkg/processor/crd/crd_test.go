@@ -14,7 +14,7 @@ const (
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
+    controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: cephvolumes.test.example.com
 spec:
