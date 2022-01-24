@@ -22,7 +22,7 @@ kind: CustomResourceDefinition
 metadata:
   name: %[1]s
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
+    controller-gen.kubebuilder.io/version: v0.7.0
   labels:
   {{- include "%[2]s.labels" . | nindent 4 }}
 spec:
