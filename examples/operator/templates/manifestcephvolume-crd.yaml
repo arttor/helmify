@@ -3,7 +3,8 @@ kind: CustomResourceDefinition
 metadata:
   name: manifestcephvolumes.test.example.com
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "operator.fullname" . }}-serving-cert
+    controller-gen.kubebuilder.io/version: v0.7.0
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
