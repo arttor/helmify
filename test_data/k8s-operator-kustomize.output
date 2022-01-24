@@ -232,6 +232,16 @@ metadata:
   creationTimestamp: null
   name: manifestcephvolumes.test.example.com
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: my-operator-webhook-service
+          namespace: my-operator-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
   group: test.example.com
   names:
     kind: ManifestCephVolume
