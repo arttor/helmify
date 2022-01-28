@@ -74,6 +74,8 @@ spec:
           subPath: controller_manager_config.yaml
         - mountPath: /my.ca
           name: secret-volume
+      imagePullSecrets:
+      - name: {{ include "operator.fullname" . }}-secret-registry-credentials
       securityContext:
         runAsNonRoot: true
       serviceAccountName: {{ include "operator.fullname" . }}-controller-manager

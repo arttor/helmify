@@ -42,6 +42,8 @@ pvc:
     storageRequest: 2Gi
 secretCa:
   caCrt: ""
+secretRegistryCredentials:
+  dockerconfigjson: ""
 secretVars:
   var1: ""
   var2: ""
