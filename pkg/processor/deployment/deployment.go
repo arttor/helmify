@@ -213,6 +213,11 @@ func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpe
 		}
 	}
 	pod.ServiceAccountName = appMeta.TemplatedName(pod.ServiceAccountName)
+
+	for i, s := range pod.ImagePullSecrets {
+		pod.ImagePullSecrets[i].Name = appMeta.TemplatedName(s.Name)
+	}
+
 	return values, nil
 }
 
