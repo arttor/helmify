@@ -571,6 +571,8 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      imagePullSecrets:
+        - name: my-operator-secret-registry-credentials
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443
@@ -714,6 +716,19 @@ metadata:
   name: my-operator-secret-ca
   namespace: my-operator-system
 type: opaque
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: |
+    ewogICAgImF1dGhzIjogewogICAgICAgICJmb28uYmFyLmlvIjogewogICAgICAgICAgIC
+    AidXNlcm5hbWUiOiAidXNlcm5hbWUiLAogICAgICAgICAgICAicGFzc3dvcmQiOiAic2Vj
+    cmV0IiwKICAgICAgICAgICAgImF1dGgiOiAiZFhObGNtNWhiV1U2YzJWamNtVjAiCiAgIC
+    AgICAgfQogICAgfQp9
+kind: Secret
+metadata:
+  name: my-operator-secret-registry-credentials
+  namespace: my-operator-system
+type: kubernetes.io/dockerconfigjson
 ---
 apiVersion: v1
 data:

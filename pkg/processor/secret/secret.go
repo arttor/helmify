@@ -24,6 +24,9 @@ var secretTempl, _ = template.New("secret").Parse(
 {{- end }}
 {{- if .StringData }}
 {{ .StringData }}
+{{- end }}
+{{- if .Type }}
+{{ .Type }}
 {{- end }}`)
 
 var configMapGVC = schema.GroupVersionKind{
@@ -56,6 +59,15 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 
 	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
+
+	secretType := string(sec.Type)
+	if secretType != "" {
+		secretType, err = yamlformat.Marshal(map[string]interface{}{"type": secretType}, 0)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+
 	values := helmify.Values{}
 	var data, stringData string
 	templatedData := map[string]string{}
@@ -101,10 +113,11 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	return true, &result{
 		name: name + ".yaml",
 		data: struct {
+			Type       string
 			Meta       string
 			Data       string
 			StringData string
-		}{Meta: meta, Data: data, StringData: stringData},
+		}{Type: secretType, Meta: meta, Data: data, StringData: stringData},
 		values: values,
 	}, nil
 }
@@ -112,6 +125,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 type result struct {
 	name string
 	data struct {
+		Type       string
 		Meta       string
 		Data       string
 		StringData string
