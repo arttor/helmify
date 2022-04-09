@@ -16,7 +16,7 @@ const (
 	decoderResultChannelBufferSize = 1
 )
 
-// Decode - reads bytes stream of k8s objects in yaml format and decodes it to k8s unstructured objects.
+// Decode - reads bytes stream of k8s yaml manifests and decodes it to k8s unstructured objects.
 // Non-blocking function. Sends results into buffered channel. Closes channel on io.EOF.
 func Decode(stop <-chan struct{}, reader io.Reader) <-chan *unstructured.Unstructured {
 	decoder := yamlutil.NewYAMLOrJSONDecoder(reader, yamlDecoderBufferSize)
