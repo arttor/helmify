@@ -1,4 +1,4 @@
-package deployment
+package statefulset
 
 import (
 	"fmt"
@@ -17,13 +17,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var deploymentGVC = schema.GroupVersionKind{
+var statefulsetGVC = schema.GroupVersionKind{
 	Group:   "apps",
 	Version: "v1",
-	Kind:    "Deployment",
+	Kind:    "StatefulSet",
 }
 
-var deploymentTempl, _ = template.New("deployment").Parse(
+var statefulsetTempl, _ = template.New("statefulset").Parse(
 	`{{- .Meta }}
 spec:
 {{- if .Replicas }}
@@ -39,22 +39,22 @@ spec:
     spec:
 {{ .Spec }}`)
 
-// New creates processor for k8s Deployment resource.
+// New creates processor for k8s StatefulSet resource.
 func New() helmify.Processor {
-	return &deployment{}
+	return &statefulset{}
 }
 
-type deployment struct{}
+type statefulset struct{}
 
-// Process k8s Deployment object into template. Returns false if not capable of processing given resource type.
-func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
-	if obj.GroupVersionKind() != deploymentGVC {
+// Process k8s StatefulSet object into template. Returns false if not capable of processing given resource type.
+func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+	if obj.GroupVersionKind() != statefulsetGVC {
 		return false, nil, nil
 	}
-	typedObj := appsv1.Deployment{}
+	typedObj := appsv1.StatefulSet{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &typedObj)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to deployment")
+		return true, nil, errors.Wrap(err, "unable to cast to statefulset")
 	}
 
 	values := helmify.Values{}
@@ -126,7 +126,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return "deployment.yaml"
+	return "statefulset.yaml"
 }
 
 func (r *result) Values() helmify.Values {
@@ -134,5 +134,5 @@ func (r *result) Values() helmify.Values {
 }
 
 func (r *result) Write(writer io.Writer) error {
-	return deploymentTempl.Execute(writer, r.data)
+	return statefulsetTempl.Execute(writer, r.data)
 }

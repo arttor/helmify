@@ -16,6 +16,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor/configmap"
 	"github.com/arttor/helmify/pkg/processor/crd"
 	"github.com/arttor/helmify/pkg/processor/deployment"
+	"github.com/arttor/helmify/pkg/processor/statefulset"
 	"github.com/arttor/helmify/pkg/processor/rbac"
 	"github.com/arttor/helmify/pkg/processor/secret"
 	"github.com/arttor/helmify/pkg/processor/service"
@@ -45,6 +46,7 @@ func Start(input io.Reader, config config.Config) error {
 		configmap.New(),
 		crd.New(),
 		deployment.New(),
+		statefulset.New(),
 		storage.New(),
 		service.New(),
 		service.NewIngress(),
