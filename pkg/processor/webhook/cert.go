@@ -15,6 +15,11 @@ import (
 )
 
 const (
+	defaultClusterDomain   = "cluster.local"
+	valuesClusterDomainKey = "kubernetesClusterDomain"
+)
+
+const (
 	certTempl = `apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -55,6 +60,7 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 		dns := dnsName.(string)
 		templatedDns := appMeta.TemplatedString(dns)
 		processedDns := strings.ReplaceAll(templatedDns, appMeta.Namespace(), "{{ .Release.Namespace }}")
+		processedDns = strings.ReplaceAll(processedDns, defaultClusterDomain, fmt.Sprintf("{{ .Values.%s }}", valuesClusterDomainKey))
 		processedDnsNames = append(processedDnsNames, processedDns)
 	}
 	err = unstructured.SetNestedSlice(obj.Object, processedDnsNames, "spec", "dnsNames")
@@ -78,12 +84,16 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	return true, &certResult{
 		name: name,
 		data: []byte(res),
+		values: helmify.Values{
+			valuesClusterDomainKey: defaultClusterDomain,
+		},
 	}, nil
 }
 
 type certResult struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *certResult) Filename() string {
@@ -91,7 +101,7 @@ func (r *certResult) Filename() string {
 }
 
 func (r *certResult) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *certResult) Write(writer io.Writer) error {
