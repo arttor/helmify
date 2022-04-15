@@ -80,16 +80,12 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	return true, &certResult{
 		name: name,
 		data: []byte(res),
-		values: helmify.Values{
-			cluster.DomainKey: cluster.DefaultDomain,
-		},
 	}, nil
 }
 
 type certResult struct {
-	name   string
-	data   []byte
-	values helmify.Values
+	name string
+	data []byte
 }
 
 func (r *certResult) Filename() string {
@@ -97,7 +93,7 @@ func (r *certResult) Filename() string {
 }
 
 func (r *certResult) Values() helmify.Values {
-	return r.values
+	return helmify.Values{}
 }
 
 func (r *certResult) Write(writer io.Writer) error {
