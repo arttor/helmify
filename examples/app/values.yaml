@@ -37,6 +37,7 @@ configProps:
   myProp1: "1"
   myProp2: val 1
   myProp3: "true"
+kubernetesClusterDomain: cluster.local
 pvc:
   samplePvClaim:
     storageClass: manual
