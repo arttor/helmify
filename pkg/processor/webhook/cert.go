@@ -6,17 +6,13 @@ import (
 	"io"
 	"strings"
 
+	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-)
-
-const (
-	defaultClusterDomain   = "cluster.local"
-	valuesClusterDomainKey = "kubernetesClusterDomain"
 )
 
 const (
@@ -60,7 +56,7 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 		dns := dnsName.(string)
 		templatedDns := appMeta.TemplatedString(dns)
 		processedDns := strings.ReplaceAll(templatedDns, appMeta.Namespace(), "{{ .Release.Namespace }}")
-		processedDns = strings.ReplaceAll(processedDns, defaultClusterDomain, fmt.Sprintf("{{ .Values.%s }}", valuesClusterDomainKey))
+		processedDns = strings.ReplaceAll(processedDns, cluster.DefaultDomain, fmt.Sprintf("{{ .Values.%s }}", cluster.DomainKey))
 		processedDnsNames = append(processedDnsNames, processedDns)
 	}
 	err = unstructured.SetNestedSlice(obj.Object, processedDnsNames, "spec", "dnsNames")
@@ -85,7 +81,7 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 		name: name,
 		data: []byte(res),
 		values: helmify.Values{
-			valuesClusterDomainKey: defaultClusterDomain,
+			cluster.DomainKey: cluster.DefaultDomain,
 		},
 	}, nil
 }
