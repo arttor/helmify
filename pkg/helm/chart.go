@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,7 @@ func (o output) Create(chartDir, chartName string, templates []helmify.Template)
 	// group templates into files
 	files := map[string][]helmify.Template{}
 	values := helmify.Values{}
+	values[cluster.DomainKey] = cluster.DefaultDomain
 	for _, template := range templates {
 		file := files[template.Filename()]
 		file = append(file, template)
