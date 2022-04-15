@@ -15,6 +15,7 @@ controllerManager:
         cpu: 100m
         memory: 20Mi
   replicas: 1
+kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml:
     health:

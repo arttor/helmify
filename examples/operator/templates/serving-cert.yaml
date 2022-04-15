@@ -7,7 +7,8 @@ metadata:
 spec:
   dnsNames:
   - '{{ include "operator.fullname" . }}-webhook-service.{{ .Release.Namespace }}.svc'
-  - '{{ include "operator.fullname" . }}-webhook-service.{{ .Release.Namespace }}.svc.cluster.local'
+  - '{{ include "operator.fullname" . }}-webhook-service.{{ .Release.Namespace }}.svc.{{
+    .Values.kubernetesClusterDomain }}'
   issuerRef:
     kind: Issuer
     name: '{{ include "operator.fullname" . }}-selfsigned-issuer'
