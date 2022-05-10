@@ -15,6 +15,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/configmap"
 	"github.com/arttor/helmify/pkg/processor/crd"
+	"github.com/arttor/helmify/pkg/processor/daemonset"
 	"github.com/arttor/helmify/pkg/processor/deployment"
 	"github.com/arttor/helmify/pkg/processor/rbac"
 	"github.com/arttor/helmify/pkg/processor/secret"
@@ -44,6 +45,7 @@ func Start(input io.Reader, config config.Config) error {
 	appCtx = appCtx.WithProcessors(
 		configmap.New(),
 		crd.New(),
+		daemonset.New(),
 		deployment.New(),
 		storage.New(),
 		service.New(),
