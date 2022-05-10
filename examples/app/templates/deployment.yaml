@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "app.fullname" . }}-app
+  name: {{ include "app.fullname" . }}-myapp
   labels:
     app: myapp
   {{- include "app.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.app.replicas }}
+  replicas: {{ .Values.myapp.replicas }}
   selector:
     matchLabels:
       app: myapp
@@ -29,16 +29,16 @@ spec:
           valueFrom:
             secretKeyRef:
               key: VAR1
-              name: {{ include "app.fullname" . }}-secret-vars
+              name: {{ include "app.fullname" . }}-my-secret-vars
         - name: VAR2
           valueFrom:
             secretKeyRef:
               key: VAR2
-              name: {{ include "app.fullname" . }}-secret-vars
+              name: {{ include "app.fullname" . }}-my-secret-vars
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
-        image: {{ .Values.app.app.image.repository }}:{{ .Values.app.app.image.tag | default
-          .Chart.AppVersion }}
+        image: {{ .Values.myapp.app.image.repository }}:{{ .Values.myapp.app.image.tag
+          | default .Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -52,7 +52,7 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
-        resources: {{- toYaml .Values.app.app.resources | nindent 10 }}
+        resources: {{- toYaml .Values.myapp.app.resources | nindent 10 }}
         securityContext:
           allowPrivilegeEscalation: false
         volumeMounts:
@@ -74,7 +74,7 @@ spec:
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
-        image: {{ .Values.app.proxySidecar.image.repository }}:{{ .Values.app.proxySidecar.image.tag
+        image: {{ .Values.myapp.proxySidecar.image.repository }}:{{ .Values.myapp.proxySidecar.image.tag
           | default .Chart.AppVersion }}
         name: proxy-sidecar
         ports:
@@ -86,14 +86,14 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
-          name: {{ include "app.fullname" . }}-config
+          name: {{ include "app.fullname" . }}-my-config
         name: manager-config
       - configMap:
-          name: {{ include "app.fullname" . }}-config-props
+          name: {{ include "app.fullname" . }}-my-config-props
         name: props
       - name: secret-volume
         secret:
-          secretName: {{ include "app.fullname" . }}-secret-ca
+          secretName: {{ include "app.fullname" . }}-my-secret-ca
       - name: sample-pv-storage
         persistentVolumeClaim:
-          claimName: {{ include "app.fullname" . }}-sample-pv-claim
+          claimName: {{ include "app.fullname" . }}-my-sample-pv-claim

@@ -77,6 +77,7 @@ Usage:
 ## Status
 Supported k8s resources:
 - deployment
+- daemonset
 - service, Ingress
 - PersistentVolumeClaim
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
