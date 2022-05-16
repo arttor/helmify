@@ -23,8 +23,8 @@ metadata:
   name: %[1]s
   annotations:
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "%[2]s.fullname" . }}-%[4]s
-    controller-gen.kubebuilder.io/version: v0.7.0
   labels:
+%[5]s
   {{- include "%[2]s.labels" . | nindent 4 }}
 spec:
 %[3]s
@@ -82,11 +82,20 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		}
 	}
 
-	versions, _ := yaml.Marshal(spec)
-	versions = yamlformat.Indent(versions, 2)
-	versions = bytes.TrimRight(versions, "\n ")
+	specYaml, _ := yaml.Marshal(spec)
+	specYaml = yamlformat.Indent(specYaml, 2)
+	specYaml = bytes.TrimRight(specYaml, "\n ")
 
-	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(versions), certName)
+	labels := obj.GetLabels()
+	var labelsYaml []byte
+
+	if len(labels) > 0 {
+		labelsYaml, _ = yaml.Marshal(labels)
+		labelsYaml = yamlformat.Indent(labelsYaml, 4)
+		labelsYaml = bytes.TrimRight(labelsYaml, "\n ")
+	}
+
+	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(specYaml), certName, string(labelsYaml))
 	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")
