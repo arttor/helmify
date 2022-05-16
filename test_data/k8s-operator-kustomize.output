@@ -10,9 +10,10 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: cephvolumes.test.example.com
+  labels:
+    example-label: my-app 
 spec:
   group: test.example.com
   names:
@@ -230,7 +231,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
-    controller-gen.kubebuilder.io/version: v0.7.0
   creationTimestamp: null
   name: manifestcephvolumes.test.example.com
 spec:
