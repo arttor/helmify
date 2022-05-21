@@ -11,23 +11,23 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.18
 
     - name: Fmt
       run: go fmt ./...
-      
+
     - name: Vet
       run: go vet ./...
 
     - name: Test
       run: go test  -coverprofile c.out ./...
-  
-    - name: Code Coverage 
+
+    - name: Code Coverage
       uses: aktions/codeclimate-test-reporter@v1
       if: github.ref == 'refs/heads/main'
       with:
@@ -38,12 +38,9 @@ jobs:
 #       uses: helm/kind-action@v1.0.0-alpha.3
 #       with:
 #         install_local_path_provisioner: true
-        
+
 #     - name: cert install
-#       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml 
-        
+#       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
+
 #     - name: helm install
-#       run: helm install my-release ./mychart -n my-namespace --create-namespace  
-
-      
-
+#       run: helm install my-release ./mychart -n my-namespace --create-namespace
