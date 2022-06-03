@@ -58,7 +58,8 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable get crd certName")
 	}
-	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/"+appMeta.ChartName()+"-")
+	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
+	certName = appMeta.TrimName(certName)
 
 	specUnstr, ok, err := unstructured.NestedMap(obj.Object, "spec")
 	if err != nil || !ok {

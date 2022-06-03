@@ -9,7 +9,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
   creationTimestamp: null
   name: cephvolumes.test.example.com
   labels:
@@ -230,7 +230,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
   creationTimestamp: null
   name: manifestcephvolumes.test.example.com
 spec:
@@ -676,7 +676,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
   name: my-operator-validating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
@@ -756,7 +756,7 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   annotations:
-    cert-manager.io/inject-ca-from: my-operator-system/operator-serving-cert
+    cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
   name: my-operator-mutating-webhook-configuration
 webhooks:
 - admissionReviewVersions:
