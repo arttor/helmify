@@ -174,7 +174,7 @@ func createCommonFiles(chartDir, chartName string) error {
 	}
 	createFile(chartYAML(chartName), cDir, "Chart.yaml")
 	createFile([]byte(helmIgnore), cDir, ".helmignore")
-	createFile(helpersYAML(chartName), cDir, "crds", "templates", "_helpers.tpl")
+	createFile(helpersYAML(chartName), cDir, "templates", "_helpers.tpl")
 	return err
 }
 
