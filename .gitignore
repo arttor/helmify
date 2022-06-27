@@ -23,5 +23,8 @@ testbin/*
 *.swp
 *.swo
 *~
+# VSCode devcontainer/codespace
+.devcontainer/
 
 dist/
+
