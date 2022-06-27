@@ -158,6 +158,10 @@ func createCommonFiles(chartDir, chartName string) error {
 	if err != nil {
 		return errors.Wrap(err, "unable create chart dir")
 	}
+	errc := os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
+	if errc != nil {
+		return errors.Wrap(err, "unable create crds dir")
+	}
 	createFile := func(content []byte, path ...string) {
 		if err != nil {
 			return
@@ -170,7 +174,7 @@ func createCommonFiles(chartDir, chartName string) error {
 	}
 	createFile(chartYAML(chartName), cDir, "Chart.yaml")
 	createFile([]byte(helmIgnore), cDir, ".helmignore")
-	createFile(helpersYAML(chartName), cDir, "templates", "_helpers.tpl")
+	createFile(helpersYAML(chartName), cDir, "crds", "templates", "_helpers.tpl")
 	return err
 }
 

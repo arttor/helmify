@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
@@ -61,7 +62,13 @@ func (o output) Create(chartDir, chartName string, templates []helmify.Template)
 }
 
 func overwriteTemplateFile(filename, chartDir string, templates []helmify.Template) error {
-	file := filepath.Join(chartDir, "templates", filename)
+	var subdir string
+	if strings.Contains(filename, "crd") {
+		subdir = "crds"
+	} else {
+		subdir = "templates"
+	}
+	file := filepath.Join(chartDir, subdir, filename)
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to open "+file)
