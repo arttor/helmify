@@ -83,6 +83,7 @@ Supported k8s resources:
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
 - configs (configmap, secret)
 - webhooks (cert, issuer, ValidatingWebhookConfiguration)
+- custom resource definitions 
 
 ### Known issues
 - Helmify will not overwrite `Chart.yaml` file if presented. Done on purpose.
