@@ -29,8 +29,8 @@ type output struct{}
 //    └── templates/    	# The template files
 //        └── _helpers.tp   # Helm default template partials
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartDir, chartName string, templates []helmify.Template) error {
-	err := initChartDir(chartDir, chartName)
+func (o output) Create(chartDir, chartName string, crd bool, templates []helmify.Template) error {
+	err := initChartDir(chartDir, chartName, crd)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (o output) Create(chartDir, chartName string, templates []helmify.Template)
 	}
 	cDir := filepath.Join(chartDir, chartName)
 	for filename, tpls := range files {
-		err = overwriteTemplateFile(filename, cDir, tpls)
+		err = overwriteTemplateFile(filename, cDir, crd, tpls)
 		if err != nil {
 			return err
 		}
@@ -61,9 +61,10 @@ func (o output) Create(chartDir, chartName string, templates []helmify.Template)
 	return nil
 }
 
-func overwriteTemplateFile(filename, chartDir string, templates []helmify.Template) error {
+func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helmify.Template) error {
+	// pull in crd-install setting and siphon crds into folder
 	var subdir string
-	if strings.Contains(filename, "crd") {
+	if strings.Contains(filename, "crd") && crd {
 		subdir = "crds"
 	} else {
 		subdir = "templates"
