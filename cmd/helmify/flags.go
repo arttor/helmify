@@ -29,12 +29,13 @@ Flags:
 // ReadFlags command-line flags into app config.
 func ReadFlags() config.Config {
 	result := config.Config{}
-	var h, help, version bool
+	var h, help, version, crd bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
 	flag.BoolVar(&help, "help", false, "Print help. Example: helmify -help")
 	flag.BoolVar(&version, "version", false, "Print helmify version. Example: helmify -version")
 	flag.BoolVar(&result.Verbose, "v", false, "Enable verbose output (print WARN & INFO). Example: helmify -v")
 	flag.BoolVar(&result.VeryVerbose, "vv", false, "Enable very verbose output. Same as verbose but with DEBUG. Example: helmify -vv")
+	flag.BoolVar(&crd, "crd-install", false, "Enable crd install into 'crds' folder. Example: helmify -crd-install")
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)
@@ -50,6 +51,8 @@ func ReadFlags() config.Config {
 		result.ChartName = filepath.Base(name)
 		result.ChartDir = filepath.Dir(name)
 	}
-
+	if crd {
+		result.Crd = crd
+	}
 	return result
 }

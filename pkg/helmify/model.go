@@ -26,7 +26,7 @@ type Template interface {
 
 // Output - converts Template into helm chart on disk.
 type Output interface {
-	Create(chartName, chartDir string, templates []Template) error
+	Create(chartName, chartDir string, Crd bool, templates []Template) error
 }
 
 // AppMetadata handle common information about K8s objects in the chart.
