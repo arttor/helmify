@@ -129,14 +129,15 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 const maxChartNameLength = 250
 
 // initChartDir - creates Helm chart structure in chartName directory if not presented.
-func initChartDir(chartDir, chartName string) error {
+func initChartDir(chartDir, chartName string, crd bool) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}
+
 	cDir := filepath.Join(chartDir, chartName)
 	_, err := os.Stat(filepath.Join(cDir, "Chart.yaml"))
 	if os.IsNotExist(err) {
-		return createCommonFiles(chartDir, chartName)
+		return createCommonFiles(chartDir, chartName, crd)
 	}
 	logrus.Info("Skip creating Chart skeleton: Chart.yaml already exists.")
 	return err
@@ -152,15 +153,17 @@ func validateChartName(name string) error {
 	return nil
 }
 
-func createCommonFiles(chartDir, chartName string) error {
+func createCommonFiles(chartDir, chartName string, crd bool) error {
 	cDir := filepath.Join(chartDir, chartName)
 	err := os.MkdirAll(filepath.Join(cDir, "templates"), 0750)
 	if err != nil {
-		return errors.Wrap(err, "unable create chart dir")
+		return errors.Wrap(err, "unable create chart/templates dir")
 	}
-	errc := os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
-	if errc != nil {
-		return errors.Wrap(err, "unable create crds dir")
+	if crd {
+		err := os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
+		if err != nil {
+			return errors.Wrap(err, "unable create crds dir")
+		}
 	}
 	createFile := func(content []byte, path ...string) {
 		if err != nil {
