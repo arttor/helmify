@@ -19,6 +19,8 @@ type Config struct {
 	Verbose bool
 	// VeryVerbose set true to see WARN, INFO, and DEBUG logs.
 	VeryVerbose bool
+	// crd-install set true to enable crd folder.
+	Crd bool
 }
 
 func (c *Config) Validate() error {
@@ -32,6 +34,9 @@ func (c *Config) Validate() error {
 			logrus.Errorf("Invalid chart name %s", e)
 		}
 		return errors.Errorf("Invalid chart name %s", c.ChartName)
+	}
+	if c.Crd {
+		logrus.Infof("enabling 'crds/' folder in helm chart")
 	}
 	return nil
 }
