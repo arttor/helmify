@@ -19,7 +19,7 @@ type Config struct {
 	Verbose bool
 	// VeryVerbose set true to see WARN, INFO, and DEBUG logs.
 	VeryVerbose bool
-	// crd-install set true to enable crd folder.
+	// crd-dir set true to enable crd folder.
 	Crd bool
 }
 

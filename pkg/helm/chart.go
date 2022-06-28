@@ -62,7 +62,7 @@ func (o output) Create(chartDir, chartName string, crd bool, templates []helmify
 }
 
 func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helmify.Template) error {
-	// pull in crd-install setting and siphon crds into folder
+	// pull in crd-dir setting and siphon crds into folder
 	var subdir string
 	if strings.Contains(filename, "crd") && crd {
 		subdir = "crds"
