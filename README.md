@@ -90,7 +90,8 @@ Supported k8s resources:
 - Helmify will not overwrite `Chart.yaml` file if presented. Done on purpose.
 - Helmify will not delete existing template files, only overwrite.
 - Helmify overwrites templates and values files on every run. 
-  This meas that all your manual changes in helm template files will be lost on the next run.
+  This means that all your manual changes in helm template files will be lost on the next run.
+- if switching between the using the `-crd-dir` flag it is better to delete and regenerate the from scratch to ensure crds are not accidentally spliced/formatted into the same chart. Bear in mind you will want to update your `Chart.yaml` thereafter.
   
 ## Develop
 To support a new type of k8s object template:
