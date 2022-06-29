@@ -21,11 +21,6 @@ const crdTeml = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: %[1]s
-  annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "%[2]s.fullname" . }}-%[4]s
-  labels:
-%[5]s
-  {{- include "%[2]s.labels" . | nindent 4 }}
 spec:
 %[3]s
 status:
