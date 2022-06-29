@@ -73,6 +73,7 @@ Usage:
 | -v | Enable verbose output. Prints WARN and INFO. | `helmify -v`|
 | -vv | Enable very verbose output. Also prints DEBUG. | `helmify -vv`|
 | -version | Print helmify version. | `helmify -version`|
+| -crd-dir | place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you) | `helmify -crd-dir`|
 
 ## Status
 Supported k8s resources:
