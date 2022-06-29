@@ -160,7 +160,7 @@ func createCommonFiles(chartDir, chartName string, crd bool) error {
 		return errors.Wrap(err, "unable create chart/templates dir")
 	}
 	if crd {
-		err := os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
+		err = os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
 		if err != nil {
 			return errors.Wrap(err, "unable create crds dir")
 		}

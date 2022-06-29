@@ -66,6 +66,13 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 	var subdir string
 	if strings.Contains(filename, "crd") && crd {
 		subdir = "crds"
+		// create "crds" if not exists
+		if _, err := os.Stat(filepath.Join(chartDir, "crds")); os.IsNotExist(err) {
+			err = os.MkdirAll(filepath.Join(chartDir, "crds"), 0750)
+			if err != nil {
+				return errors.Wrap(err, "unable create crds dir")
+			}
+		}
 	} else {
 		subdir = "templates"
 	}
