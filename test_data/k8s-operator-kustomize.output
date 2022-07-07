@@ -10,6 +10,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: my-operator-system/my-operator-serving-cert
+    example-annotation: xyz
   creationTimestamp: null
   name: cephvolumes.test.example.com
   labels:
