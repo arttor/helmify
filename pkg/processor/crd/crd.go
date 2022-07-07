@@ -21,13 +21,12 @@ const crdTeml = `apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: %[1]s
-  annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "%[2]s.fullname" . }}-%[4]s
+%[3]s
   labels:
-%[5]s
+%[4]s
   {{- include "%[2]s.labels" . | nindent 4 }}
 spec:
-%[3]s
+%[5]s
 status:
   acceptedNames:
     kind: ""
@@ -53,13 +52,37 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil
 	}
-
-	certName, _, err := unstructured.NestedString(obj.Object, "metadata", "annotations", "cert-manager.io/inject-ca-from")
-	if err != nil {
-		return true, nil, errors.Wrap(err, "unable get crd certName")
+	var err error
+	var labels, annotations string
+	if len(obj.GetAnnotations()) != 0 {
+		a := obj.GetAnnotations()
+		certName := a["cert-manager.io/inject-ca-from"]
+		if certName != "" {
+			certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
+			certName = appMeta.TrimName(certName)
+			a["cert-manager.io/inject-ca-from"] = fmt.Sprintf(`{{ .Release.Namespace }}/{{ include "%[1]s.fullname" . }}-%[2]s`, appMeta.ChartName(), certName)
+		}
+		annotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": a}, 2)
+		if err != nil {
+			return true, nil, err
+		}
 	}
-	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
-	certName = appMeta.TrimName(certName)
+	if len(obj.GetLabels()) != 0 {
+		l := obj.GetLabels()
+		// provided by Helm
+		delete(l, "app.kubernetes.io/name")
+		delete(l, "app.kubernetes.io/instance")
+		delete(l, "app.kubernetes.io/version")
+		delete(l, "app.kubernetes.io/managed-by")
+		delete(l, "helm.sh/chart")
+		if len(l) != 0 {
+			labels, err = yamlformat.Marshal(l, 4)
+			if err != nil {
+				return true, nil, err
+			}
+			labels = strings.Trim(labels, "\n")
+		}
+	}
 
 	specUnstr, ok, err := unstructured.NestedMap(obj.Object, "spec")
 	if err != nil || !ok {
@@ -87,16 +110,7 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	specYaml = yamlformat.Indent(specYaml, 2)
 	specYaml = bytes.TrimRight(specYaml, "\n ")
 
-	labels := obj.GetLabels()
-	var labelsYaml []byte
-
-	if len(labels) > 0 {
-		labelsYaml, _ = yaml.Marshal(labels)
-		labelsYaml = yamlformat.Indent(labelsYaml, 4)
-		labelsYaml = bytes.TrimRight(labelsYaml, "\n ")
-	}
-
-	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), string(specYaml), certName, string(labelsYaml))
+	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
 	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")

@@ -3,7 +3,9 @@ kind: CustomResourceDefinition
 metadata:
   name: cephvolumes.test.example.com
   annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "operator.fullname" . }}-serving-cert
+    cert-manager.io/inject-ca-from: '{{ .Release.Namespace }}/{{ include "operator.fullname"
+      . }}-serving-cert'
+    example-annotation: xyz
   labels:
     example-label: my-app
   {{- include "operator.labels" . | nindent 4 }}
