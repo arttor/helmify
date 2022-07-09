@@ -111,6 +111,7 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	specYaml = bytes.TrimRight(specYaml, "\n ")
 
 	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
+	res = strings.ReplaceAll(res, "\n\n", "\n")
 	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
 		return true, nil, errors.Wrap(err, "unable to create crd template")

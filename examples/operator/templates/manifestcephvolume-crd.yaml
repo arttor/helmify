@@ -6,7 +6,6 @@ metadata:
     cert-manager.io/inject-ca-from: '{{ .Release.Namespace }}/{{ include "operator.fullname"
       . }}-serving-cert'
   labels:
-
   {{- include "operator.labels" . | nindent 4 }}
 spec:
   conversion:
