@@ -1,6 +1,7 @@
 package helmify
 
 import (
+	"github.com/arttor/helmify/pkg/config"
 	"io"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -45,4 +46,6 @@ type AppMetadata interface {
 	// TrimName trims common prefix from object name if exists.
 	// We trim common prefix because helm already using release for this purpose.
 	TrimName(objName string) string
+
+	Config() config.Config
 }

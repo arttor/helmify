@@ -22,7 +22,7 @@ type appContext struct {
 func New(config config.Config, output helmify.Output) *appContext {
 	return &appContext{
 		config:  config,
-		appMeta: metadata.New(config.ChartName),
+		appMeta: metadata.New(config),
 		output:  output,
 	}
 }

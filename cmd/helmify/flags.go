@@ -35,7 +35,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&version, "version", false, "Print helmify version. Example: helmify -version")
 	flag.BoolVar(&result.Verbose, "v", false, "Enable verbose output (print WARN & INFO). Example: helmify -v")
 	flag.BoolVar(&result.VeryVerbose, "vv", false, "Enable very verbose output. Same as verbose but with DEBUG. Example: helmify -vv")
-	flag.BoolVar(&crd, "crd-dir", false, "Enable crd install into 'crds' folder. Example: helmify -crd-dir")
+	flag.BoolVar(&crd, "crd-dir", false, "Enable crd install into 'crds' directory.\nWarning: CRDs placed in 'crds' directory will not be templated by Helm.\nSee https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations\nExample: helmify -crd-dir")
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)

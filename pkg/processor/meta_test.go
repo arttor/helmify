@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"github.com/arttor/helmify/pkg/config"
 	"testing"
 
 	"github.com/arttor/helmify/internal"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestProcessObjMeta(t *testing.T) {
-	testMeta := metadata.New("chart-name")
+	testMeta := metadata.New(config.Config{ChartName: "chart-name"})
 	testMeta.Load(internal.TestNs)
 	res, err := ProcessObjMeta(testMeta, internal.TestNs)
 	assert.NoError(t, err)

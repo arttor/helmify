@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"github.com/arttor/helmify/pkg/config"
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
@@ -24,15 +25,19 @@ var crdGVK = schema.GroupVersionKind{
 	Kind:    "CustomResourceDefinition",
 }
 
-func New(chartName string) *Service {
-	return &Service{chartName: chartName, names: make(map[string]struct{})}
+func New(conf config.Config) *Service {
+	return &Service{names: make(map[string]struct{}), conf: conf}
 }
 
 type Service struct {
 	commonPrefix string
 	namespace    string
-	chartName    string
 	names        map[string]struct{}
+	conf         config.Config
+}
+
+func (a *Service) Config() config.Config {
+	return a.conf
 }
 
 // TrimName - tries to trim app common prefix for object name if detected.
@@ -71,7 +76,7 @@ func (a *Service) Namespace() string {
 
 // ChartName returns ChartName.
 func (a *Service) ChartName() string {
-	return a.chartName
+	return a.conf.ChartName
 }
 
 // TemplatedName - converts object name to its Helm templated representation.
@@ -83,12 +88,12 @@ func (a *Service) TemplatedName(name string) string {
 		return name
 	}
 	name = a.TrimName(name)
-	return fmt.Sprintf(nameTeml, a.chartName, name)
+	return fmt.Sprintf(nameTeml, a.conf.ChartName, name)
 }
 
 func (a *Service) TemplatedString(str string) string {
 	name := a.TrimName(str)
-	return fmt.Sprintf(nameTeml, a.chartName, name)
+	return fmt.Sprintf(nameTeml, a.conf.ChartName, name)
 }
 
 func extractAppNamespace(obj *unstructured.Unstructured) string {

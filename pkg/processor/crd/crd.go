@@ -3,6 +3,7 @@ package crd
 import (
 	"bytes"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"strings"
 
@@ -52,7 +53,23 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if obj.GroupVersionKind() != crdGVC {
 		return false, nil, nil
 	}
-	var err error
+	name, ok, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
+	if err != nil || !ok {
+		return true, nil, errors.Wrap(err, "unable to create crd template")
+	}
+	if appMeta.Config().Crd {
+		logrus.WithField("crd", name).Info("put CRD under crds dir without templating")
+		// do not template CRDs when placed to crds dir
+		res, err := yaml.Marshal(obj)
+		if err != nil {
+			return true, nil, errors.Wrap(err, "unable to create crd template")
+		}
+		return true, &result{
+			name: name + "-crd.yaml",
+			data: res,
+		}, nil
+	}
+
 	var labels, annotations string
 	if len(obj.GetAnnotations()) != 0 {
 		a := obj.GetAnnotations()
@@ -112,10 +129,7 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 
 	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
 	res = strings.ReplaceAll(res, "\n\n", "\n")
-	name, _, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
-	if err != nil || !ok {
-		return true, nil, errors.Wrap(err, "unable to create crd template")
-	}
+
 	return true, &result{
 		name: name + "-crd.yaml",
 		data: []byte(res),

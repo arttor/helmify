@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"fmt"
+	"github.com/arttor/helmify/pkg/config"
 	"testing"
 
 	"github.com/arttor/helmify/internal"
@@ -72,18 +73,18 @@ func Test_commonPrefix(t *testing.T) {
 func Test_Service(t *testing.T) {
 	t.Run("load ns from object", func(t *testing.T) {
 		obj := createRes("name", "ns")
-		testSvc := New("")
+		testSvc := New(config.Config{})
 		testSvc.Load(obj)
 		assert.Equal(t, "ns", testSvc.Namespace())
 		testSvc.Load(internal.TestNs)
 		assert.Equal(t, internal.TestNsName, testSvc.Namespace())
 	})
 	t.Run("get chart name", func(t *testing.T) {
-		testSvc := New("name")
+		testSvc := New(config.Config{ChartName: "name"})
 		assert.Equal(t, "name", testSvc.ChartName())
 	})
 	t.Run("trim common prefix abc", func(t *testing.T) {
-		testSvc := New("")
+		testSvc := New(config.Config{})
 		testSvc.Load(createRes("abc-name1", "ns"))
 		testSvc.Load(createRes("abc-name2", "ns"))
 		testSvc.Load(createRes("abc-service", "ns"))
@@ -93,7 +94,7 @@ func Test_Service(t *testing.T) {
 		assert.Equal(t, "service", testSvc.TrimName("abc-service"))
 	})
 	t.Run("trim common prefix: no common", func(t *testing.T) {
-		testSvc := New("")
+		testSvc := New(config.Config{})
 		testSvc.Load(createRes("name1", "ns"))
 		testSvc.Load(createRes("abc", "ns"))
 		testSvc.Load(createRes("service", "ns"))
@@ -103,13 +104,13 @@ func Test_Service(t *testing.T) {
 		assert.Equal(t, "service", testSvc.TrimName("service"))
 	})
 	t.Run("template name", func(t *testing.T) {
-		testSvc := New("chart-name")
+		testSvc := New(config.Config{ChartName: "chart-name"})
 		testSvc.Load(createRes("abc", "ns"))
 		templated := testSvc.TemplatedName("abc")
 		assert.Equal(t, `{{ include "chart-name.fullname" . }}-abc`, templated)
 	})
 	t.Run("template name: not process unknown name", func(t *testing.T) {
-		testSvc := New("chart-name")
+		testSvc := New(config.Config{ChartName: "chart-name"})
 		testSvc.Load(createRes("abc", "ns"))
 		assert.Equal(t, "qwe", testSvc.TemplatedName("qwe"))
 		assert.NotEqual(t, "abc", testSvc.TemplatedName("abc"))

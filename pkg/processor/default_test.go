@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"github.com/arttor/helmify/pkg/config"
 	"testing"
 
 	"github.com/arttor/helmify/internal"
@@ -23,7 +24,7 @@ spec:
 func Test_dft_Process(t *testing.T) {
 
 	t.Run("skip namespace", func(t *testing.T) {
-		testMeta := metadata.New("chart-name")
+		testMeta := metadata.New(config.Config{ChartName: "chart-name"})
 		testMeta.Load(internal.TestNs)
 		testProcessor := Default()
 		processed, templ, err := testProcessor.Process(testMeta, internal.TestNs)
@@ -33,7 +34,7 @@ func Test_dft_Process(t *testing.T) {
 	})
 	t.Run("process", func(t *testing.T) {
 		obj := internal.GenerateObj(pvcYaml)
-		testMeta := metadata.New("chart-name")
+		testMeta := metadata.New(config.Config{ChartName: "chart-name"})
 		testMeta.Load(obj)
 		testProcessor := Default()
 		processed, templ, err := testProcessor.Process(testMeta, obj)

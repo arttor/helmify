@@ -67,13 +67,13 @@ Usage:
 
 ```helmify [flags] CHART_NAME```  -  `CHART_NAME` is optional. Default is 'chart'. Can be a directory, e.g. 'deploy/charts/mychart'.
 
-| flag | description | sample |
+| flag | description                                                                                                                                                                                                 | sample |
 | --- | --- | --- |
-| -h -help | Prints help | `helmify -h`|
-| -v | Enable verbose output. Prints WARN and INFO. | `helmify -v`|
-| -vv | Enable very verbose output. Also prints DEBUG. | `helmify -vv`|
-| -version | Print helmify version. | `helmify -version`|
-| -crd-dir | place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you) | `helmify -crd-dir`|
+| -h -help | Prints help                                                                                                                                                                                                 | `helmify -h`|
+| -v | Enable verbose output. Prints WARN and INFO.                                                                                                                                                                | `helmify -v`|
+| -vv | Enable very verbose output. Also prints DEBUG.                                                                                                                                                              | `helmify -vv`|
+| -version | Print helmify version.                                                                                                                                                                                      | `helmify -version`|
+| -crd-dir | Place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you). Caveat: CRDs templating is not supported by Helm. | `helmify -crd-dir`|
 
 ## Status
 Supported k8s resources:

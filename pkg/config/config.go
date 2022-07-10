@@ -35,8 +35,5 @@ func (c *Config) Validate() error {
 		}
 		return errors.Errorf("Invalid chart name %s", c.ChartName)
 	}
-	if c.Crd {
-		logrus.Infof("enabling 'crds/' folder in helm chart")
-	}
 	return nil
 }
