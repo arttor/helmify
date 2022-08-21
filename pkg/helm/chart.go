@@ -1,7 +1,6 @@
 package helm
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,7 +104,7 @@ func overwriteValuesFile(chartDir string, values helmify.Values) error {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
 	file := filepath.Join(chartDir, "values.yaml")
-	err = ioutil.WriteFile(file, res, 0600)
+	err = os.WriteFile(file, res, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to write values.yaml")
 	}
