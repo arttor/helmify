@@ -170,7 +170,7 @@ func createCommonFiles(chartDir, chartName string, crd bool) error {
 			return
 		}
 		file := filepath.Join(path...)
-		err = ioutil.WriteFile(file, content, 0750)
+		err = ioutil.WriteFile(file, content, 0640)
 		if err == nil {
 			logrus.WithField("file", file).Info("created")
 		}
