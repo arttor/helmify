@@ -116,7 +116,7 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		conv := spec.Conversion
 		if conv.Strategy == v1.WebhookConverter {
 			wh := conv.Webhook
-			if wh != nil {
+			if wh != nil && wh.ClientConfig != nil && wh.ClientConfig.Service != nil {
 				wh.ClientConfig.Service.Name = appMeta.TemplatedName(wh.ClientConfig.Service.Name)
 				wh.ClientConfig.Service.Namespace = strings.ReplaceAll(wh.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
 			}
