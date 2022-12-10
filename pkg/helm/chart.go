@@ -8,7 +8,6 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -107,8 +106,6 @@ func overwriteValuesFile(chartDir string, values helmify.Values) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
-
-	res = append(res, []byte(imagePullSecrets.ValuesHelp)...)
 
 	file := filepath.Join(chartDir, "values.yaml")
 	err = ioutil.WriteFile(file, res, 0600)
