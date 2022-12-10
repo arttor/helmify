@@ -9,6 +9,7 @@ fluentdElasticsearch:
       requests:
         cpu: 100m
         memory: 200Mi
+imagePullSecrets: []
 kubernetesClusterDomain: cluster.local
 myConfig:
   dummyconfigmapkey: dummyconfigmapvalue
