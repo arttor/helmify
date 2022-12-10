@@ -21,6 +21,8 @@ type Config struct {
 	VeryVerbose bool
 	// crd-dir set true to enable crd folder.
 	Crd bool
+	// ImagePullSecrets flag
+	ImagePullSecrets bool
 }
 
 func (c *Config) Validate() error {
