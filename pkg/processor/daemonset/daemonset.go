@@ -149,7 +149,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 		return true, nil, err
 	}
 
-	imagePullSecrets.ProcessSpecMap(specMap)
+	imagePullSecrets.ProcessSpecMap(specMap, &values)
 
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {

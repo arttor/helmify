@@ -80,7 +80,7 @@ Usage:
 If no `imagePullSecrets` are present in the input manifests, helmify allows existing 
 secrets to be used as `imagePullSecrets` for pods in deployments and daemonsets.
 
-This is opt-in, there is a comment in `values.yaml` about how this can be enabled.
+This is opt-in, in `values.yaml` you can add secrets like:
 
 ```yaml
 # values.yaml

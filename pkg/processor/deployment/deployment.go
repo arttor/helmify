@@ -156,7 +156,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	imagePullSecrets.ProcessSpecMap(specMap)
+	imagePullSecrets.ProcessSpecMap(specMap, &values)
 
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {
