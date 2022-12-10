@@ -8,6 +8,7 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -23,11 +24,13 @@ type output struct{}
 
 // Create a helm chart in the current directory:
 // chartName/
-//    ├── .helmignore   	# Contains patterns to ignore when packaging Helm charts.
-//    ├── Chart.yaml    	# Information about your chart
-//    ├── values.yaml   	# The default values for your templates
-//    └── templates/    	# The template files
-//        └── _helpers.tp   # Helm default template partials
+//
+//	├── .helmignore   	# Contains patterns to ignore when packaging Helm charts.
+//	├── Chart.yaml    	# Information about your chart
+//	├── values.yaml   	# The default values for your templates
+//	└── templates/    	# The template files
+//	    └── _helpers.tp   # Helm default template partials
+//
 // Overwrites existing values.yaml and templates in templates dir on every run.
 func (o output) Create(chartDir, chartName string, crd bool, templates []helmify.Template) error {
 	err := initChartDir(chartDir, chartName, crd)
@@ -104,6 +107,9 @@ func overwriteValuesFile(chartDir string, values helmify.Values) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
+
+	res = append(res, []byte(imagePullSecrets.ValuesHelp)...)
+
 	file := filepath.Join(chartDir, "values.yaml")
 	err = ioutil.WriteFile(file, res, 0600)
 	if err != nil {
