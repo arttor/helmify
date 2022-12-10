@@ -8,6 +8,7 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/processor"
+	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
@@ -154,6 +155,9 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	if err != nil {
 		return true, nil, err
 	}
+
+	imagePullSecrets.ProcessSpecMap(specMap)
+
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {
 		return true, nil, err
