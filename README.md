@@ -74,21 +74,7 @@ Usage:
 | -vv | Enable very verbose output. Also prints DEBUG.                                                                                                                                                              | `helmify -vv`|
 | -version | Print helmify version.                                                                                                                                                                                      | `helmify -version`|
 | -crd-dir | Place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you). Caveat: CRDs templating is not supported by Helm. | `helmify -crd-dir`|
-| -image-pull-secrets| Allows the user to use existing secrets as imagePullSecrets | `helmify -image-pull-secrets`|
-
-## ImagePullSecrets
-
-If no `imagePullSecrets` are present in the input manifests, helmify allows existing 
-secrets to be used as `imagePullSecrets` for pods in deployments and daemonsets.
-
-You need to enable this feature by the `-image-pull-secrets` flag. This allows
-the user to add existing secrets in `values.yaml` like:
-
-```yaml
-# values.yaml
-imagePullSecrets:
-- name: image-pull-secret
-```
+| -image-pull-secrets| Allows the user to use existing secrets as imagePullSecrets  | `helmify -image-pull-secrets`|
 
 ## Status
 Supported k8s resources:
