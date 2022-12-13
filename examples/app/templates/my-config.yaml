@@ -16,3 +16,4 @@ data:
         | quote }}
     metrics:
       bindAddress: {{ .Values.myConfig.myConfigYaml.metrics.bindAddress | quote }}
+    users: {{ toYaml .Values.myConfig.myConfigYaml.users | nindent 6 }}
