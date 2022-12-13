@@ -2,6 +2,7 @@ package helmify
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -31,6 +32,11 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	_, isString := value.(string)
 	if isString {
 		return "{{ .Values." + strings.Join(name, ".") + " | quote }}", nil
+	}
+	_, isSlice := value.([]interface{})
+	if isSlice {
+		spaces := strconv.Itoa(len(name) * 2)
+		return "{{ toYaml .Values." + strings.Join(name, ".") + " | nindent " + spaces + " }}", nil
 	}
 	return "{{ .Values." + strings.Join(name, ".") + " }}", nil
 }
