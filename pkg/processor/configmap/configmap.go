@@ -68,7 +68,7 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 
 	name := appMeta.TrimName(obj.GetName())
 	var values helmify.Values
-	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
+	if field, exists, _ := unstructured.NestedMap(obj.Object, "data"); exists {
 		field, values = parseMapData(field, name)
 		data, err = yamlformat.Marshal(map[string]interface{}{"data": field}, 0)
 		if err != nil {
@@ -89,7 +89,7 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}, nil
 }
 
-func parseMapData(data map[string]string, configName string) (map[string]string, helmify.Values) {
+func parseMapData(data map[string]interface{}, configName string) (map[string]interface{}, helmify.Values) {
 	values := helmify.Values{}
 	for key, value := range data {
 		valuesNamePath := []string{configName, key}
@@ -121,9 +121,9 @@ func parseMapData(data map[string]string, configName string) (map[string]string,
 	return data, values
 }
 
-func parseYaml(value string, path []string, values helmify.Values) (string, error) {
+func parseYaml(value interface{}, path []string, values helmify.Values) (string, error) {
 	config := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(value), &config)
+	err := yaml.Unmarshal([]byte(value.(string)), &config)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to unmarshal configmap %v", path)
 	}
@@ -135,9 +135,10 @@ func parseYaml(value string, path []string, values helmify.Values) (string, erro
 	return string(confBytes), nil
 }
 
-func parseProperties(properties string, path []string, values helmify.Values) (string, error) {
+// func parseProperties(properties string, path []string, values helmify.Values) (string, error) {
+func parseProperties(properties interface{}, path []string, values helmify.Values) (string, error) {
 	var res strings.Builder
-	for _, line := range strings.Split(strings.TrimSuffix(properties, "\n"), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(properties.(string), "\n"), "\n") {
 		prop := strings.Split(line, "=")
 		if len(prop) != 2 {
 			return "", errors.Errorf("wrong property format in %v: %s", path, line)

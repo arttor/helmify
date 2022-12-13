@@ -9,7 +9,6 @@ fluentdElasticsearch:
       requests:
         cpu: 100m
         memory: 200Mi
-imagePullSecrets: []
 kubernetesClusterDomain: cluster.local
 myConfig:
   dummyconfigmapkey: dummyconfigmapvalue
@@ -23,10 +22,18 @@ myConfig:
       healthProbeBindAddress: :8081
     metrics:
       bindAddress: 127.0.0.1:8080
+    users:
+    - default
+    - guest
+    - temp
 myConfigProps:
   myProp1: "1"
   myProp2: val 1
   myProp3: "true"
+  myServices:
+  - docker
+  - helm
+  - k8s
 mySecretCa:
   caCrt: ""
 mySecretVars:
