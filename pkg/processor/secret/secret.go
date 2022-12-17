@@ -1,6 +1,7 @@
 package secret
 
 import (
+	"github.com/arttor/helmify/pkg/format"
 	"io"
 	"strings"
 	"text/template"
@@ -88,6 +89,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 			return true, nil, err
 		}
 		data = strings.ReplaceAll(data, "'", "")
+		data = format.FixUnterminatedQuotes(data)
 	}
 
 	templatedData = map[string]string{}
@@ -108,6 +110,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 			return true, nil, err
 		}
 		stringData = strings.ReplaceAll(stringData, "'", "")
+		stringData = format.FixUnterminatedQuotes(stringData)
 	}
 
 	return true, &result{

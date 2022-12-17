@@ -37,6 +37,7 @@ myConfigProps:
 mySecretCa:
   caCrt: ""
 mySecretVars:
+  elasticFoobarHunter123MeowtownVerify: ""
   str: ""
   var1: ""
   var2: ""
