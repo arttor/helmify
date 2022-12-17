@@ -166,6 +166,7 @@ type: opaque
 data:
   VAR1: bXlfc2VjcmV0X3Zhcl8x
   VAR2: bXlfc2VjcmV0X3Zhcl8y
+  ELASTIC_FOOBAR_HUNTER123_MEOWTOWN_VERIFY: bXlfc2VjcmV0X3Zhcl8y
 stringData:
   str: |
     some big not so secret string with
