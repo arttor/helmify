@@ -1,6 +1,8 @@
 package rbac
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"text/template"
@@ -15,6 +17,9 @@ import (
 
 var roleTempl, _ = template.New("clusterRole").Parse(
 	`{{ .Meta }}
+{{- if .AggregationRule }}
+{{ .AggregationRule }}
+{{- end}}
 {{ .Rules }}`)
 
 var clusterRoleGVC = schema.GroupVersionKind{
@@ -37,6 +42,8 @@ type role struct{}
 
 // Process k8s ClusterRole object into template. Returns false if not capable of processing given resource type.
 func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
+	var aggregationRule string
+
 	if obj.GroupVersionKind() != clusterRoleGVC && obj.GroupVersionKind() != roleGVC {
 		return false, nil, nil
 	}
@@ -44,6 +51,21 @@ func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
+	}
+
+	if existingAggRule := obj.Object["aggregationRule"]; existingAggRule != nil {
+		if obj.GroupVersionKind().Kind == "Role" {
+			return true, nil, errors.New(fmt.Sprintf("unable to set aggregationRule to the kind Role in '%s': unsupported", obj.GetName()))
+		}
+
+		if existingAggRule.(map[string]interface{})["clusterRoleSelectors"] != nil {
+			aggRuleMap := map[string]interface{}{"aggregationRule": existingAggRule}
+
+			aggregationRule, err = yamlformat.Marshal(aggRuleMap, 0)
+			if err != nil {
+				return true, nil, err
+			}
+		}
 	}
 
 	rules, err := yamlformat.Marshal(map[string]interface{}{"rules": obj.Object["rules"]}, 0)
@@ -54,17 +76,19 @@ func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	return true, &crResult{
 		name: appMeta.TrimName(obj.GetName()),
 		data: struct {
-			Meta  string
-			Rules string
-		}{Meta: meta, Rules: rules},
+			Meta            string
+			AggregationRule string
+			Rules           string
+		}{Meta: meta, AggregationRule: aggregationRule, Rules: rules},
 	}, nil
 }
 
 type crResult struct {
 	name string
 	data struct {
-		Meta  string
-		Rules string
+		Meta            string
+		AggregationRule string
+		Rules           string
 	}
 }
 

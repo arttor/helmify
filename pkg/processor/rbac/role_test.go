@@ -14,6 +14,11 @@ kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: my-operator-manager-role
+aggregationRule:
+  clusterRoleSelectors:
+  - matchExpressions:
+    - key: my.operator.dev/release
+      operator: Exists
 rules:
 - apiGroups:
   - ""
