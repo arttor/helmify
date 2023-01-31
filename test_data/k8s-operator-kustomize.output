@@ -366,6 +366,20 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
+  name: my-operator-manager-aggregated-role
+aggregationRule:
+  clusterRoleSelectors:
+  - matchExpressions:
+    - key: app.kubernetes.io/instance
+      operator: In
+      values:
+      - my-operator
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
   name: my-operator-manager-role
 rules:
 - apiGroups:
