@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "operator.fullname" . }}-manager-aggregated-role
+  labels:
+  {{- include "operator.labels" . | nindent 4 }}
+aggregationRule:
+  clusterRoleSelectors:
+  - matchExpressions:
+    - key: app.kubernetes.io/instance
+      operator: In
+      values:
+      - my-operator
+rules: []
