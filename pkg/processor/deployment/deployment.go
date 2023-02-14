@@ -47,6 +47,8 @@ const selectorTempl = `%[1]s
 {{- include "%[2]s.selectorLabels" . | nindent 6 }}
 %[3]s`
 
+const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s }}"
+
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
 	return &deployment{}
@@ -245,14 +247,23 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	if err != nil {
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
-	for _, e := range c.Env {
-		if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-			e.ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.SecretKeyRef.Name)
-		}
-		if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
-			e.ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.ConfigMapKeyRef.Name)
+
+	for i := 0; i < len(c.Env); i++ {
+		if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.SecretKeyRef != nil {
+			c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
+		} else if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.ConfigMapKeyRef != nil {
+			c.Env[i].ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.ConfigMapKeyRef.Name)
+		} else {
+
+			err = unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+			if err != nil {
+				return c, errors.Wrap(err, "unable to set deployment value field")
+			}
+
+			c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 		}
 	}
+
 	for _, e := range c.EnvFrom {
 		if e.SecretRef != nil {
 			e.SecretRef.Name = appMeta.TemplatedName(e.SecretRef.Name)

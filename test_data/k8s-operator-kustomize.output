@@ -617,6 +617,10 @@ spec:
             secretKeyRef:
               name: my-operator-secret-vars
               key: VAR1
+        - name: VAR2
+          value: "ciao"
+        - name: VAR3_MY_ENV
+          value: "ciao"
         image: controller:latest
         livenessProbe:
           httpGet:
