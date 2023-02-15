@@ -248,7 +248,7 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
 
-	c, err = processEnv(name, appMeta, c, values, containerName)
+	c, err = processEnv(name, appMeta, c, values)
 	if err != nil {
 		return c, err
 	}
@@ -280,7 +280,8 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	return c, nil
 }
 
-func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values, containerName string) (corev1.Container, error) {
+func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
+	containerName := strcase.ToLowerCamel(c.Name)
 	for i := 0; i < len(c.Env); i++ {
 		if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.SecretKeyRef != nil {
 			c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
