@@ -52,6 +52,10 @@ spec:
             secretKeyRef:
               key: VAR1
               name: {{ include "operator.fullname" . }}-secret-vars
+        - name: VAR2
+          value: {{ .Values.controllerManager.manager.var2 }}
+        - name: VAR3_MY_ENV
+          value: {{ .Values.controllerManager.manager.var3MyEnv }}
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
