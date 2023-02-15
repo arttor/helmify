@@ -248,20 +248,9 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 		return c, errors.Wrap(err, "unable to set deployment value field")
 	}
 
-	for i := 0; i < len(c.Env); i++ {
-		if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.SecretKeyRef != nil {
-			c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
-		} else if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.ConfigMapKeyRef != nil {
-			c.Env[i].ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.ConfigMapKeyRef.Name)
-		} else {
-
-			err = unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
-			if err != nil {
-				return c, errors.Wrap(err, "unable to set deployment value field")
-			}
-
-			c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
-		}
+	c, err = processEnv(name, appMeta, c, values, containerName)
+	if err != nil {
+		return c, err
 	}
 
 	for _, e := range c.EnvFrom {
@@ -286,6 +275,24 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "limits", k.String())
 		if err != nil {
 			return c, errors.Wrap(err, "unable to set container resources value")
+		}
+	}
+	return c, nil
+}
+
+func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values, containerName string) (corev1.Container, error) {
+	for i := 0; i < len(c.Env); i++ {
+		if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.SecretKeyRef != nil {
+			c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
+		} else if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.ConfigMapKeyRef != nil {
+			c.Env[i].ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.ConfigMapKeyRef.Name)
+		} else {
+
+			err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+			if err != nil {
+				return c, errors.Wrap(err, "unable to set deployment value field")
+			}
+			c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 		}
 	}
 	return c, nil
