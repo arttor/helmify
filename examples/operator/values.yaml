@@ -4,6 +4,9 @@ controllerManager:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
   manager:
+    env:
+      var2: ciao
+      var3MyEnv: ciao
     image:
       repository: controller
       tag: latest
