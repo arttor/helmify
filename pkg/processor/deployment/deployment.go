@@ -283,18 +283,23 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
 	containerName := strcase.ToLowerCamel(c.Name)
 	for i := 0; i < len(c.Env); i++ {
-		if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.SecretKeyRef != nil {
-			c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
-		} else if c.Env[i].ValueFrom != nil && c.Env[i].ValueFrom.ConfigMapKeyRef != nil {
-			c.Env[i].ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.ConfigMapKeyRef.Name)
-		} else {
-
-			err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
-			if err != nil {
-				return c, errors.Wrap(err, "unable to set deployment value field")
+		if c.Env[i].ValueFrom != nil {
+			switch {
+			case c.Env[i].ValueFrom.SecretKeyRef != nil:
+				c.Env[i].ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.SecretKeyRef.Name)
+			case c.Env[i].ValueFrom.ConfigMapKeyRef != nil:
+				c.Env[i].ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(c.Env[i].ValueFrom.ConfigMapKeyRef.Name)
+			case c.Env[i].ValueFrom.FieldRef != nil, c.Env[i].ValueFrom.ResourceFieldRef != nil:
+				// nothing to change here, keep the original value
 			}
-			c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+			continue
 		}
+
+		err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+		if err != nil {
+			return c, errors.Wrap(err, "unable to set deployment value field")
+		}
+		c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 	}
 	return c, nil
 }

@@ -58,6 +58,21 @@ spec:
             secretKeyRef:
               name: my-operator-secret-vars
               key: VAR1
+        - name: VAR2
+          valueFrom:
+            configMapKeyRef:
+              name: my-operator-configmap-vars
+              key: VAR2
+        - name: VAR3
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: VAR4
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.cpu
+        - name: VAR5
+          value: "123"
         image: controller:latest
         livenessProbe:
           httpGet:
