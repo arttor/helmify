@@ -586,6 +586,13 @@ spec:
       labels:
         control-plane: controller-manager
     spec:
+      topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            matchLabelKeys:
+              - app
+              - pod-template-hash
       imagePullSecrets:
         - name: my-operator-secret-registry-credentials
       containers:
