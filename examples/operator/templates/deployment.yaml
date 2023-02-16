@@ -56,6 +56,20 @@ spec:
           value: {{ .Values.controllerManager.manager.var2 }}
         - name: VAR3_MY_ENV
           value: {{ .Values.controllerManager.manager.var3MyEnv }}
+        - name: VAR4
+          valueFrom:
+            configMapKeyRef:
+              key: VAR4
+              name: my-operator-configmap-vars
+        - name: VAR5
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: VAR6
+          valueFrom:
+            resourceFieldRef:
+              divisor: "0"
+              resource: limits.cpu
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ .Values.kubernetesClusterDomain }}
         image: {{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
