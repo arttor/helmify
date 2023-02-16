@@ -53,8 +53,8 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         resources: {{- toYaml .Values.myapp.app.resources | nindent 10 }}
-        securityContext:
-          allowPrivilegeEscalation: false
+        securityContext: {{- toYaml .Values.myapp.app.containerSecurityContext | nindent
+          8 }}
         volumeMounts:
         - mountPath: /my_config.yaml
           name: manager-config

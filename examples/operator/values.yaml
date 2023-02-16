@@ -6,6 +6,17 @@ controllerManager:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
   manager:
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65532
+      seccompProfile:
+        type: RuntimeDefault
     env:
       var2: ciao
       var3MyEnv: ciao

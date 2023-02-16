@@ -163,6 +163,8 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		imagePullSecrets.ProcessSpecMap(specMap, &values)
 	}
 
+	securityContext.ProcessContainerSecurityContext(nameCamel, specMap, &values)
+
 	// process nodeSelector if presented:
 	if len(depl.Spec.Template.Spec.NodeSelector) != 0 {
 		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, nameCamel), "nodeSelector")
@@ -179,6 +181,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	if err != nil {
 		return true, nil, err
 	}
+
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{

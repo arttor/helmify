@@ -43,6 +43,8 @@ mySecretVars:
   var2: ""
 myapp:
   app:
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
     image:
       repository: controller
       tag: latest

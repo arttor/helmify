@@ -12,5 +12,4 @@ func ProcessSpecMap(specMap map[string]interface{}, values *helmify.Values) {
 		specMap["imagePullSecrets"] = helmExpression
 		(*values)["imagePullSecrets"] = []string{}
 	}
-
 }
