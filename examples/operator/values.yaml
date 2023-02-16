@@ -43,6 +43,7 @@ metricsService:
     port: 8443
     targetPort: https
   type: ClusterIP
+nodeSelector: {}
 pvc:
   pvcLim:
     storageClass: cust1-mypool-lim
@@ -54,6 +55,11 @@ secretRegistryCredentials:
 secretVars:
   var1: ""
   var2: ""
+tolerations: []
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: DoNotSchedule
 webhookService:
   ports:
   - port: 443
