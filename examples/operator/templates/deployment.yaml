@@ -90,8 +90,8 @@ spec:
           periodSeconds: 10
         resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
           }}
-        securityContext:
-          allowPrivilegeEscalation: false
+        securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
+          | nindent 8 }}
         volumeMounts:
         - mountPath: /controller_manager_config.yaml
           name: manager-config
