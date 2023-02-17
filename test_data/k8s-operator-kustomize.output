@@ -773,6 +773,14 @@ metadata:
 type: opaque
 ---
 apiVersion: v1
+data:
+  VAR4: value for var4
+kind: ConfigMap
+metadata:
+  name: my-operator-configmap-vars
+  namespace: my-operator-system
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: my-operator-pvc-lim

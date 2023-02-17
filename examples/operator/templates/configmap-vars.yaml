@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "operator.fullname" . }}-configmap-vars
+  labels:
+  {{- include "operator.labels" . | nindent 4 }}
+data:
+  VAR4: {{ .Values.configmapVars.var4 | quote }}
