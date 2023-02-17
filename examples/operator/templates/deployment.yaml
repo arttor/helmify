@@ -60,7 +60,7 @@ spec:
           valueFrom:
             configMapKeyRef:
               key: VAR4
-              name: my-operator-configmap-vars
+              name: {{ include "operator.fullname" . }}-configmap-vars
         - name: VAR5
           valueFrom:
             fieldRef:

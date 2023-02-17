@@ -1,3 +1,5 @@
+configmapVars:
+  var4: value for var4
 controllerManager:
   kubeRbacProxy:
     image:
