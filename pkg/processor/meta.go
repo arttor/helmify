@@ -14,6 +14,7 @@ const metaTeml = `apiVersion: %[1]s
 kind: %[2]s
 metadata:
   name: %[3]s
+  namespace: {{ .Release.Namespace | quote }}
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
