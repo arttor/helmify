@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "operator.fullname" . }}-controller-manager-metrics-service
+  namespace: {{ .Release.Namespace | quote }}
   labels:
     control-plane: controller-manager
   {{- include "operator.labels" . | nindent 4 }}

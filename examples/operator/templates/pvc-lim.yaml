@@ -2,6 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ include "operator.fullname" . }}-pvc-lim
+  namespace: {{ .Release.Namespace | quote }}
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
