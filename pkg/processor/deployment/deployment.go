@@ -47,7 +47,7 @@ const selectorTempl = `%[1]s
 {{- include "%[2]s.selectorLabels" . | nindent 6 }}
 %[3]s`
 
-const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s }}"
+const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
@@ -295,12 +295,12 @@ func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, va
 			continue
 		}
 
-		err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
-		if err != nil {
-			return c, errors.Wrap(err, "unable to set deployment value field")
+			err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+			if err != nil {
+				return c, errors.Wrap(err, "unable to set deployment value field")
+			}
+			c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 		}
-		c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
-	}
 	return c, nil
 }
 
