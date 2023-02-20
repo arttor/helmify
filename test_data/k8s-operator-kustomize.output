@@ -635,6 +635,7 @@ spec:
             resourceFieldRef:
               resource: limits.cpu
         image: controller:latest
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /healthz
