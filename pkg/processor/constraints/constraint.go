@@ -23,11 +23,11 @@ const tolerationsExpression = "{{- if .Values.tolerations }}\n" +
 
 // ProcessSpecMap adds 'topologyConstraints' to the podSpec in specMap, if it doesn't
 // already has one defined.
-func ProcessSpecMap(specMap map[string]interface{}, values *helmify.Values) string {
+func ProcessSpecMap(name string, specMap map[string]interface{}, values *helmify.Values) string {
 
-	mapConstraint(specMap, topology, []interface{}{}, values)
-	mapConstraint(specMap, tolerations, []interface{}{}, values)
-	mapConstraint(specMap, nodeSelector, map[string]string{}, values)
+	mapConstraint(name, specMap, topology, []interface{}{}, values)
+	mapConstraint(name, specMap, tolerations, []interface{}{}, values)
+	mapConstraint(name, specMap, nodeSelector, map[string]string{}, values)
 
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {
@@ -36,11 +36,11 @@ func ProcessSpecMap(specMap map[string]interface{}, values *helmify.Values) stri
 	return spec + topologyExpression + nodeSelectorExpression + tolerationsExpression
 }
 
-func mapConstraint(specMap map[string]interface{}, constraint string, override interface{}, values *helmify.Values) {
+func mapConstraint(name string, specMap map[string]interface{}, constraint string, override interface{}, values *helmify.Values) {
 	if specMap[constraint] != nil {
-		(*values)[constraint] = specMap[constraint].(interface{})
+		(*values)[name].(map[string]interface{})[constraint] = specMap[constraint].(interface{})
 	} else {
-		(*values)[constraint] = override
+		(*values)[name].(map[string]interface{})[constraint] = override
 	}
 	delete(specMap, constraint)
 }
