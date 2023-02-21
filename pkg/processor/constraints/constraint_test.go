@@ -30,17 +30,24 @@ func TestProcessSpecMap(t *testing.T) {
 	}{
 		{name: "no predefined resource returns still a template and to fill in values",
 			specMap: make(map[string]interface{}, 4),
-			values:  &helmify.Values{},
-			want:    templatedResult,
+			values: &helmify.Values{
+				"mydep": map[string]interface{}{},
+			},
+			want: templatedResult,
 			wantValues: &helmify.Values{
-				"nodeSelector":              map[string]string{},
-				"tolerations":               []interface{}{},
-				"topologySpreadConstraints": []interface{}{},
+				"mydep": map[string]interface{}{
+					"nodeSelector":              map[string]string{},
+					"tolerations":               []interface{}{},
+					"topologySpreadConstraints": []interface{}{},
+				},
 			},
 		},
 		{name: "predefined resource are added to values, template is the same",
-			values: &helmify.Values{},
+			values: &helmify.Values{
+				"mydep": map[string]interface{}{},
+			},
 			specMap: map[string]interface{}{
+
 				"topologySpreadConstraints": []v1.TopologySpreadConstraint{
 					{
 						MaxSkew:           0,
@@ -52,13 +59,15 @@ func TestProcessSpecMap(t *testing.T) {
 			},
 			want: templatedResult,
 			wantValues: &helmify.Values{
-				"nodeSelector": map[string]string{},
-				"tolerations":  []interface{}{},
-				"topologySpreadConstraints": []v1.TopologySpreadConstraint{
-					{
-						MaxSkew:           0,
-						TopologyKey:       "trtr",
-						WhenUnsatisfiable: "test",
+				"mydep": map[string]interface{}{
+					"nodeSelector": map[string]string{},
+					"tolerations":  []interface{}{},
+					"topologySpreadConstraints": []v1.TopologySpreadConstraint{
+						{
+							MaxSkew:           0,
+							TopologyKey:       "trtr",
+							WhenUnsatisfiable: "test",
+						},
 					},
 				},
 			},
@@ -66,9 +75,9 @@ func TestProcessSpecMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ProcessSpecMap(tt.specMap, tt.values)
+			got := ProcessSpecMap("mydep", tt.specMap, tt.values)
 			require.Contains(t, got, tt.want)
-			require.Equal(t, tt.wantValues, tt.values)
+			require.Equal(t, *tt.wantValues, *tt.values)
 		})
 	}
 }
