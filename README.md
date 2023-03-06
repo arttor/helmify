@@ -27,7 +27,7 @@ Submit issue if some features missing for your use-case.
 
 2) From directory with yamls:
     ```shell
-    awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify mychart
+    awk 'FNR==1 && NR!=1  {print "---"}{print}' ./<my_directory>/*.yaml | helmify mychart
     ```
     Will create 'mychart' directory with Helm chart from all yaml files in `<my_directory> `directory.
 
