@@ -8,7 +8,6 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/processor"
-	"github.com/arttor/helmify/pkg/processor/imagePullPolicy"
 	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
 
 	"github.com/arttor/helmify/pkg/helmify"
@@ -48,6 +47,7 @@ const selectorTempl = `%[1]s
 {{- include "%[2]s.selectorLabels" . | nindent 6 }}
 %[3]s`
 
+const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s }}"
 
 // New creates processor for k8s Deployment resource.
@@ -161,11 +161,6 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 
 	if appMeta.Config().ImagePullSecrets {
 		imagePullSecrets.ProcessSpecMap(specMap, &values)
-	}
-
-	err = imagePullPolicy.ProcessSpecMap(nameCamel, specMap, &values)
-	if err != nil {
-		return true, nil, err
 	}
 
 	spec, err := yamlformat.Marshal(specMap, 6)
@@ -282,6 +277,14 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 		if err != nil {
 			return c, errors.Wrap(err, "unable to set container resources value")
 		}
+	}
+
+	if c.ImagePullPolicy != "" {
+		err = unstructured.SetNestedField(*values, string(c.ImagePullPolicy), name, containerName, "imagePullPolicy")
+		if err != nil {
+			return c, errors.Wrap(err, "unable to set container imagePullPolicy")
+		}
+		c.ImagePullPolicy = corev1.PullPolicy(fmt.Sprintf(imagePullPolicyTemplate, name, containerName))
 	}
 	return c, nil
 }
