@@ -26,6 +26,8 @@ type Config struct {
 	// GenerateDefaults enables the generation of empty values placeholders for common customization options of helm chart
 	// current generated values: tolerances, node selectors, topology constraints
 	GenerateDefaults bool
+	// Probes flag if true the probes will be parametrised
+	Probes bool
 }
 
 func (c *Config) Validate() error {

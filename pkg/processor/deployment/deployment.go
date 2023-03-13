@@ -7,11 +7,11 @@ import (
 	"text/template"
 
 	"github.com/arttor/helmify/pkg/cluster"
+	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/constraints"
 	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
-
-	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor/probes"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -50,7 +50,6 @@ const selectorTempl = `%[1]s
 
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
-
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
@@ -166,8 +165,15 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	}
 
 	spec := constraints.ProcessSpecMap(nameCamel, specMap, &values, appMeta.Config().GenerateDefaults)
-	spec = strings.ReplaceAll(spec, "'", "")
 
+	if appMeta.Config().Probes {
+		spec, err = probes.ProcessSpecMap(nameCamel, specMap, &values)
+		if err != nil {
+			return true, nil, err
+		}
+	}
+
+	spec = strings.ReplaceAll(spec, "'", "")
 	return true, &result{
 		values: values,
 		data: struct {

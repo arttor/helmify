@@ -112,6 +112,7 @@ Usage:
         {{- tpl (.value | toYaml) .context }}
     {{- end }}
 {{- end -}}
+
 `
 
 const defaultChartfile = `apiVersion: v2
