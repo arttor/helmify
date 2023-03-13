@@ -75,7 +75,7 @@ func TestProcessSpecMap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ProcessSpecMap("mydep", tt.specMap, tt.values)
+			got := ProcessSpecMap("mydep", tt.specMap, tt.values, true)
 			require.Contains(t, got, tt.want)
 			require.Equal(t, *tt.wantValues, *tt.values)
 		})
