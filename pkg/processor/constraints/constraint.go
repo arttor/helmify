@@ -25,9 +25,6 @@ const tolerationsExpression = "{{- if .Values.tolerations }}\n" +
 // already has one defined.
 func ProcessSpecMap(name string, specMap map[string]interface{}, values *helmify.Values, defaultEmpty bool) string {
 
-	mapConstraint(name, specMap, topology, values)
-	mapConstraint(name, specMap, tolerations, values)
-	mapConstraint(name, specMap, nodeSelector, values)
 	spec, err := yamlformat.Marshal(specMap, 6)
 	if err != nil {
 		return ""
@@ -40,18 +37,31 @@ func ProcessSpecMap(name string, specMap map[string]interface{}, values *helmify
 		return spec + topologyExpression + nodeSelectorExpression + tolerationsExpression
 	}
 
+	if specMap[topology] != nil {
+		(*values)[name].(map[string]interface{})[topology] = specMap[topology].(interface{})
+		delete(specMap, topology)
+		spec += topologyExpression
+	}
+
+	if specMap[tolerations] != nil {
+		(*values)[name].(map[string]interface{})[tolerations] = specMap[tolerations].(interface{})
+		delete(specMap, tolerations)
+		spec += tolerationsExpression
+	}
+	if specMap[nodeSelector] != nil {
+		(*values)[name].(map[string]interface{})[nodeSelector] = specMap[nodeSelector].(interface{})
+		delete(specMap, nodeSelector)
+		spec += nodeSelectorExpression
+	}
+
 	return spec
 }
 
 func mapConstraintWithEmpty(name string, specMap map[string]interface{}, constraint string, override interface{}, values *helmify.Values) {
-	if specMap[constraint] == nil {
-		(*values)[name].(map[string]interface{})[constraint] = override
-	}
-	delete(specMap, topology)
-}
-
-func mapConstraint(name string, specMap map[string]interface{}, constraint string, values *helmify.Values) {
 	if specMap[constraint] != nil {
 		(*values)[name].(map[string]interface{})[constraint] = specMap[constraint].(interface{})
+	} else {
+		(*values)[name].(map[string]interface{})[constraint] = override
 	}
+	delete(specMap, constraint)
 }
