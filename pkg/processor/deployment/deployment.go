@@ -165,7 +165,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		imagePullSecrets.ProcessSpecMap(specMap, &values)
 	}
 
-	spec := constraints.ProcessSpecMap(nameCamel, specMap, &values)
+	spec := constraints.ProcessSpecMap(nameCamel, specMap, &values, appMeta.Config().GenerateDefault)
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{
