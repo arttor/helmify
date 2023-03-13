@@ -20,9 +20,7 @@ controllerManager:
       requests:
         cpu: 100m
         memory: 20Mi
-  nodeSelector: {}
   replicas: 1
-  tolerations: []
   topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: kubernetes.io/hostname
