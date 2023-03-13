@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	"github.com/arttor/helmify/pkg/cluster"
+	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/constraints"
 	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
@@ -49,7 +50,6 @@ const selectorTempl = `%[1]s
 
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
-
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
