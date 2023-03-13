@@ -238,7 +238,7 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	}
 	c.Env = append(c.Env, corev1.EnvVar{
 		Name:  cluster.DomainEnv,
-		Value: fmt.Sprintf("{{ .Values.%s }}", cluster.DomainKey),
+		Value: fmt.Sprintf("{{ quote .Values.%s }}", cluster.DomainKey),
 	})
 	for k, v := range c.Resources.Requests {
 		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "requests", k.String())
