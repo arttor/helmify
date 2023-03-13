@@ -23,9 +23,9 @@ type Config struct {
 	Crd bool
 	// ImagePullSecrets flag
 	ImagePullSecrets bool
-	// GenerateDefault enables the generation of empty values placeholders for common customization options of helm chart
+	// GenerateDefaults enables the generation of empty values placeholders for common customization options of helm chart
 	// current generated values: tolerances, node selectors, topology constraints
-	GenerateDefault bool
+	GenerateDefaults bool
 }
 
 func (c *Config) Validate() error {
