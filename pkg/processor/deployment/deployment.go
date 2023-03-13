@@ -48,7 +48,7 @@ const selectorTempl = `%[1]s
 %[3]s`
 
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
-const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
+const envValue = "{{ quote .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
@@ -276,7 +276,7 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	}
 	c.Env = append(c.Env, corev1.EnvVar{
 		Name:  cluster.DomainEnv,
-		Value: fmt.Sprintf("{{ .Values.%s }}", cluster.DomainKey),
+		Value: fmt.Sprintf("{{ quote .Values.%s }}", cluster.DomainKey),
 	})
 	for k, v := range c.Resources.Requests {
 		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "requests", k.String())
