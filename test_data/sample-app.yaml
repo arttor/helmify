@@ -79,6 +79,9 @@ spec:
               name: https
       securityContext:
         runAsNonRoot: true
+      nodeSelector:
+        region: east
+        type: user-node
       terminationGracePeriodSeconds: 10
       volumes:
         - configMap:

@@ -53,6 +53,9 @@ myapp:
       requests:
         cpu: 100m
         memory: 20Mi
+  nodeSelector:
+    region: east
+    type: user-node
   proxySidecar:
     image:
       repository: gcr.io/kubebuilder/kube-rbac-proxy

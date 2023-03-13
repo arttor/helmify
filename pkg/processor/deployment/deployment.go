@@ -8,7 +8,6 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/processor"
-	"github.com/arttor/helmify/pkg/processor/constraints"
 	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
 
 	"github.com/arttor/helmify/pkg/helmify"
@@ -50,7 +49,6 @@ const selectorTempl = `%[1]s
 
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
-
 
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
@@ -165,7 +163,22 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		imagePullSecrets.ProcessSpecMap(specMap, &values)
 	}
 
-	spec := constraints.ProcessSpecMap(nameCamel, specMap, &values, appMeta.Config().GenerateDefaults)
+	// process nodeSelector if presented:
+	if len(depl.Spec.Template.Spec.NodeSelector) != 0 {
+		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, nameCamel), "nodeSelector")
+		if err != nil {
+			return true, nil, err
+		}
+		err = unstructured.SetNestedStringMap(values, depl.Spec.Template.Spec.NodeSelector, nameCamel, "nodeSelector")
+		if err != nil {
+			return true, nil, err
+		}
+	}
+
+	spec, err := yamlformat.Marshal(specMap, 6)
+	if err != nil {
+		return true, nil, err
+	}
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{

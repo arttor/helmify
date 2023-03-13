@@ -100,6 +100,7 @@ spec:
           name: secret-volume
       imagePullSecrets:
       - name: {{ include "operator.fullname" . }}-secret-registry-credentials
+      nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
       serviceAccountName: {{ include "operator.fullname" . }}-controller-manager
@@ -115,6 +116,3 @@ spec:
       - name: secret-volume
         secret:
           secretName: {{ include "operator.fullname" . }}-secret-ca
-{{- if .Values.topologySpreadConstraints }}
-      topologySpreadConstraints: {{- include "tplvalues.render" (dict "value" .Values.topologySpreadConstraints "context" $) | nindent 8 }}
-{{- end }}

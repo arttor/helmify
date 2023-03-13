@@ -667,6 +667,9 @@ spec:
           allowPrivilegeEscalation: false
       securityContext:
         runAsNonRoot: true
+      nodeSelector:
+        region: east
+        type: user-node
       serviceAccountName: my-operator-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:

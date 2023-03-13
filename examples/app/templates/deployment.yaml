@@ -81,6 +81,7 @@ spec:
         - containerPort: 8443
           name: https
         resources: {}
+      nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true
       terminationGracePeriodSeconds: 10

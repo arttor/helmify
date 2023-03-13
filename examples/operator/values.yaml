@@ -20,11 +20,10 @@ controllerManager:
       requests:
         cpu: 100m
         memory: 20Mi
+  nodeSelector:
+    region: east
+    type: user-node
   replicas: 1
-  topologySpreadConstraints:
-  - maxSkew: 1
-    topologyKey: kubernetes.io/hostname
-    whenUnsatisfiable: DoNotSchedule
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml:
