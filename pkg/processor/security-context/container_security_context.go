@@ -11,7 +11,7 @@ import (
 const (
 	sc           = "securityContext"
 	cscValueName = "containerSecurityContext"
-	helmTemplate = "{{- toYaml .Values.%[1]s.%[2]s.containerSecurityContext | nindent 8 }}"
+	helmTemplate = "{{- toYaml .Values.%[1]s.%[2]s.containerSecurityContext | nindent 10 }}"
 )
 
 // ProcessContainerSecurityContext adds 'securityContext' to the podSpec in specMap, if it doesn't have one already defined.
