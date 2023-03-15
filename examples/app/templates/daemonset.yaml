@@ -19,7 +19,7 @@ spec:
       containers:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ .Values.kubernetesClusterDomain }}
+          value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.fluentdElasticsearch.fluentdElasticsearch.image.repository }}:{{
           .Values.fluentdElasticsearch.fluentdElasticsearch.image.tag | default .Chart.AppVersion
           }}

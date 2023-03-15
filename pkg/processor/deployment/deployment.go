@@ -9,6 +9,7 @@ import (
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
+	securityContext "github.com/arttor/helmify/pkg/processor/security-context"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
