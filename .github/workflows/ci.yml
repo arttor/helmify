@@ -26,19 +26,12 @@ jobs:
       run: go vet ./...
 
     - name: Test
-      run: go test  -coverprofile c.out ./...
-
-    - name: Code Coverage
-      uses: aktions/codeclimate-test-reporter@v1
-      if: github.ref == 'refs/heads/main'
-      with:
-        codeclimate-test-reporter-id: ${{ secrets.CC_TEST_REPORTER_ID }}
-        command: after-build --prefix github.com/arttor/helmify/  --coverage-input-type gocov
+      run: go test ./...
 
     - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.51.2
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.51.2
 # Dry-run generated charts in cluster
     - name: Install k8s cluster
       uses: helm/kind-action@v1.4.0
