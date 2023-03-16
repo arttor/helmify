@@ -1,0 +1,51 @@
+run:
+  tests: false
+  skip-dirs:
+    - internal
+go: 1.19
+
+fix: true
+
+linters-settings:
+  maligned:
+    suggest-new: true
+  staticcheck:
+    go: "1.20"
+    checks: [ "all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022","-SA6005","-SA1019" ]
+  gocritic:
+    disabled-checks:
+      - captLocal
+      - commentFormatting
+  revive:
+    rules:
+      - name: var-naming
+        disabled: true
+  nolintlint:
+    require-explanation: true
+
+linters:
+  disable-all: true
+  enable:
+    - asasalint # check for pass []any as any in variadic func(...any)
+    - asciicheck # simple linter to check that your code does not contain non-ASCII identifiers
+    - errchkjson # checks types passed to the json encoding functions
+    - errorlint # errorlint is a linter for that can be used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13
+    - exportloopref # checks for pointers to enclosing loop variables
+    - gocritic # provides diagnostics that check for bugs, performance and style issues
+    - revive # fast, configurable, extensible, flexible, and beautiful linter for Go. Drop-in replacement of golint
+    - nolintlint # requiresw to write notes why linter is disabled
+    - errcheck
+    - staticcheck
+    - typecheck
+    - unused
+    - govet
+    - ineffassign
+    - gosimple
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - makezero
+    - exportloopref
+    - errchkjson
+    - prealloc
+    - deadcode
