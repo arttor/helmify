@@ -2,7 +2,7 @@ run:
   tests: false
   skip-dirs:
     - internal
-go: 1.19
+go: 1.20
 
 fix: true
 
