@@ -5,8 +5,7 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/arttor/helmify)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arttor/helmify)](https://goreportcard.com/report/github.com/arttor/helmify)
 [![GoDoc](https://godoc.org/github.com/arttor/helmify?status.svg)](https://pkg.go.dev/github.com/arttor/helmify?tab=doc)
-[![Maintainability](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/maintainability)](https://codeclimate.com/github/arttor/helmify/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/2ee755bb948d363207bb/test_coverage)](https://codeclimate.com/github/arttor/helmify/test_coverage)
+![GitHub total downloads](https://img.shields.io/github/downloads/arttor/helmify/total)
 
 CLI that creates [Helm](https://github.com/helm/helm) charts from kubernetes yamls.
 
