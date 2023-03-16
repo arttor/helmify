@@ -56,9 +56,6 @@ spec:
         securityContext: {{- toYaml .Values.myapp.app.containerSecurityContext | nindent
           10 }}
         volumeMounts:
-        - mountPath: /my_config.yaml
-          name: manager-config
-          subPath: my_config.yaml
         - mountPath: /my_config.properties
           name: manager-config
           subPath: my_config.properties

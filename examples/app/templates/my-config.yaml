@@ -10,10 +10,3 @@ data:
   my_config.properties: |
     health.healthProbeBindAddress={{ .Values.myConfig.myConfigProperties.health.healthProbeBindAddress | quote }}
     metrics.bindAddress={{ .Values.myConfig.myConfigProperties.metrics.bindAddress | quote }}
-  my_config.yaml: |
-    health:
-      healthProbeBindAddress: {{ .Values.myConfig.myConfigYaml.health.healthProbeBindAddress
-        | quote }}
-    metrics:
-      bindAddress: {{ .Values.myConfig.myConfigYaml.metrics.bindAddress | quote }}
-    users: {{ toYaml .Values.myConfig.myConfigYaml.users | nindent 6 }}
