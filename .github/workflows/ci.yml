@@ -34,14 +34,14 @@ jobs:
         codeclimate-test-reporter-id: ${{ secrets.CC_TEST_REPORTER_ID }}
         command: after-build --prefix github.com/arttor/helmify/  --coverage-input-type gocov
 
-     - name: Create kind cluster
-       uses: helm/kind-action@v1.4.0
-#       with:
-#         install_local_path_provisioner: true
-      - name: dry-run generated chart
-        run: |
-          cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator | sed -i '' 's/""/"abc"/' examples/operator/values.yaml  | helm template ./examples/operator | kubectl apply --dry-run=server -f -
+    - name: Install k8s cluster
+      uses: helm/kind-action@v1.4.0
 
+    - name: Install certs
+      run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
+
+    - name: Dry-run in k8s cluster
+      run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator | sed -i '' 's/""/"abc"/' examples/operator/values.yaml  | helm template ./examples/operator | kubectl apply --dry-run=server -f -
 
       #     - name: cert install
 #       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
