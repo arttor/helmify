@@ -38,9 +38,9 @@ jobs:
        uses: helm/kind-action@v1.4.0
 #       with:
 #         install_local_path_provisioner: true
-    - name: dry-run generated chart
-      run: |
-        cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator | sed -i '' 's/""/"abc"/' examples/operator/values.yaml  | helm template ./examples/operator | kubectl apply --dry-run=server -f -
+      - name: dry-run generated chart
+        run: |
+          cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator | sed -i '' 's/""/"abc"/' examples/operator/values.yaml  | helm template ./examples/operator | kubectl apply --dry-run=server -f -
 
 
       #     - name: cert install
