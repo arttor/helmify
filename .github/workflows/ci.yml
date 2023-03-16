@@ -13,6 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+# GO tests
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
@@ -34,14 +35,15 @@ jobs:
         codeclimate-test-reporter-id: ${{ secrets.CC_TEST_REPORTER_ID }}
         command: after-build --prefix github.com/arttor/helmify/  --coverage-input-type gocov
 
+# Dry-run generated charts in cluster
     - name: Install k8s cluster
       uses: helm/kind-action@v1.4.0
     - name: Install certs
       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
 
-    - name: Generate operator chart
+    - name: Generate operator ci chart
       run: cat test_data/k8s-operator-ci.yaml | go run ./cmd/helmify examples/operator-ci
-    - name: Fill operator secrets
+    - name: Fill operator ci secrets
       run: sed -i 's/""/"abc"/' ./examples/operator-ci/values.yaml
     - name: Dry-run operator in k8s cluster
       run: helm template ./examples/operator-ci -n operator-ns --create-namespace | kubectl apply --dry-run=server -f -
@@ -52,3 +54,17 @@ jobs:
       run: sed -i 's/""/"abc"/' ./examples/app/values.yaml
     - name: Dry-run app in k8s cluster
       run: helm template ./examples/app -n app-ns --create-namespace | kubectl apply --dry-run=server -f -
+
+# Validate charts with Kubeconform
+    - name: Install Kubeconform
+      run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.6.1
+
+    - name: Validate app
+      run: helm template ./examples/app -n app-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict
+
+    - name: Generate operator example chart
+      run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
+    - name: Fill operator example secrets
+      run: sed -i 's/""/"abc"/' ./examples/operator/values.yaml
+    - name: Validate example operator
+      run: helm template ./examples/operator -n operator-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict
