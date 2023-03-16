@@ -42,7 +42,7 @@ jobs:
     - name: Generate operator chart
       run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
     - name: Fill secrets
-      run: sed -i 's/""/"abc"/' examples/operator/values.yaml
+      run: sed -i 's/""/"abc"/' ./examples/operator/values.yaml
     - name: Dry-run in k8s cluster
       run: helm template ./examples/operator | kubectl apply --dry-run=server -f -
 
