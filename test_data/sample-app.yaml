@@ -24,9 +24,6 @@ spec:
           command:
             - /manager
           volumeMounts:
-            - mountPath: /my_config.yaml
-              name: manager-config
-              subPath: my_config.yaml
             - mountPath: /my_config.properties
               name: manager-config
               subPath: my_config.properties
@@ -183,15 +180,6 @@ metadata:
 immutable: true
 data:
   dummyconfigmapkey: dummyconfigmapvalue
-  my_config.yaml: |
-    health:
-      healthProbeBindAddress: :8081
-    metrics:
-      bindAddress: 127.0.0.1:8080
-    users:
-      - default
-      - guest
-      - temp
   my_config.properties: |
     health.healthProbeBindAddress=8081
     metrics.bindAddress=127.0.0.1:8080
@@ -205,10 +193,6 @@ data:
   my.prop1: "1"
   my.prop2: "val 1"
   my.prop3: "true"
-  my.services:
-    - docker
-    - helm
-    - k8s
 ---
 apiVersion: apps/v1
 kind: DaemonSet

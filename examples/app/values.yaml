@@ -17,23 +17,10 @@ myConfig:
       healthProbeBindAddress: "8081"
     metrics:
       bindAddress: 127.0.0.1:8080
-  myConfigYaml:
-    health:
-      healthProbeBindAddress: :8081
-    metrics:
-      bindAddress: 127.0.0.1:8080
-    users:
-    - default
-    - guest
-    - temp
 myConfigProps:
   myProp1: "1"
   myProp2: val 1
   myProp3: "true"
-  myServices:
-  - docker
-  - helm
-  - k8s
 mySecretCa:
   caCrt: ""
 mySecretVars:

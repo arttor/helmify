@@ -8,4 +8,3 @@ data:
   my.prop1: {{ .Values.myConfigProps.myProp1 | quote }}
   my.prop2: {{ .Values.myConfigProps.myProp2 | quote }}
   my.prop3: {{ .Values.myConfigProps.myProp3 | quote }}
-  my.services: {{ toYaml .Values.myConfigProps.myServices | nindent 4 }}

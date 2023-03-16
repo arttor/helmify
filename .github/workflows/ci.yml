@@ -52,9 +52,3 @@ jobs:
       run: sed -i 's/""/"abc"/' ./examples/app/values.yaml
     - name: Dry-run app in k8s cluster
       run: helm template ./examples/app -n app-ns --create-namespace | kubectl apply --dry-run=server -f -
-
-      #     - name: cert install
-#       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
-
-#     - name: helm install
-#       run: helm install my-release ./mychart -n my-namespace --create-namespace
