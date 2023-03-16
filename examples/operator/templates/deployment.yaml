@@ -91,7 +91,7 @@ spec:
         resources: {{- toYaml .Values.controllerManager.manager.resources | nindent 10
           }}
         securityContext: {{- toYaml .Values.controllerManager.manager.containerSecurityContext
-          | nindent 8 }}
+          | nindent 10 }}
         volumeMounts:
         - mountPath: /controller_manager_config.yaml
           name: manager-config
@@ -106,7 +106,10 @@ spec:
       serviceAccountName: {{ include "operator.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
       topologySpreadConstraints:
-      - maxSkew: 1
+      - matchLabelKeys:
+        - app
+        - pod-template-hash
+        maxSkew: 1
         topologyKey: kubernetes.io/hostname
         whenUnsatisfiable: DoNotSchedule
       volumes:
