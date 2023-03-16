@@ -40,11 +40,11 @@ jobs:
       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
 
     - name: Generate operator chart
-      run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
+      run: cat test_data/k8s-operator-ci.yaml | go run ./cmd/helmify examples/operator-ci
     - name: Fill secrets
-      run: sed -i 's/""/"abc"/' ./examples/operator/values.yaml
+      run: sed -i 's/""/"abc"/' ./examples/operator-ci/values.yaml
     - name: Dry-run in k8s cluster
-      run: helm template ./examples/operator | kubectl apply --dry-run=server -f -
+      run: helm template ./examples/operator-ci | kubectl apply --dry-run=server -f -
 
       #     - name: cert install
 #       run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
