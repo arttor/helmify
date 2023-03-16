@@ -50,6 +50,6 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured)
 	apiVersion, kind := obj.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	metaStr := fmt.Sprintf(metaTeml, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations)
 	metaStr = strings.Trim(metaStr, " \n")
-	metaStr = strings.Replace(metaStr, "\n\n", "\n", -1)
+	metaStr = strings.ReplaceAll(metaStr, "\n\n", "\n")
 	return metaStr, nil
 }

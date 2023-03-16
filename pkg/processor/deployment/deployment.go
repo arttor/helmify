@@ -164,7 +164,10 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		imagePullSecrets.ProcessSpecMap(specMap, &values)
 	}
 
-	securityContext.ProcessContainerSecurityContext(nameCamel, specMap, &values)
+	err = securityContext.ProcessContainerSecurityContext(nameCamel, specMap, &values)
+	if err != nil {
+		return true, nil, err
+	}
 
 	// process nodeSelector if presented:
 	if len(depl.Spec.Template.Spec.NodeSelector) != 0 {

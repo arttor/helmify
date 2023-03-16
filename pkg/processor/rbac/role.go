@@ -1,7 +1,6 @@
 package rbac
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -55,7 +54,7 @@ func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 
 	if existingAggRule := obj.Object["aggregationRule"]; existingAggRule != nil {
 		if obj.GroupVersionKind().Kind == "Role" {
-			return true, nil, errors.New(fmt.Sprintf("unable to set aggregationRule to the kind Role in '%s': unsupported", obj.GetName()))
+			return true, nil, fmt.Errorf("unable to set aggregationRule to the kind Role in %q: unsupported", obj.GetName())
 		}
 
 		if existingAggRule.(map[string]interface{})["clusterRoleSelectors"] != nil {
