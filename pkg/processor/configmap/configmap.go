@@ -1,7 +1,7 @@
 package configmap
 
 import (
-	"fmt"
+	"github.com/arttor/helmify/pkg/format"
 	"io"
 	"strings"
 	"text/template"
@@ -14,7 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/yaml"
 )
 
 var configMapTempl, _ = template.New("configMap").Parse(
@@ -68,7 +67,7 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 
 	name := appMeta.TrimName(obj.GetName())
 	var values helmify.Values
-	if field, exists, _ := unstructured.NestedMap(obj.Object, "data"); exists {
+	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
 		field, values = parseMapData(field, name)
 		data, err = yamlformat.Marshal(map[string]interface{}{"data": field}, 0)
 		if err != nil {
@@ -89,20 +88,12 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}, nil
 }
 
-func parseMapData(data map[string]interface{}, configName string) (map[string]interface{}, helmify.Values) {
+func parseMapData(data map[string]string, configName string) (map[string]string, helmify.Values) {
 	values := helmify.Values{}
 	for key, value := range data {
 		valuesNamePath := []string{configName, key}
-		if strings.HasSuffix(key, ".yaml") || strings.HasSuffix(key, ".yml") {
-			templated, err := parseYaml(value, valuesNamePath, values)
-			if err != nil {
-				logrus.WithError(err).Errorf("unable to process configmap data: %v", valuesNamePath)
-				continue
-			}
-			data[key] = templated
-			continue
-		}
 		if strings.HasSuffix(key, ".properties") {
+			// handle properties
 			templated, err := parseProperties(value, valuesNamePath, values)
 			if err != nil {
 				logrus.WithError(err).Errorf("unable to process configmap data: %v", valuesNamePath)
@@ -111,6 +102,17 @@ func parseMapData(data map[string]interface{}, configName string) (map[string]in
 			data[key] = templated
 			continue
 		}
+		if strings.Contains(value, "\n") {
+			value = format.RemoveTrailingWhitespaces(value)
+			templatedVal, err := values.AddYaml(value, 1, valuesNamePath...)
+			if err != nil {
+				logrus.WithError(err).Errorf("unable to process multiline configmap data: %v", valuesNamePath)
+				continue
+			}
+			data[key] = templatedVal
+			continue
+		}
+		// handle plain string
 		templatedVal, err := values.Add(value, valuesNamePath...)
 		if err != nil {
 			logrus.WithError(err).Errorf("unable to process configmap data: %v", valuesNamePath)
@@ -119,20 +121,6 @@ func parseMapData(data map[string]interface{}, configName string) (map[string]in
 		data[key] = templatedVal
 	}
 	return data, values
-}
-
-func parseYaml(value interface{}, path []string, values helmify.Values) (string, error) {
-	config := map[string]interface{}{}
-	err := yaml.Unmarshal([]byte(value.(string)), &config)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to unmarshal configmap %v", path)
-	}
-	parseConfig(config, values, path)
-	confBytes, err := yaml.Marshal(config)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to marshal configmap %v", path)
-	}
-	return string(confBytes), nil
 }
 
 // func parseProperties(properties string, path []string, values helmify.Values) (string, error) {
@@ -155,51 +143,6 @@ func parseProperties(properties interface{}, path []string, values helmify.Value
 		}
 	}
 	return res.String(), nil
-}
-
-func parseConfig(config map[string]interface{}, values helmify.Values, path []string) {
-	for k, v := range config {
-		switch t := v.(type) {
-		case string, bool, float64, int64:
-			if k == "kind" || k == "apiVersion" {
-				continue
-			}
-			templated, err := values.Add(v, append(path, k)...)
-			if err != nil {
-				logrus.WithError(err).Error()
-				continue
-			}
-			config[k] = templated
-		case []interface{}:
-			templated, err := values.Add(v, append(path, k)...)
-			if err != nil {
-				logrus.WithError(err).Error()
-				continue
-			}
-			config[k] = templated
-		case map[string]interface{}:
-			if len(t) == 0 {
-				templated, err := values.Add(v, append(path, k)...)
-				if err != nil {
-					logrus.WithError(err).Error()
-					continue
-				}
-				config[k] = templated
-				continue
-			}
-			parseConfig(t, values, append(path, k))
-		case map[interface{}]interface{}:
-			c, ok := v.(map[string]interface{})
-			if !ok {
-				logrus.Warn("configmap: unable to cast to map[string]interface{}")
-				continue
-			}
-			parseConfig(c, values, append(path, k))
-		default:
-			logrus.Warn("configmap: unknown type ", t)
-			fmt.Printf("\n%T\n", t)
-		}
-	}
 }
 
 type result struct {

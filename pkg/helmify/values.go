@@ -41,6 +41,20 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	return "{{ .Values." + strings.Join(name, ".") + " }}", nil
 }
 
+// AddYaml - adds given value to values and returns its helm template representation as Yaml {{ .Values.<valueName> | toYaml | indent i }}
+// indent  <= 0 will be omitted.
+func (v *Values) AddYaml(value interface{}, indent int, name ...string) (string, error) {
+	name = toCamelCase(name)
+	err := unstructured.SetNestedField(*v, value, name...)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to set value: %v", name)
+	}
+	if indent > 0 {
+		return "{{ .Values." + strings.Join(name, ".") + fmt.Sprintf(" | toYaml | indent %d }}", indent), nil
+	}
+	return "{{ .Values." + strings.Join(name, ".") + " | toYaml }}", nil
+}
+
 // AddSecret - adds empty value to values and returns its helm template representation {{ required "<valueName>" .Values.<valueName> }}.
 // Set toBase64=true for Secret data to be base64 encoded and set false for Secret stringData.
 func (v *Values) AddSecret(toBase64 bool, name ...string) (string, error) {
