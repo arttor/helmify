@@ -44,9 +44,6 @@ const selectorTempl = `%[1]s
 {{- include "%[2]s.selectorLabels" . | nindent 6 }}
 %[3]s`
 
-const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
-const envValue = "{{ quote .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
-
 // New creates processor for k8s Deployment resource.
 func New() helmify.Processor {
 	return &deployment{}

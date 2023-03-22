@@ -1,9 +1,10 @@
-package storage
+package job
 
 import (
 	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
+	"github.com/arttor/helmify/pkg/processor/pod"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
@@ -33,7 +34,7 @@ func NewJob() helmify.Processor {
 
 type job struct{}
 
-// Process k8s PVC object into template. Returns false if not capable of processing given resource type.
+// Process k8s Job object into template. Returns false if not capable of processing given resource type.
 func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != jobGVC {
 		return false, nil, nil
@@ -59,7 +60,7 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return true, nil, errors.New("no job spec presented")
 	}
 
-	var values helmify.Values
+	values := helmify.Values{}
 
 	// process job spec params:
 	if spec.BackoffLimit != nil {
@@ -104,6 +105,19 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		}
 	}
 	// process job pod template:
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.Template.Spec)
+	if err != nil {
+		return true, nil, err
+	}
+	err = values.Merge(podValues)
+	if err != nil {
+		return true, nil, err
+	}
+
+	err = unstructured.SetNestedMap(specMap, podSpecMap, "template", "spec")
+	if err != nil {
+		return true, nil, fmt.Errorf("%w: unable to template job spec", err)
+	}
 
 	specStr, err := yamlformat.Marshal(map[string]interface{}{"spec": specMap}, 0)
 	if err != nil {
