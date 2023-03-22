@@ -115,7 +115,7 @@ func (p cron) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 		return true, nil, err
 	}
 
-	err = unstructured.SetNestedMap(specMap, podSpecMap, "jobTemplate", "template", "spec")
+	err = unstructured.SetNestedMap(specMap, podSpecMap, "jobTemplate", "spec", "template", "spec")
 	if err != nil {
 		return true, nil, fmt.Errorf("%w: unable to template job spec", err)
 	}
