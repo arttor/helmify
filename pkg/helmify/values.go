@@ -25,6 +25,17 @@ func (v *Values) Merge(values Values) error {
 // Add - adds given value to values and returns its helm template representation {{ .Values.<valueName> }}
 func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	name = toCamelCase(name)
+	switch val := value.(type) {
+	case int:
+		value = int64(val)
+	case int8:
+		value = int64(val)
+	case int16:
+		value = int64(val)
+	case int32:
+		value = int64(val)
+	}
+
 	err := unstructured.SetNestedField(*v, value, name...)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to set value: %v", name)

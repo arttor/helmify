@@ -83,7 +83,7 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 			return nil, nil, err
 		}
 	}
-	return values, specMap, nil
+	return specMap, values, nil
 }
 
 func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpec) (helmify.Values, error) {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/arttor/helmify/pkg/processor/job"
 	"io"
 	"os"
 	"os/signal"
@@ -59,6 +60,8 @@ func Start(input io.Reader, config config.Config) error {
 		webhook.Certificate(),
 		webhook.ValidatingWebhook(),
 		webhook.MutatingWebhook(),
+		job.NewCron(),
+		job.NewJob(),
 	).WithDefaultProcessor(processor.Default())
 	for obj := range objects {
 		appCtx.Add(obj)
