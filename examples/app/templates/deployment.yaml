@@ -17,81 +17,24 @@ spec:
         app: myapp
       {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
-      containers:
-      - args:
-        - --health-probe-bind-address=:8081
-        - --metrics-bind-address=127.0.0.1:8080
-        - --leader-elect
-        command:
-        - /manager
-        env:
-        - name: VAR1
-          valueFrom:
-            secretKeyRef:
-              key: VAR1
-              name: {{ include "app.fullname" . }}-my-secret-vars
-        - name: VAR2
-          valueFrom:
-            secretKeyRef:
-              key: VAR2
-              name: {{ include "app.fullname" . }}-my-secret-vars
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.myapp.app.image.repository }}:{{ .Values.myapp.app.image.tag
-          | default .Chart.AppVersion }}
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8081
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        name: app
-        readinessProbe:
-          httpGet:
-            path: /readyz
-            port: 8081
-          initialDelaySeconds: 5
-          periodSeconds: 10
-        resources: {{- toYaml .Values.myapp.app.resources | nindent 10 }}
-        securityContext: {{- toYaml .Values.myapp.app.containerSecurityContext | nindent
-          10 }}
-        volumeMounts:
-        - mountPath: /my_config.properties
-          name: manager-config
-          subPath: my_config.properties
-        - mountPath: /my.ca
-          name: secret-volume
-        - mountPath: /etc/props
-          name: props
-        - mountPath: /usr/share/nginx/html
-          name: sample-pv-storage
-      - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --v=10
-        env:
-        - name: KUBERNETES_CLUSTER_DOMAIN
-          value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.myapp.proxySidecar.image.repository }}:{{ .Values.myapp.proxySidecar.image.tag
-          | default .Chart.AppVersion }}
-        name: proxy-sidecar
-        ports:
-        - containerPort: 8443
-          name: https
-        resources: {}
-      nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
-      securityContext:
-        runAsNonRoot: true
-      terminationGracePeriodSeconds: 10
-      volumes:
-      - configMap:
-          name: {{ include "app.fullname" . }}-my-config
-        name: manager-config
-      - configMap:
-          name: {{ include "app.fullname" . }}-my-config-props
-        name: props
-      - name: secret-volume
-        secret:
-          secretName: {{ include "app.fullname" . }}-my-secret-ca
-      - name: sample-pv-storage
-        persistentVolumeClaim:
-          claimName: {{ include "app.fullname" . }}-my-sample-pv-claim
+      myapp:
+        app:
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+          image:
+            repository: controller
+            tag: latest
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+        nodeSelector:
+          region: east
+          type: user-node
+        proxySidecar:
+          image:
+            repository: gcr.io/kubebuilder/kube-rbac-proxy
+            tag: v0.8.0

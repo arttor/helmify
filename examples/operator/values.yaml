@@ -1,40 +1,83 @@
 configmapVars:
   var4: value for var4
+containers:
+- args:
+  - --secure-listen-address=0.0.0.0:8443
+  - --upstream=http://127.0.0.1:8080/
+  - --logtostderr=true
+  - --v=10
+  env:
+  - name: KUBERNETES_CLUSTER_DOMAIN
+    value: '{{ quote .Values.kubernetesClusterDomain }}'
+  image: '{{ .Values.controllerManager.kubeRbacProxy.image.repository }}:{{ .Values.controllerManager.kubeRbacProxy.image.tag
+    | default .Chart.AppVersion }}'
+  name: kube-rbac-proxy
+  ports:
+  - containerPort: 8443
+    name: https
+  resources: {}
+- args:
+  - --health-probe-bind-address=:8081
+  - --metrics-bind-address=127.0.0.1:8080
+  - --leader-elect
+  command:
+  - /manager
+  env:
+  - name: VAR1
+    valueFrom:
+      secretKeyRef:
+        key: VAR1
+        name: '{{ include "operator.fullname" . }}-secret-vars'
+  - name: VAR2
+    value: '{{ quote .Values.controllerManager.manager.env.var2 }}'
+  - name: VAR3_MY_ENV
+    value: '{{ quote .Values.controllerManager.manager.env.var3MyEnv }}'
+  - name: VAR4
+    valueFrom:
+      configMapKeyRef:
+        key: VAR4
+        name: '{{ include "operator.fullname" . }}-configmap-vars'
+  - name: VAR5
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: VAR6
+    valueFrom:
+      resourceFieldRef:
+        divisor: "0"
+        resource: limits.cpu
+  - name: KUBERNETES_CLUSTER_DOMAIN
+    value: '{{ quote .Values.kubernetesClusterDomain }}'
+  image: '{{ .Values.controllerManager.manager.image.repository }}:{{ .Values.controllerManager.manager.image.tag
+    | default .Chart.AppVersion }}'
+  imagePullPolicy: '{{ .Values.controllerManager.manager.imagePullPolicy }}'
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  name: manager
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 8081
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources: '{{- toYaml .Values.controllerManager.manager.resources | nindent 10
+    }}'
+  securityContext: '{{- toYaml .Values.controllerManager.manager.containerSecurityContext
+    | nindent 10 }}'
+  volumeMounts:
+  - mountPath: /controller_manager_config.yaml
+    name: manager-config
+    subPath: controller_manager_config.yaml
+  - mountPath: /my.ca
+    name: secret-volume
 controllerManager:
-  kubeRbacProxy:
-    image:
-      repository: gcr.io/kubebuilder/kube-rbac-proxy
-      tag: v0.8.0
-  manager:
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-        - ALL
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 65532
-      seccompProfile:
-        type: RuntimeDefault
-    env:
-      var2: ciao
-      var3MyEnv: ciao
-    image:
-      repository: controller
-      tag: latest
-    imagePullPolicy: Always
-    resources:
-      limits:
-        cpu: 100m
-        memory: 30Mi
-      requests:
-        cpu: 100m
-        memory: 20Mi
-  nodeSelector:
-    region: east
-    type: user-node
   replicas: 1
+imagePullSecrets:
+- name: '{{ include "operator.fullname" . }}-secret-registry-credentials'
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
@@ -59,6 +102,7 @@ metricsService:
     port: 8443
     targetPort: https
   type: ClusterIP
+nodeSelector: '{{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}'
 pvc:
   pvcLim:
     storageClass: cust1-mypool-lim
@@ -70,6 +114,24 @@ secretRegistryCredentials:
 secretVars:
   var1: ""
   var2: ""
+securityContext:
+  runAsNonRoot: true
+serviceAccountName: '{{ include "operator.fullname" . }}-controller-manager'
+terminationGracePeriodSeconds: 10
+topologySpreadConstraints:
+- matchLabelKeys:
+  - app
+  - pod-template-hash
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: DoNotSchedule
+volumes:
+- configMap:
+    name: '{{ include "operator.fullname" . }}-manager-config'
+  name: manager-config
+- name: secret-volume
+  secret:
+    secretName: '{{ include "operator.fullname" . }}-secret-ca'
 webhookService:
   ports:
   - port: 443
