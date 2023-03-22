@@ -14,24 +14,13 @@ spec:
             - /bin/sh
             - -c
             - date; echo Hello from the Kubernetes cluster
-            image: busybox:1.28
-            imagePullPolicy: IfNotPresent
+            env:
+            - name: KUBERNETES_CLUSTER_DOMAIN
+              value: {{ quote .Values.kubernetesClusterDomain }}
+            image: {{ .Values.cronJob.hello.image.repository }}:{{ .Values.cronJob.hello.image.tag
+              | default .Chart.AppVersion }}
+            imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
             name: hello
+            resources: {}
           restartPolicy: OnFailure
-    template:
-      spec:
-        containers:
-        - command:
-          - /bin/sh
-          - -c
-          - date; echo Hello from the Kubernetes cluster
-          env:
-          - name: KUBERNETES_CLUSTER_DOMAIN
-            value: {{ quote .Values.kubernetesClusterDomain }}
-          image: {{ .Values.cronJob.hello.image.repository }}:{{ .Values.cronJob.hello.image.tag
-            | default .Chart.AppVersion }}
-          imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
-          name: hello
-          resources: {}
-        restartPolicy: OnFailure
   schedule: {{ .Values.cronJob.schedule | quote }}
