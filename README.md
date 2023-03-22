@@ -89,8 +89,8 @@ Usage:
 
 ## Status
 Supported k8s resources:
-- deployment
-- daemonset
+- deployment, daemonset
+- job, cronJob
 - service, Ingress
 - PersistentVolumeClaim
 - RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
