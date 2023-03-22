@@ -2,20 +2,17 @@ package daemonset
 
 import (
 	"fmt"
+	"github.com/arttor/helmify/pkg/processor/pod"
 	"io"
 	"strings"
 	"text/template"
 
-	"github.com/arttor/helmify/pkg/cluster"
-	"github.com/arttor/helmify/pkg/processor"
-	"github.com/arttor/helmify/pkg/processor/imagePullSecrets"
-
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -102,55 +99,13 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
-	podValues, err := processPodSpec(nameCamel, appMeta, &dae.Spec.Template.Spec)
+	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, dae.Spec.Template.Spec)
 	if err != nil {
 		return true, nil, err
 	}
 	err = values.Merge(podValues)
 	if err != nil {
 		return true, nil, err
-	}
-
-	// replace PVC to templated name
-	for i := 0; i < len(dae.Spec.Template.Spec.Volumes); i++ {
-		vol := dae.Spec.Template.Spec.Volumes[i]
-		if vol.PersistentVolumeClaim == nil {
-			continue
-		}
-		tempPVCName := appMeta.TemplatedName(vol.PersistentVolumeClaim.ClaimName)
-		dae.Spec.Template.Spec.Volumes[i].PersistentVolumeClaim.ClaimName = tempPVCName
-	}
-
-	// replace container resources with template to values.
-	specMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&dae.Spec.Template.Spec)
-	if err != nil {
-		return true, nil, err
-	}
-	containers, _, err := unstructured.NestedSlice(specMap, "containers")
-	if err != nil {
-		return true, nil, err
-	}
-	for i := range containers {
-		containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
-		res, exists, err := unstructured.NestedMap(values, nameCamel, containerName, "resources")
-		if err != nil {
-			return true, nil, err
-		}
-		if !exists || len(res) == 0 {
-			continue
-		}
-		err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, nameCamel, containerName), "resources")
-		if err != nil {
-			return true, nil, err
-		}
-	}
-	err = unstructured.SetNestedSlice(specMap, containers, "containers")
-	if err != nil {
-		return true, nil, err
-	}
-
-	if appMeta.Config().ImagePullSecrets {
-		imagePullSecrets.ProcessSpecMap(specMap, &values)
 	}
 
 	spec, err := yamlformat.Marshal(specMap, 6)
@@ -175,84 +130,6 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 			Spec:           spec,
 		},
 	}, nil
-}
-
-func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpec) (helmify.Values, error) {
-	values := helmify.Values{}
-	for i, c := range pod.Containers {
-		processed, err := processPodContainer(name, appMeta, c, &values)
-		if err != nil {
-			return nil, err
-		}
-		pod.Containers[i] = processed
-	}
-	for _, v := range pod.Volumes {
-		if v.ConfigMap != nil {
-			v.ConfigMap.Name = appMeta.TemplatedName(v.ConfigMap.Name)
-		}
-		if v.Secret != nil {
-			v.Secret.SecretName = appMeta.TemplatedName(v.Secret.SecretName)
-		}
-	}
-	pod.ServiceAccountName = appMeta.TemplatedName(pod.ServiceAccountName)
-
-	for i, s := range pod.ImagePullSecrets {
-		pod.ImagePullSecrets[i].Name = appMeta.TemplatedName(s.Name)
-	}
-
-	return values, nil
-}
-
-func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
-	index := strings.LastIndex(c.Image, ":")
-	if index < 0 {
-		return c, errors.New("wrong image format: " + c.Image)
-	}
-	repo, tag := c.Image[:index], c.Image[index+1:]
-	containerName := strcase.ToLowerCamel(c.Name)
-	c.Image = fmt.Sprintf("{{ .Values.%[1]s.%[2]s.image.repository }}:{{ .Values.%[1]s.%[2]s.image.tag | default .Chart.AppVersion }}", name, containerName)
-
-	err := unstructured.SetNestedField(*values, repo, name, containerName, "image", "repository")
-	if err != nil {
-		return c, errors.Wrap(err, "unable to set daemonset value field")
-	}
-	err = unstructured.SetNestedField(*values, tag, name, containerName, "image", "tag")
-	if err != nil {
-		return c, errors.Wrap(err, "unable to set daemonset value field")
-	}
-	for _, e := range c.Env {
-		if e.ValueFrom != nil && e.ValueFrom.SecretKeyRef != nil {
-			e.ValueFrom.SecretKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.SecretKeyRef.Name)
-		}
-		if e.ValueFrom != nil && e.ValueFrom.ConfigMapKeyRef != nil {
-			e.ValueFrom.ConfigMapKeyRef.Name = appMeta.TemplatedName(e.ValueFrom.ConfigMapKeyRef.Name)
-		}
-	}
-	for _, e := range c.EnvFrom {
-		if e.SecretRef != nil {
-			e.SecretRef.Name = appMeta.TemplatedName(e.SecretRef.Name)
-		}
-		if e.ConfigMapRef != nil {
-			e.ConfigMapRef.Name = appMeta.TemplatedName(e.ConfigMapRef.Name)
-		}
-	}
-	c.Env = append(c.Env, corev1.EnvVar{
-		Name:  cluster.DomainEnv,
-		Value: fmt.Sprintf("{{ quote .Values.%s }}", cluster.DomainKey),
-	})
-	for k, v := range c.Resources.Requests {
-		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "requests", k.String())
-		if err != nil {
-			return c, errors.Wrap(err, "unable to set container resources value")
-		}
-	}
-	for k, v := range c.Resources.Limits {
-		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "limits", k.String())
-		if err != nil {
-			return c, errors.Wrap(err, "unable to set container resources value")
-		}
-	}
-	return c, nil
 }
 
 type result struct {
