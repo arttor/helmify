@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"github.com/arttor/helmify/pkg/processor/job"
+	"github.com/arttor/helmify/pkg/processor/statefulset"
 	"io"
 	"os"
 	"os/signal"
@@ -48,6 +49,7 @@ func Start(input io.Reader, config config.Config) error {
 		crd.New(),
 		daemonset.New(),
 		deployment.New(),
+		statefulset.New(),
 		storage.New(),
 		service.New(),
 		service.NewIngress(),

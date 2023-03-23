@@ -89,14 +89,14 @@ Usage:
 
 ## Status
 Supported k8s resources:
-- deployment, daemonset
-- job, cronJob
-- service, Ingress
+- Deployment, DaemonSet, StatefulSet
+- Job, CronJob
+- Service, Ingress
 - PersistentVolumeClaim
-- RBAC (serviceaccount, (cluster-)role, (cluster-)rolebinding)
-- configs (configmap, secret)
+- RBAC (ServiceAccount, (cluster-)role, (cluster-)roleBinding)
+- configs (ConfigMap, Secret)
 - webhooks (cert, issuer, ValidatingWebhookConfiguration)
-- custom resource definitions 
+- custom resource definitions (CRD)
 
 ### Known issues
 - Helmify will not overwrite `Chart.yaml` file if presented. Done on purpose.

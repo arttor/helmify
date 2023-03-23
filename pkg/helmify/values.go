@@ -54,13 +54,16 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 
 // AddYaml - adds given value to values and returns its helm template representation as Yaml {{ .Values.<valueName> | toYaml | indent i }}
 // indent  <= 0 will be omitted.
-func (v *Values) AddYaml(value interface{}, indent int, name ...string) (string, error) {
+func (v *Values) AddYaml(value interface{}, indent int, newLine bool, name ...string) (string, error) {
 	name = toCamelCase(name)
 	err := unstructured.SetNestedField(*v, value, name...)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to set value: %v", name)
 	}
 	if indent > 0 {
+		if newLine {
+			return "{{ .Values." + strings.Join(name, ".") + fmt.Sprintf(" | toYaml | nindent %d }}", indent), nil
+		}
 		return "{{ .Values." + strings.Join(name, ".") + fmt.Sprintf(" | toYaml | indent %d }}", indent), nil
 	}
 	return "{{ .Values." + strings.Join(name, ".") + " | toYaml }}", nil

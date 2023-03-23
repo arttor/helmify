@@ -104,7 +104,7 @@ func parseMapData(data map[string]string, configName string) (map[string]string,
 		}
 		if strings.Contains(value, "\n") {
 			value = format.RemoveTrailingWhitespaces(value)
-			templatedVal, err := values.AddYaml(value, 1, valuesNamePath...)
+			templatedVal, err := values.AddYaml(value, 1, false, valuesNamePath...)
 			if err != nil {
 				logrus.WithError(err).Errorf("unable to process multiline configmap data: %v", valuesNamePath)
 				continue
