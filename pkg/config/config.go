@@ -26,6 +26,8 @@ type Config struct {
 	// GenerateDefaults enables the generation of empty values placeholders for common customization options of helm chart
 	// current generated values: tolerances, node selectors, topology constraints
 	GenerateDefaults bool
+	// CertManagerAsSubchart enables the generation of a subchart for cert-manager
+	CertManagerAsSubchart bool
 }
 
 func (c *Config) Validate() error {

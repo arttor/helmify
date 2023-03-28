@@ -31,8 +31,8 @@ type output struct{}
 //	    └── _helpers.tp   # Helm default template partials
 //
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartDir, chartName string, crd bool, templates []helmify.Template) error {
-	err := initChartDir(chartDir, chartName, crd)
+func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, templates []helmify.Template) error {
+	err := initChartDir(chartDir, chartName, crd, certManagerAsSubchart)
 	if err != nil {
 		return err
 	}
@@ -108,6 +108,7 @@ func overwriteValuesFile(chartDir string, values helmify.Values) error {
 	}
 
 	file := filepath.Join(chartDir, "values.yaml")
+	res = append(res, []byte("cert-manager:\n  enabled: false\n  installCRDs: true")...)
 	err = ioutil.WriteFile(file, res, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to write values.yaml")

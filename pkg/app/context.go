@@ -67,7 +67,7 @@ func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 		default:
 		}
 	}
-	return c.output.Create(c.config.ChartDir, c.config.ChartName, c.config.Crd, templates)
+	return c.output.Create(c.config.ChartDir, c.config.ChartName, c.config.Crd, c.config.CertManagerAsSubchart, templates)
 }
 
 func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, error) {
