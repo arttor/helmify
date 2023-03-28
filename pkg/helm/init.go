@@ -183,9 +183,14 @@ func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubcha
 
 func chartYAML(appName string, certManagerAsSubchart bool) []byte {
 	chartFile := defaultChartfile
+	annotatins := `
+dependencies:
+  - name: cert-manager
+    version: 1.9.1
+    repository: https://charts.jetstack.io
+    condition: certManager.enabled`
 	if certManagerAsSubchart {
-		chartFile += "\ndependencies:\n  - name: cert-manager\n    version: 1.9.1\n" +
-			"    repository: https://charts.jetstack.io\n    condition: cert-manager.enabled"
+		chartFile += annotatins
 	}
 	return []byte(fmt.Sprintf(chartFile, appName))
 }
