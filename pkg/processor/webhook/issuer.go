@@ -21,6 +21,17 @@ metadata:
   {{- include "%[1]s.labels" . | nindent 4 }}
 spec:
 %[3]s`
+	issuerTemplWithAnno = `apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "%[1]s.fullname" . }}-%[2]s
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+  labels:
+  {{- include "%[1]s.labels" . | nindent 4 }}
+spec:
+%[3]s`
 )
 
 var issuerGVC = schema.GroupVersionKind{
@@ -45,7 +56,13 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")
-	res := fmt.Sprintf(issuerTempl, appMeta.ChartName(), name, string(spec))
+	tmpl := ""
+	if appMeta.Config().CertManagerAsSubchart {
+		tmpl = issuerTemplWithAnno
+	} else {
+		tmpl = issuerTempl
+	}
+	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
 	return true, &issResult{
 		name: name,
 		data: []byte(res),
