@@ -56,7 +56,7 @@ func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubcha
 			return err
 		}
 	}
-	err = overwriteValuesFile(cDir, values)
+	err = overwriteValuesFile(cDir, values, certManagerAsSubchart)
 	if err != nil {
 		return err
 	}
@@ -101,14 +101,17 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 	return nil
 }
 
-func overwriteValuesFile(chartDir string, values helmify.Values) error {
+func overwriteValuesFile(chartDir string, values helmify.Values, certManagerAsSubchart bool) error {
+	if certManagerAsSubchart {
+		values.Add(true, "cert-manager", "installCRDs")
+		values.Add(true, "cert-manager", "enabled")
+	}
 	res, err := yaml.Marshal(values)
 	if err != nil {
 		return errors.Wrap(err, "unable to write marshal values.yaml")
 	}
 
 	file := filepath.Join(chartDir, "values.yaml")
-	res = append(res, []byte("cert-manager:\n  enabled: false\n  installCRDs: true")...)
 	err = ioutil.WriteFile(file, res, 0600)
 	if err != nil {
 		return errors.Wrap(err, "unable to write values.yaml")
