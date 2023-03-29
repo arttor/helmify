@@ -186,7 +186,6 @@ func chartYAML(appName string, certManagerAsSubchart bool) []byte {
 	annotatins := `
 dependencies:
   - name: cert-manager
-    version: 1.9.1
     repository: https://charts.jetstack.io
     condition: certManager.enabled`
 	if certManagerAsSubchart {
