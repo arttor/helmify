@@ -124,6 +124,14 @@ version: 0.1.0
 appVersion: "0.1.0"
 `
 
+const certManagerDependencies = `
+dependencies:
+  - name: cert-manager
+    repository: https://charts.jetstack.io
+    condition: certmanager.enabled
+	alias: certmanager
+`
+
 var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 
 const maxChartNameLength = 250
@@ -183,13 +191,8 @@ func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubcha
 
 func chartYAML(appName string, certManagerAsSubchart bool) []byte {
 	chartFile := defaultChartfile
-	annotatins := `
-dependencies:
-  - name: cert-manager
-    repository: https://charts.jetstack.io
-    condition: certManager.enabled`
 	if certManagerAsSubchart {
-		chartFile += annotatins
+		chartFile += certManagerDependencies
 	}
 	return []byte(fmt.Sprintf(chartFile, appName))
 }
