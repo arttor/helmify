@@ -61,7 +61,7 @@ Submit issue if some features missing for your use-case.
         test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
         
     helm: manifests kustomize helmify
-	$(KUSTOMIZE) build config/default | $(HELMIFY)
+	    $(KUSTOMIZE) build config/default | $(HELMIFY)
     ```
 3. Run `make helm` in project root. It will generate helm chart with name 'chart' in 'chart' directory.
 
