@@ -58,10 +58,10 @@ Submit issue if some features missing for your use-case.
     .PHONY: helmify
     helmify: $(HELMIFY) ## Download helmify locally if necessary.
     $(HELMIFY): $(LOCALBIN)
-        test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
+    	test -s $(LOCALBIN)/helmify || GOBIN=$(LOCALBIN) go install github.com/arttor/helmify/cmd/helmify@latest
         
     helm: manifests kustomize helmify
-	$(KUSTOMIZE) build config/default | $(HELMIFY)
+    	$(KUSTOMIZE) build config/default | $(HELMIFY)
     ```
 3. Run `make helm` in project root. It will generate helm chart with name 'chart' in 'chart' directory.
 
