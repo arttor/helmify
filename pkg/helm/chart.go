@@ -103,12 +103,12 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 
 func overwriteValuesFile(chartDir string, values helmify.Values, certManagerAsSubchart bool) error {
 	if certManagerAsSubchart {
-		_, err := values.Add(true, "cert-manager", "installCRDs")
+		_, err := values.Add(true, "certmanager", "installCRDs")
 		if err != nil {
 			return errors.Wrap(err, "unable to add cert-manager.installCRDs")
 		}
 
-		_, err = values.Add(true, "cert-manager", "enabled")
+		_, err = values.Add(true, "certmanager", "enabled")
 		if err != nil {
 			return errors.Wrap(err, "unable to add cert-manager.enabled")
 		}
