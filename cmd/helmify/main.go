@@ -14,7 +14,7 @@ func main() {
 		logrus.WithError(err).Error("stdin error")
 		os.Exit(1)
 	}
-	if (stat.Mode() & os.ModeCharDevice) != 0 {
+	if len(conf.Files) == 0 && (stat.Mode()&os.ModeCharDevice) != 0 {
 		logrus.Error("no data piped in stdin")
 		os.Exit(1)
 	}

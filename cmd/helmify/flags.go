@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/arttor/helmify/pkg/config"
 )
@@ -17,7 +18,16 @@ Example 1: 'kustomize build <kustomize_dir> | helmify mychart'
 Example 2: 'cat my-app.yaml | helmify mychart' 
   - will create 'mychart' directory with Helm chart from yaml file.
 
-Example 3: 'awk 'FNR==1 && NR!=1  {print "---"}{print}' /my_directory/*.yaml | helmify mychart' 
+Example 3: 'helmify -f ./test_data/dir  mychart' 
+  - will scan directory ./test_data/dir for files with k8s manifests and create 'mychart' directory with Helm chart.
+
+Example 4: 'helmify -f ./test_data/dir -r  mychart' 
+  - will scan directory ./test_data/dir recursively and  create 'mychart' directory with Helm chart.
+
+Example 5: 'helmify -f ./test_data/dir -f ./test_data/sample-app.yaml -f ./test_data/dir/another_dir  mychart' 
+  - will scan provided multiple files and directories and  create 'mychart' directory with Helm chart.
+
+Example 6: 'awk 'FNR==1 && NR!=1  {print "---"}{print}' /my_directory/*.yaml | helmify mychart' 
   - will create 'mychart' directory with Helm chart from all yaml files in my_directory directory.
 
 Usage:
@@ -26,8 +36,23 @@ Usage:
 Flags:
 `
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	if i == nil || len(*i) == 0 {
+		return ""
+	}
+	return strings.Join(*i, ", ")
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 // ReadFlags command-line flags into app config.
 func ReadFlags() config.Config {
+	files := arrayFlags{}
 	result := config.Config{}
 	var h, help, version, crd bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
@@ -39,6 +64,8 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.ImagePullSecrets, "image-pull-secrets", false, "Allows the user to use existing secrets as imagePullSecrets in values.yaml")
 	flag.BoolVar(&result.GenerateDefaults, "generate-defaults", false, "Allows the user to add empty placeholders for tipical customization options in values.yaml. Currently covers: topology constraints, node selectors, tolerances")
 	flag.BoolVar(&result.CertManagerAsSubchart, "cert-manager-as-subchart", false, "Allows the user to add cert-manager as a subchart")
+	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
+	flag.Var(&files, "f", "File or directory containing k8s manifests")
 
 	flag.Parse()
 	if h || help {
@@ -58,5 +85,6 @@ func ReadFlags() config.Config {
 	if crd {
 		result.Crd = crd
 	}
+	result.Files = files
 	return result
 }

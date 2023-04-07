@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/arttor/helmify/pkg/file"
 	"github.com/arttor/helmify/pkg/processor/job"
 	"github.com/arttor/helmify/pkg/processor/statefulset"
 	"io"
@@ -27,7 +28,7 @@ import (
 )
 
 // Start - application entrypoint for processing input to a Helm chart.
-func Start(input io.Reader, config config.Config) error {
+func Start(stdin io.Reader, config config.Config) error {
 	err := config.Validate()
 	if err != nil {
 		return err
@@ -42,7 +43,6 @@ func Start(input io.Reader, config config.Config) error {
 		logrus.Debug("Received termination, signaling shutdown")
 		cancelFunc()
 	}()
-	objects := decoder.Decode(ctx.Done(), input)
 	appCtx := New(config, helm.NewOutput())
 	appCtx = appCtx.WithProcessors(
 		configmap.New(),
@@ -65,9 +65,20 @@ func Start(input io.Reader, config config.Config) error {
 		job.NewCron(),
 		job.NewJob(),
 	).WithDefaultProcessor(processor.Default())
-	for obj := range objects {
-		appCtx.Add(obj)
+	if len(config.Files) != 0 {
+		file.Walk(config.Files, config.FilesRecursively, func(filename string, fileReader io.Reader) {
+			objects := decoder.Decode(ctx.Done(), fileReader)
+			for obj := range objects {
+				appCtx.Add(obj, filename)
+			}
+		})
+	} else {
+		objects := decoder.Decode(ctx.Done(), stdin)
+		for obj := range objects {
+			appCtx.Add(obj, "")
+		}
 	}
+
 	return appCtx.CreateHelm(ctx.Done())
 }
 
