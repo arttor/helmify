@@ -31,7 +31,7 @@ type output struct{}
 //	    └── _helpers.tp   # Helm default template partials
 //
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, templates []helmify.Template) error {
+func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, templates []helmify.Template, filenames []string) error {
 	err := initChartDir(chartDir, chartName, crd, certManagerAsSubchart)
 	if err != nil {
 		return err
@@ -40,10 +40,10 @@ func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubcha
 	files := map[string][]helmify.Template{}
 	values := helmify.Values{}
 	values[cluster.DomainKey] = cluster.DefaultDomain
-	for _, template := range templates {
-		file := files[template.Filename()]
+	for i, template := range templates {
+		file := files[filenames[i]]
 		file = append(file, template)
-		files[template.Filename()] = file
+		files[filenames[i]] = file
 		err = values.Merge(template.Values())
 		if err != nil {
 			return err

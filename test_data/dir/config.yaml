@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+  namespace: my-ns
+immutable: true
+data:
+  dummyconfigmapkey: dummyconfigmapvalue
+  my_config.properties: |
+    health.healthProbeBindAddress=8081
+    metrics.bindAddress=127.0.0.1:8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config-props
+  namespace: my-ns
+data:
+  my.prop1: "1"
+  my.prop2: "val 1"
+  my.prop3: "true"
+  myval.yaml: |
+    apiVersion: clickhouse.altinity.com/v1
+    kind: ClickHouseInstallationTemplate
+    metadata:
+      name: default-oneperhost-pod-template
+    spec:
+      templates:
+        podTemplates: 
+          - name: default-oneperhost-pod-template
+            distribution: "OnePerHost"

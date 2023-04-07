@@ -16,6 +16,7 @@ type appContext struct {
 	config           config.Config
 	appMeta          *metadata.Service
 	objects          []*unstructured.Unstructured
+	fileNames        []string
 }
 
 // New returns context with config set.
@@ -40,10 +41,11 @@ func (c *appContext) WithDefaultProcessor(processor helmify.Processor) *appConte
 }
 
 // Add k8s object to app context.
-func (c *appContext) Add(obj *unstructured.Unstructured) {
+func (c *appContext) Add(obj *unstructured.Unstructured, filename string) {
 	// we need to add all objects before start processing only to define app metadata.
 	c.appMeta.Load(obj)
 	c.objects = append(c.objects, obj)
+	c.fileNames = append(c.fileNames, filename)
 }
 
 // CreateHelm creates helm chart from context k8s objects.
@@ -53,13 +55,19 @@ func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 		"Namespace": c.appMeta.Namespace(),
 	}).Info("creating a chart")
 	var templates []helmify.Template
-	for _, obj := range c.objects {
+	var filenames []string
+	for i, obj := range c.objects {
 		template, err := c.process(obj)
 		if err != nil {
 			return err
 		}
 		if template != nil {
 			templates = append(templates, template)
+			filename := template.Filename()
+			if c.fileNames[i] != "" {
+				filename = c.fileNames[i]
+			}
+			filenames = append(filenames, filename)
 		}
 		select {
 		case <-stop:
@@ -67,7 +75,7 @@ func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 		default:
 		}
 	}
-	return c.output.Create(c.config.ChartDir, c.config.ChartName, c.config.Crd, c.config.CertManagerAsSubchart, templates)
+	return c.output.Create(c.config.ChartDir, c.config.ChartName, c.config.Crd, c.config.CertManagerAsSubchart, templates, filenames)
 }
 
 func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, error) {

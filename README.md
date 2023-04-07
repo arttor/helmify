@@ -19,16 +19,35 @@ Submit issue if some features missing for your use-case.
 
 ## Usage
 
-1) From file: `cat my-app.yaml | helmify mychart`
-    
-    Will create 'mychart' directory with Helm chart from yaml file with k8s objects.
+1) As pipe:
 
+    ```shell
+    cat my-app.yaml | helmify mychart
+    ```
+   Will create 'mychart' directory with Helm chart from yaml file with k8s objects.
 
-2) From directory with yamls:
     ```shell
     awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify mychart
     ```
+   Will create 'mychart' directory with Helm chart from all yaml files in `<my_directory> `directory.
+
+2) From filesystem:
+    ```shell
+    helmify -f /my_directory/my-app.yaml mychart
+    ```
+    Will create 'mychart' directory with Helm chart from `my_directory/my-app.yaml`.
+    ```shell
+    helmify -f /my_directory mychart
+    ```
     Will create 'mychart' directory with Helm chart from all yaml files in `<my_directory> `directory.
+    ```shell
+    helmify -f /my_directory -r mychart
+    ```
+    Will create 'mychart' directory with Helm chart from all yaml files in `<my_directory> `directory recursively.
+    ```shell
+    helmify -f ./first_dir -f ./second_dir/my_deployment.yaml -f ./third_dir  mychart
+    ```
+    Will create 'mychart' directory with Helm chart from multiple directories and files.
 
 
 3) From [kustomize](https://kustomize.io/) output:
@@ -78,15 +97,17 @@ Usage:
 
 ```helmify [flags] CHART_NAME```  -  `CHART_NAME` is optional. Default is 'chart'. Can be a directory, e.g. 'deploy/charts/mychart'.
 
-| flag | description                                                                                                                                                                                                 | sample |
-| --- | --- | --- |
-| -h -help | Prints help                                                                                                                                                                                                 | `helmify -h`|
-| -v | Enable verbose output. Prints WARN and INFO.                                                                                                                                                                | `helmify -v`|
-| -vv | Enable very verbose output. Also prints DEBUG.                                                                                                                                                              | `helmify -vv`|
-| -version | Print helmify version.                                                                                                                                                                                      | `helmify -version`|
-| -crd-dir | Place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you). Caveat: CRDs templating is not supported by Helm. | `helmify -crd-dir`|
-| -image-pull-secrets| Allows the user to use existing secrets as imagePullSecrets  | `helmify -image-pull-secrets`|
-| -cert-manager-as-subchart | Allows the user to install cert-manager as a subchart  | `helmify -cert-manager-as-subchart`|
+| flag                      | description                                                                                                                                                                                                 | sample                              |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| -h -help                  | Prints help                                                                                                                                                                                                 | `helmify -h`                        |
+| -f                        | File source for k8s manifests (directory or file), multiple sources supported                                                                                                                               | `helmify -f ./test_data`            |
+| -r                        | Scan file directory recursively. Used only if -f provided                                                                                                                                                   | `helmify -f ./test_data -r`         |
+| -v                        | Enable verbose output. Prints WARN and INFO.                                                                                                                                                                | `helmify -v`                        |
+| -vv                       | Enable very verbose output. Also prints DEBUG.                                                                                                                                                              | `helmify -vv`                       |
+| -version                  | Print helmify version.                                                                                                                                                                                      | `helmify -version`                  |
+| -crd-dir                  | Place crds in their own folder per Helm 3 [docs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#method-1-let-helm-do-it-for-you). Caveat: CRDs templating is not supported by Helm. | `helmify -crd-dir`                  |
+| -image-pull-secrets       | Allows the user to use existing secrets as imagePullSecrets                                                                                                                                                 | `helmify -image-pull-secrets`       |
+| -cert-manager-as-subchart | Allows the user to install cert-manager as a subchart                                                                                                                                                       | `helmify -cert-manager-as-subchart` |
 ## Status
 Supported k8s resources:
 - Deployment, DaemonSet, StatefulSet
