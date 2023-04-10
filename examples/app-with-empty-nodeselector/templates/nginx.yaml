@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app-with-empty-nodeselector.fullname" . }}-nginx
+  labels:
+    app: nginx
+  {{- include "app-with-empty-nodeselector.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.nginx.type }}
+  selector:
+    app: nginx
+  {{- include "app-with-empty-nodeselector.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.nginx.ports | toYaml | nindent 2 -}}
