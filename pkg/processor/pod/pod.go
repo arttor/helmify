@@ -2,6 +2,8 @@ package pod
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
 	securityContext "github.com/arttor/helmify/pkg/processor/security-context"
@@ -9,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"strings"
 )
 
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
@@ -73,14 +74,23 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	}
 
 	// process nodeSelector if presented:
-	if len(spec.NodeSelector) != 0 {
+	if spec.NodeSelector == nil {
+		return specMap, values, nil
+	} else {
 		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, objName), "nodeSelector")
 		if err != nil {
 			return nil, nil, err
 		}
-		err = unstructured.SetNestedStringMap(values, spec.NodeSelector, objName, "nodeSelector")
-		if err != nil {
-			return nil, nil, err
+		if len(spec.NodeSelector) != 0 {
+			err = unstructured.SetNestedStringMap(values, spec.NodeSelector, objName, "nodeSelector")
+			if err != nil {
+				return nil, nil, err
+			}
+		} else {
+			err = unstructured.SetNestedStringMap(values, map[string]string{}, objName, "nodeSelector")
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 	}
 	return specMap, values, nil
