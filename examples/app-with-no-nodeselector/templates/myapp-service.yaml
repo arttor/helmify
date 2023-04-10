@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app-with-no-nodeselector.fullname" . }}-myapp-service
+  labels:
+    app: myapp
+  {{- include "app-with-no-nodeselector.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.myappService.type }}
+  selector:
+    app: myapp
+  {{- include "app-with-no-nodeselector.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.myappService.ports | toYaml | nindent 2 -}}
