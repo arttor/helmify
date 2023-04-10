@@ -74,21 +74,12 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	}
 
 	// process nodeSelector if presented:
-	if spec.NodeSelector == nil {
-		return specMap, values, nil
-	}
-
-	err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, objName), "nodeSelector")
-	if err != nil {
-		return nil, nil, err
-	}
-	if len(spec.NodeSelector) != 0 {
-		err = unstructured.SetNestedStringMap(values, spec.NodeSelector, objName, "nodeSelector")
+	if spec.NodeSelector != nil {
+		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, objName), "nodeSelector")
 		if err != nil {
 			return nil, nil, err
 		}
-	} else {
-		err = unstructured.SetNestedStringMap(values, map[string]string{}, objName, "nodeSelector")
+		err = unstructured.SetNestedStringMap(values, spec.NodeSelector, objName, "nodeSelector")
 		if err != nil {
 			return nil, nil, err
 		}
