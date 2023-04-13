@@ -2,10 +2,11 @@ package deployment
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor/pod"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/processor/pod"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
