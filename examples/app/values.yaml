@@ -53,6 +53,10 @@ mySecretVars:
   var2: ""
 myapp:
   app:
+    args:
+    - --health-probe-bind-address=:8081
+    - --metrics-bind-address=127.0.0.1:8080
+    - --leader-elect
     containerSecurityContext:
       allowPrivilegeEscalation: false
     image:
@@ -69,6 +73,9 @@ myapp:
     region: east
     type: user-node
   proxySidecar:
+    args:
+    - --secure-listen-address=0.0.0.0:8443
+    - --v=10
     image:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
