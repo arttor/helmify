@@ -47,6 +47,7 @@ metadata:
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
+  annotations
 %[6]s
   {{ toYaml .Values.%[7]s.annotations | nindent 4 }}`
 
@@ -55,7 +56,7 @@ func (sa serviceAccount) processServiceAccountMeta(appMeta helmify.AppMetadata, 
 	var labels, annotations string
 	values := helmify.Values{}
 	name := strcase.ToLowerCamel(appMeta.TrimName(obj.GetName()))
-	err = unstructured.SetNestedField(values, map[string]interface{}{}, name, "annotations")
+	err = unstructured.SetNestedField(values, map[string]interface{}{}, name, "serviceaccount", "annotations")
 	if err != nil {
 		return "", nil, err
 	}
@@ -77,7 +78,7 @@ func (sa serviceAccount) processServiceAccountMeta(appMeta helmify.AppMetadata, 
 		}
 	}
 	if len(obj.GetAnnotations()) != 0 {
-		annotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": obj.GetAnnotations()}, 2)
+		annotations, err = yamlformat.Marshal(obj.GetAnnotations(), 4)
 		if err != nil {
 			return "", nil, err
 		}
