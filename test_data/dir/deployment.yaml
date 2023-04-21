@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: myapp
+  name: myapp
+  namespace: my-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: app
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --leader-elect
+          command:
+            - /manager
+          volumeMounts:
+            - mountPath: /my_config.properties
+              name: manager-config
+              subPath: my_config.properties
+            - name: secret-volume
+              mountPath: /my.ca
+            - name: props
+              mountPath: /etc/props
+            - name: sample-pv-storage
+              mountPath: "/usr/share/nginx/html"
+          env:
+            - name: VAR1
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret-vars
+                  key: VAR1
+            - name: VAR2
+              valueFrom:
+                secretKeyRef:
+                  name: my-secret-vars
+                  key: VAR2
+          image: controller:latest
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 100m
+              memory: 30Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: proxy-sidecar
+          args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --v=10
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+          ports:
+            - containerPort: 8443
+              name: https
+      securityContext:
+        runAsNonRoot: true
+      nodeSelector:
+        region: east
+        type: user-node
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - configMap:
+            name: my-config
+          name: manager-config
+        - configMap:
+            name: my-config-props
+          name: props
+        - name: secret-volume
+          secret:
+            secretName: my-secret-ca
+        - name: sample-pv-storage
+          persistentVolumeClaim:
+            claimName: my-sample-pv-claim
