@@ -69,6 +69,10 @@ myapp:
       requests:
         cpu: 100m
         memory: 20Mi
+  initContainer:
+    image:
+      repository: bash
+      tag: latest
   nodeSelector:
     region: east
     type: user-node
