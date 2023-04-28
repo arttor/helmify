@@ -49,14 +49,30 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		if err != nil {
 			return nil, nil, err
 		}
-		if !exists || len(res) == 0 {
-			continue
+		if exists && len(res) > 0 {
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
+			if err != nil {
+				return nil, nil, err
+			}
 		}
-		err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
+
+		args, exists, err := unstructured.NestedStringSlice(containers[i].(map[string]interface{}), "args")
 		if err != nil {
 			return nil, nil, err
 		}
+		if exists && len(args) > 0 {
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent 8 }}`, objName, containerName), "args")
+			if err != nil {
+				return nil, nil, err
+			}
+
+			err = unstructured.SetNestedStringSlice(values, args, objName, containerName, "args")
+			if err != nil {
+				return nil, nil, fmt.Errorf("%w: unable to set deployment value field", err)
+			}
+		}
 	}
+
 	err = unstructured.SetNestedSlice(specMap, containers, "containers")
 	if err != nil {
 		return nil, nil, err
