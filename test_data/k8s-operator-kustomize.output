@@ -323,6 +323,8 @@ kind: ServiceAccount
 metadata:
   name: my-operator-controller-manager
   namespace: my-operator-system
+  annotations:
+    k8s.acme.org/some-meta-data: "ACME Inc."
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

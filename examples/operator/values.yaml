@@ -44,6 +44,8 @@ controllerManager:
     region: east
     type: user-node
   replicas: 1
+  serviceaccount:
+    annotations: {}
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
