@@ -32,7 +32,6 @@ spec:
         - mountPath: /var/lib/docker/containers
           name: varlibdockercontainers
           readOnly: true
-      initContainers: null
       terminationGracePeriodSeconds: 30
       tolerations:
       - effect: NoSchedule
