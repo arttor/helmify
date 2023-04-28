@@ -47,7 +47,7 @@ metadata:
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
-  annotations
+  annotations:
 %[6]s
   {{ toYaml .Values.%[7]s.annotations | nindent 4 }}`
 
