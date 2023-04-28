@@ -82,23 +82,25 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	if err != nil {
 		return nil, nil, err
 	}
-	for i := range initContainers {
-		containerName := strcase.ToLowerCamel((initContainers[i].(map[string]interface{})["name"]).(string))
-		res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
+	if len(initContainers) > 0 {
+		for i := range initContainers {
+			containerName := strcase.ToLowerCamel((initContainers[i].(map[string]interface{})["name"]).(string))
+			res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
+			if err != nil {
+				return nil, nil, err
+			}
+			if !exists || len(res) == 0 {
+				continue
+			}
+			err = unstructured.SetNestedField(initContainers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+		err = unstructured.SetNestedSlice(specMap, initContainers, "initContainers")
 		if err != nil {
 			return nil, nil, err
 		}
-		if !exists || len(res) == 0 {
-			continue
-		}
-		err = unstructured.SetNestedField(initContainers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	err = unstructured.SetNestedSlice(specMap, initContainers, "initContainers")
-	if err != nil {
-		return nil, nil, err
 	}
 
 	if appMeta.Config().ImagePullSecrets {

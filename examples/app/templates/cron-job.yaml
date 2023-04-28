@@ -22,6 +22,5 @@ spec:
             imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
             name: hello
             resources: {}
-          initContainers: null
           restartPolicy: OnFailure
   schedule: {{ .Values.cronJob.schedule | quote }}
