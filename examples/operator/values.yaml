@@ -2,10 +2,19 @@ configmapVars:
   var4: value for var4
 controllerManager:
   kubeRbacProxy:
+    args:
+    - --secure-listen-address=0.0.0.0:8443
+    - --upstream=http://127.0.0.1:8080/
+    - --logtostderr=true
+    - --v=10
     image:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
   manager:
+    args:
+    - --health-probe-bind-address=:8081
+    - --metrics-bind-address=127.0.0.1:8080
+    - --leader-elect
     containerSecurityContext:
       allowPrivilegeEscalation: false
       capabilities:
