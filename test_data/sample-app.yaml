@@ -15,6 +15,10 @@ spec:
       labels:
         app: myapp
     spec:
+      initContainers:
+        - name: initContainer
+          image: bash:latest
+          command: ["/bin/sh", "-c", "echo 'Initializing container...'"]
       containers:
         - name: app
           args:
