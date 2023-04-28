@@ -29,6 +29,7 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/nginx/html
           name: www
+      initContainers: null
   updateStrategy: {}
   volumeClaimTemplates:
   - metadata:

@@ -78,6 +78,18 @@ spec:
         - containerPort: 8443
           name: https
         resources: {}
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - echo Initializing container...
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.myapp.initContainer.image.repository }}:{{ .Values.myapp.initContainer.image.tag
+          | default .Chart.AppVersion }}
+        name: initContainer
+        resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
       securityContext:
         runAsNonRoot: true

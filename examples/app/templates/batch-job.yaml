@@ -21,4 +21,5 @@ spec:
           | default .Chart.AppVersion }}
         name: pi
         resources: {}
+      initContainers: null
       restartPolicy: Never
