@@ -2,7 +2,7 @@ package security_context
 
 import (
 	"fmt"
-	
+
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/iancoleman/strcase"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,12 +20,12 @@ func ProcessContainerSecurityContext(nameCamel string, specMap map[string]interf
 	if err != nil {
 		return err
 	}
-	
+
 	err = processSecurityContext(nameCamel, "initContainers", specMap, values)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -55,9 +55,9 @@ func setSecContextValue(resourceName string, containerName string, castedContain
 		if err != nil {
 			return err
 		}
-		
+
 		valueString := fmt.Sprintf(helmTemplate, resourceName, containerName)
-		
+
 		err = unstructured.SetNestedField(castedContainer, valueString, sc)
 		if err != nil {
 			return err
