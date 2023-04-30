@@ -16,9 +16,22 @@ const (
 
 // ProcessContainerSecurityContext adds 'securityContext' to the podSpec in specMap, if it doesn't have one already defined.
 func ProcessContainerSecurityContext(nameCamel string, specMap map[string]interface{}, values *helmify.Values) error {
-	if _, defined := specMap["containers"]; defined {
-		containers, _, _ := unstructured.NestedSlice(specMap, "containers")
-		for _, container := range containers {
+	err := processSecurityContext(nameCamel, "containers", specMap, values)
+	if err != nil {
+		return err
+	}
+
+	err = processSecurityContext(nameCamel, "initContainers", specMap, values)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func processSecurityContext(nameCamel string, containerType string, specMap map[string]interface{}, values *helmify.Values) error {
+	if containers, defined := specMap[containerType]; defined {
+		for _, container := range containers.([]interface{}) {
 			castedContainer := container.(map[string]interface{})
 			containerName := strcase.ToLowerCamel(castedContainer["name"].(string))
 			if _, defined2 := castedContainer["securityContext"]; defined2 {
@@ -28,7 +41,7 @@ func ProcessContainerSecurityContext(nameCamel string, specMap map[string]interf
 				}
 			}
 		}
-		err := unstructured.SetNestedSlice(specMap, containers, "containers")
+		err := unstructured.SetNestedField(specMap, containers, containerType)
 		if err != nil {
 			return err
 		}
