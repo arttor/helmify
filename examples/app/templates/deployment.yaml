@@ -83,7 +83,7 @@ spec:
           value: {{ quote .Values.kubernetesClusterDomain }}
         image: {{ .Values.myapp.initContainer.image.repository }}:{{ .Values.myapp.initContainer.image.tag
           | default .Chart.AppVersion }}
-        name: initContainer
+        name: init-container
         resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
       securityContext:
