@@ -3,7 +3,7 @@ package pod
 import (
 	"fmt"
 	"strings"
-
+	
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
 	securityContext "github.com/arttor/helmify/pkg/processor/security-context"
@@ -21,7 +21,7 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	if err != nil {
 		return nil, nil, err
 	}
-
+	
 	// replace PVC to templated name
 	for i := 0; i < len(spec.Volumes); i++ {
 		vol := spec.Volumes[i]
@@ -29,38 +29,38 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 			continue
 		}
 		tempPVCName := appMeta.TemplatedName(vol.PersistentVolumeClaim.ClaimName)
-
+		
 		spec.Volumes[i].PersistentVolumeClaim.ClaimName = tempPVCName
 	}
-
+	
 	// replace container resources with template to values.
 	specMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&spec)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: unable to convert podSpec to map", err)
 	}
-
+	
 	specMap, values, err = processNestedContainers(specMap, objName, values, "containers")
 	if err != nil {
-			return nil, nil, err
+		return nil, nil, err
 	}
 	
 	specMap, values, err = processNestedContainers(specMap, objName, values, "initContainers")
 	if err != nil {
-			return nil, nil, err
+		return nil, nil, err
 	}
-
+	
 	if appMeta.Config().ImagePullSecrets {
 		if _, defined := specMap["imagePullSecrets"]; !defined {
 			specMap["imagePullSecrets"] = "{{ .Values.imagePullSecrets | default list | toJson }}"
 			values["imagePullSecrets"] = []string{}
 		}
 	}
-
+	
 	err = securityContext.ProcessContainerSecurityContext(objName, specMap, &values)
 	if err != nil {
 		return nil, nil, err
 	}
-
+	
 	// process nodeSelector if presented:
 	if spec.NodeSelector != nil {
 		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.nodeSelector | nindent 8 }}`, objName), "nodeSelector")
@@ -72,60 +72,60 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 			return nil, nil, err
 		}
 	}
-
+	
 	return specMap, values, nil
 }
 
 func processNestedContainers(specMap map[string]interface{}, objName string, values map[string]interface{}, containerKey string) (map[string]interface{}, map[string]interface{}, error) {
 	containers, _, err := unstructured.NestedSlice(specMap, containerKey)
 	if err != nil {
-			return nil, nil, err
+		return nil, nil, err
 	}
-
+	
 	if len(containers) > 0 {
-			containers, values, err = processContainers(objName, values, containerKey, containers)
-			if err != nil {
-					return nil, nil, err
-			}
-
-			err = unstructured.SetNestedSlice(specMap, containers, containerKey)
-			if err != nil {
-					return nil, nil, err
-			}
+		containers, values, err = processContainers(objName, values, containerKey, containers)
+		if err != nil {
+			return nil, nil, err
+		}
+		
+		err = unstructured.SetNestedSlice(specMap, containers, containerKey)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-
+	
 	return specMap, values, nil
 }
 
 func processContainers(objName string, values helmify.Values, containerType string, containers []interface{}) ([]interface{}, helmify.Values, error) {
 	for i := range containers {
-			containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
-			res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
+		containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
+		res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
+		if err != nil {
+			return nil, nil, err
+		}
+		if exists && len(res) > 0 {
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
 			if err != nil {
-					return nil, nil, err
+				return nil, nil, err
 			}
-			if exists && len(res) > 0 {
-					err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
-					if err != nil {
-							return nil, nil, err
-					}
-			}
-
-			args, exists, err := unstructured.NestedStringSlice(containers[i].(map[string]interface{}), "args")
+		}
+		
+		args, exists, err := unstructured.NestedStringSlice(containers[i].(map[string]interface{}), "args")
+		if err != nil {
+			return nil, nil, err
+		}
+		if exists && len(args) > 0 {
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent 8 }}`, objName, containerName), "args")
 			if err != nil {
-					return nil, nil, err
+				return nil, nil, err
 			}
-			if exists && len(args) > 0 {
-					err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent 8 }}`, objName, containerName), "args")
-					if err != nil {
-							return nil, nil, err
-					}
-
-					err = unstructured.SetNestedStringSlice(values, args, objName, containerName, "args")
-					if err != nil {
-							return nil, nil, fmt.Errorf("%w: unable to set deployment value field", err)
-					}
+			
+			err = unstructured.SetNestedStringSlice(values, args, objName, containerName, "args")
+			if err != nil {
+				return nil, nil, fmt.Errorf("%w: unable to set deployment value field", err)
 			}
+		}
 	}
 	return containers, values, nil
 }
@@ -139,7 +139,7 @@ func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpe
 		}
 		pod.Containers[i] = processed
 	}
-
+	
 	for i, c := range pod.InitContainers {
 		processed, err := processPodContainer(name, appMeta, c, &values)
 		if err != nil {
@@ -147,7 +147,7 @@ func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpe
 		}
 		pod.InitContainers[i] = processed
 	}
-
+	
 	for _, v := range pod.Volumes {
 		if v.ConfigMap != nil {
 			v.ConfigMap.Name = appMeta.TemplatedName(v.ConfigMap.Name)
@@ -157,11 +157,11 @@ func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpe
 		}
 	}
 	pod.ServiceAccountName = appMeta.TemplatedName(pod.ServiceAccountName)
-
+	
 	for i, s := range pod.ImagePullSecrets {
 		pod.ImagePullSecrets[i].Name = appMeta.TemplatedName(s.Name)
 	}
-
+	
 	return values, nil
 }
 
@@ -173,7 +173,7 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	repo, tag := c.Image[:index], c.Image[index+1:]
 	containerName := strcase.ToLowerCamel(c.Name)
 	c.Image = fmt.Sprintf("{{ .Values.%[1]s.%[2]s.image.repository }}:{{ .Values.%[1]s.%[2]s.image.tag | default .Chart.AppVersion }}", name, containerName)
-
+	
 	err := unstructured.SetNestedField(*values, repo, name, containerName, "image", "repository")
 	if err != nil {
 		return c, fmt.Errorf("%w: unable to set deployment value field", err)
@@ -182,12 +182,12 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	if err != nil {
 		return c, fmt.Errorf("%w: unable to set deployment value field", err)
 	}
-
+	
 	c, err = processEnv(name, appMeta, c, values)
 	if err != nil {
 		return c, err
 	}
-
+	
 	for _, e := range c.EnvFrom {
 		if e.SecretRef != nil {
 			e.SecretRef.Name = appMeta.TemplatedName(e.SecretRef.Name)
@@ -212,7 +212,7 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 			return c, fmt.Errorf("%w: unable to set container resources value", err)
 		}
 	}
-
+	
 	if c.ImagePullPolicy != "" {
 		err = unstructured.SetNestedField(*values, string(c.ImagePullPolicy), name, containerName, "imagePullPolicy")
 		if err != nil {
@@ -237,7 +237,7 @@ func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, va
 			}
 			continue
 		}
-
+		
 		err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 		if err != nil {
 			return c, fmt.Errorf("%w: unable to set deployment value field", err)
