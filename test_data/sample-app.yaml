@@ -16,7 +16,7 @@ spec:
         app: myapp
     spec:
       initContainers:
-        - name: initContainer
+        - name: init-container
           image: bash:latest
           command: ["/bin/sh", "-c", "echo 'Initializing container...'"]
       containers:
