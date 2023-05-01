@@ -18,10 +18,7 @@ spec:
       {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - args:
-        - --health-probe-bind-address=:8081
-        - --metrics-bind-address=127.0.0.1:8080
-        - --leader-elect
+      - args: {{- toYaml .Values.myapp.app.args | nindent 8 }}
         command:
         - /manager
         env:
@@ -65,9 +62,7 @@ spec:
           name: props
         - mountPath: /usr/share/nginx/html
           name: sample-pv-storage
-      - args:
-        - --secure-listen-address=0.0.0.0:8443
-        - --v=10
+      - args: {{- toYaml .Values.myapp.proxySidecar.args | nindent 8 }}
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
@@ -77,6 +72,18 @@ spec:
         ports:
         - containerPort: 8443
           name: https
+        resources: {}
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - echo Initializing container...
+        env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.myapp.initContainer.image.repository }}:{{ .Values.myapp.initContainer.image.tag
+          | default .Chart.AppVersion }}
+        name: init-container
         resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
       securityContext:
