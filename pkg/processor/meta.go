@@ -18,7 +18,6 @@ metadata:
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
-  annotations:
 %[6]s`
 
 const annotationsMetaTemplate = `apiVersion: %[1]s
@@ -86,7 +85,7 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 		}
 	}
 	if len(obj.GetAnnotations()) != 0 {
-		annotations, err = yamlformat.Marshal(obj.GetAnnotations(), 4)
+		annotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": obj.GetAnnotations()}, 2)
 		if err != nil {
 			return "", err
 		}
@@ -96,6 +95,12 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 
 	var metaStr string
 	if options.values != nil && options.annotations {
+		if len(obj.GetAnnotations()) != 0 {
+			annotations, err = yamlformat.Marshal(obj.GetAnnotations(), 4)
+			if err != nil {
+				return "", err
+			}
+		}
 		name := strcase.ToLowerCamel(appMeta.TrimName(obj.GetName()))
 		err = unstructured.SetNestedField(options.values, map[string]interface{}{}, name, strings.ToLower(kind), "annotations")
 		metaStr = fmt.Sprintf(annotationsMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations, name)
