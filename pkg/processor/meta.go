@@ -2,6 +2,7 @@ package processor
 
 import (
 	"fmt"
+	"github.com/iancoleman/strcase"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -10,17 +11,61 @@ import (
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 )
 
-const metaTeml = `apiVersion: %[1]s
+const defaultMetaTemplate = `apiVersion: %[1]s
 kind: %[2]s
 metadata:
   name: %[3]s
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
+  annotations:
 %[6]s`
 
+const annotationsMetaTemplate = `apiVersion: %[1]s
+kind: %[2]s
+metadata:
+  name: %[3]s
+  labels:
+%[5]s
+  {{- include "%[4]s.labels" . | nindent 4 }}
+  annotations:
+%[6]s
+  {{ toYaml .Values.%[7]s.annotations | nindent 4 }}`
+
+type MetaOpt interface {
+	apply(*options)
+}
+
+type options struct {
+	values      helmify.Values
+	annotations bool
+}
+
+type annotationsOption struct {
+	values helmify.Values
+}
+
+func (a annotationsOption) apply(opts *options) {
+	opts.annotations = true
+	opts.values = a.values
+}
+
+func WithAnnotations(values helmify.Values) MetaOpt {
+	return annotationsOption{
+		values: values,
+	}
+}
+
 // ProcessObjMeta - returns object apiVersion, kind and metadata as helm template.
-func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (string, error) {
+func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured, opts ...MetaOpt) (string, error) {
+	options := &options{
+		values:      nil,
+		annotations: false,
+	}
+	for _, opt := range opts {
+		opt.apply(options)
+	}
+
 	var err error
 	var labels, annotations string
 	if len(obj.GetLabels()) != 0 {
@@ -41,14 +86,22 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured)
 		}
 	}
 	if len(obj.GetAnnotations()) != 0 {
-		annotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": obj.GetAnnotations()}, 2)
+		annotations, err = yamlformat.Marshal(obj.GetAnnotations(), 4)
 		if err != nil {
 			return "", err
 		}
 	}
 	templatedName := appMeta.TemplatedName(obj.GetName())
 	apiVersion, kind := obj.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-	metaStr := fmt.Sprintf(metaTeml, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations)
+
+	var metaStr string
+	if options.values != nil && options.annotations {
+		name := strcase.ToLowerCamel(appMeta.TrimName(obj.GetName()))
+		err = unstructured.SetNestedField(options.values, map[string]interface{}{}, name, strings.ToLower(kind), "annotations")
+		metaStr = fmt.Sprintf(annotationsMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations, name)
+	} else {
+		metaStr = fmt.Sprintf(defaultMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations)
+	}
 	metaStr = strings.Trim(metaStr, " \n")
 	metaStr = strings.ReplaceAll(metaStr, "\n\n", "\n")
 	return metaStr, nil
