@@ -42,7 +42,7 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 	}
 	_, isString := value.(string)
 	if isString {
-		return "{{ .Values." + strings.Join(name, ".") + " | quote }}", nil
+		return "{{ tpl (.Values." + strings.Join(name, ".") + ") $ | quote }}", nil
 	}
 	_, isSlice := value.([]interface{})
 	if isSlice {
@@ -78,7 +78,7 @@ func (v *Values) AddSecret(toBase64 bool, name ...string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to set value: %v", nameStr)
 	}
-	res := fmt.Sprintf(`{{ required "%[1]s is required" .Values.%[1]s`, nameStr)
+	res := fmt.Sprintf(`{{ tpl (required "%[1]s is required" .Values.%[1]s) $`, nameStr)
 	if toBase64 {
 		res += " | b64enc"
 	}

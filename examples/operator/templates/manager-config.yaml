@@ -7,4 +7,4 @@ metadata:
 data:
   controller_manager_config.yaml: {{ .Values.managerConfig.controllerManagerConfigYaml
     | toYaml | indent 1 }}
-  dummyconfigmapkey: {{ .Values.managerConfig.dummyconfigmapkey | quote }}
+  dummyconfigmapkey: {{ tpl (.Values.managerConfig.dummyconfigmapkey) $ | quote }}
