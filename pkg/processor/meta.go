@@ -30,7 +30,7 @@ metadata:
   {{- include "%[4]s.labels" . | nindent 4 }}
   annotations:
 %[6]s
-  {{ toYaml .Values.%[7]s.%[8]s.annotations | nindent 4 }}`
+  {{- toYaml .Values.%[7]s.%[8]s.annotations | nindent 4 }}`
 
 type MetaOpt interface {
 	apply(*options)
