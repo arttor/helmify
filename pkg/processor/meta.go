@@ -2,8 +2,9 @@ package processor
 
 import (
 	"fmt"
-	"github.com/iancoleman/strcase"
 	"strings"
+
+	"github.com/iancoleman/strcase"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -29,7 +30,7 @@ metadata:
   {{- include "%[4]s.labels" . | nindent 4 }}
   annotations:
 %[6]s
-  {{ toYaml .Values.%[7]s.annotations | nindent 4 }}`
+  {{ toYaml .Values.%[7]s.%[8]s.annotations | nindent 4 }}`
 
 type MetaOpt interface {
 	apply(*options)
@@ -103,7 +104,7 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 		}
 		name := strcase.ToLowerCamel(appMeta.TrimName(obj.GetName()))
 		err = unstructured.SetNestedField(options.values, map[string]interface{}{}, name, strings.ToLower(kind), "annotations")
-		metaStr = fmt.Sprintf(annotationsMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations, name)
+		metaStr = fmt.Sprintf(annotationsMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations, name, strings.ToLower(kind))
 	} else {
 		metaStr = fmt.Sprintf(defaultMetaTemplate, apiVersion, kind, templatedName, appMeta.ChartName(), labels, annotations)
 	}
