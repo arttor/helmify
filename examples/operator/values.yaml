@@ -44,8 +44,9 @@ controllerManager:
     region: east
     type: user-node
   replicas: 1
-  serviceaccount:
-    annotations: {}
+  serviceAccount:
+    annotations:
+      k8s.acme.org/some-meta-data: ACME Inc.
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
