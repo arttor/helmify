@@ -129,7 +129,8 @@ dependencies:
   - name: cert-manager
     repository: https://charts.jetstack.io
     condition: certmanager.enabled
-	alias: certmanager
+    alias: certmanager
+    version: %q
 `
 
 var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
@@ -137,7 +138,7 @@ var chartName = regexp.MustCompile("^[a-zA-Z0-9._-]+$")
 const maxChartNameLength = 250
 
 // initChartDir - creates Helm chart structure in chartName directory if not presented.
-func initChartDir(chartDir, chartName string, crd bool, certManagerAsSubchart bool) error {
+func initChartDir(chartDir, chartName string, crd bool, certManagerAsSubchart bool, certManagerVersion string) error {
 	if err := validateChartName(chartName); err != nil {
 		return err
 	}
@@ -145,7 +146,7 @@ func initChartDir(chartDir, chartName string, crd bool, certManagerAsSubchart bo
 	cDir := filepath.Join(chartDir, chartName)
 	_, err := os.Stat(filepath.Join(cDir, "Chart.yaml"))
 	if os.IsNotExist(err) {
-		return createCommonFiles(chartDir, chartName, crd, certManagerAsSubchart)
+		return createCommonFiles(chartDir, chartName, crd, certManagerAsSubchart, certManagerVersion)
 	}
 	logrus.Info("Skip creating Chart skeleton: Chart.yaml already exists.")
 	return err
@@ -161,7 +162,7 @@ func validateChartName(name string) error {
 	return nil
 }
 
-func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubchart bool) error {
+func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubchart bool, certManagerVersion string) error {
 	cDir := filepath.Join(chartDir, chartName)
 	err := os.MkdirAll(filepath.Join(cDir, "templates"), 0750)
 	if err != nil {
@@ -183,16 +184,16 @@ func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubcha
 			logrus.WithField("file", file).Info("created")
 		}
 	}
-	createFile(chartYAML(chartName, certManagerAsSubchart), cDir, "Chart.yaml")
+	createFile(chartYAML(chartName, certManagerAsSubchart, certManagerVersion), cDir, "Chart.yaml")
 	createFile([]byte(helmIgnore), cDir, ".helmignore")
 	createFile(helpersYAML(chartName), cDir, "templates", "_helpers.tpl")
 	return err
 }
 
-func chartYAML(appName string, certManagerAsSubchart bool) []byte {
+func chartYAML(appName string, certManagerAsSubchart bool, certManagerVersion string) []byte {
 	chartFile := defaultChartfile
 	if certManagerAsSubchart {
-		chartFile += certManagerDependencies
+		chartFile += fmt.Sprintf(certManagerDependencies, certManagerVersion)
 	}
 	return []byte(fmt.Sprintf(chartFile, appName))
 }
