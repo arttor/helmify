@@ -28,6 +28,8 @@ type Config struct {
 	GenerateDefaults bool
 	// CertManagerAsSubchart enables the generation of a subchart for cert-manager
 	CertManagerAsSubchart bool
+	// CertManagerVersion sets cert-manager version in dependency
+	CertManagerVersion string
 	// Files - directories or files with k8s manifests
 	Files []string
 	// FilesRecursively read Files recursively

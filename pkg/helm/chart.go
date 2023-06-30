@@ -31,8 +31,8 @@ type output struct{}
 //	    └── _helpers.tp   # Helm default template partials
 //
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, templates []helmify.Template, filenames []string) error {
-	err := initChartDir(chartDir, chartName, crd, certManagerAsSubchart)
+func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, certManagerVersion string, templates []helmify.Template, filenames []string) error {
+	err := initChartDir(chartDir, chartName, crd, certManagerAsSubchart, certManagerVersion)
 	if err != nil {
 		return err
 	}
