@@ -64,7 +64,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.ImagePullSecrets, "image-pull-secrets", false, "Allows the user to use existing secrets as imagePullSecrets in values.yaml")
 	flag.BoolVar(&result.GenerateDefaults, "generate-defaults", false, "Allows the user to add empty placeholders for tipical customization options in values.yaml. Currently covers: topology constraints, node selectors, tolerances")
 	flag.BoolVar(&result.CertManagerAsSubchart, "cert-manager-as-subchart", false, "Allows the user to add cert-manager as a subchart")
-	flag.StringVar(&result.CertManagerVersion, "cert-manager-version", "v1.12.2", "Allows to define cert-manager version. Only useful with cert-manager-as-subchart.")
+	flag.StringVar(&result.CertManagerVersion, "cert-manager-version", "v1.12.2", "Allows the user to specify cert-manager subchart version. Only useful with cert-manager-as-subchart.")
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
 
