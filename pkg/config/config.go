@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -40,6 +41,8 @@ type Config struct {
 	OriginalName bool
 	// PreserveNs retains the namespaces on the Kubernetes manifests
 	PreserveNs bool
+	// AddWebhookOption enables the generation of a webhook option in values.yamlß
+	AddWebhookOption bool
 }
 
 func (c *Config) Validate() error {

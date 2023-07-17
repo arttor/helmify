@@ -129,6 +129,9 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	if err != nil {
 		return true, nil, err
 	}
+	if appMeta.Config().AddWebhookOption {
+		spec = addWebhookOption(spec)
+	}
 
 	spec = replaceSingleQuotes(spec)
 
@@ -157,6 +160,30 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 func replaceSingleQuotes(s string) string {
 	r := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
 	return r.ReplaceAllString(s, "${1}")
+}
+
+func addWebhookOption(manifest string) string {
+	webhookOptionHeader := "      {{- if .Values.webhook.enabled }}"
+	webhookOptionFooter := "      {{- end }}"
+	volumes := `      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: webhook-server-cert`
+	volumeMounts := `        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true`
+	manifest = strings.ReplaceAll(manifest, volumes, fmt.Sprintf("%s\n%s\n%s",
+		webhookOptionHeader, volumes, webhookOptionFooter))
+	manifest = strings.ReplaceAll(manifest, volumeMounts, fmt.Sprintf("%s\n%s\n%s",
+		webhookOptionHeader, volumeMounts, webhookOptionFooter))
+
+	re := regexp.MustCompile(`        - containerPort: \d+
+          name: webhook-server
+          protocol: TCP`)
+
+	manifest = re.ReplaceAllString(manifest, fmt.Sprintf("%s\n%s\n%s", webhookOptionHeader,
+		re.FindString(manifest), webhookOptionFooter))
+	return manifest
 }
 
 func processReplicas(name string, deployment *appsv1.Deployment, values *helmify.Values) (string, error) {
