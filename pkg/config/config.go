@@ -43,6 +43,8 @@ type Config struct {
 	PreserveNs bool
 	// OptionalSecrets - list of secrets that are optional and should only be generated if values are given
 	OptionalSecrets []string
+	// AddWebhookOption enables the generation of a webhook option in values.yamlß
+	AddWebhookOption bool
 }
 
 func (c *Config) Validate() error {

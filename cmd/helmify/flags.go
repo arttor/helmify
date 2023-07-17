@@ -72,6 +72,8 @@ func ReadFlags() config.Config {
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
 	flag.Var(&optionalSecrets, "optional-secrets", "List of secrets to be templated as optional (their values will not be required).")
 	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace")
+	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml")
+
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)
