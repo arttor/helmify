@@ -94,8 +94,12 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		}
 		ports[i] = pMap
 	}
+
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
 	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName())
+	if shortNameCamel == "webhookService" && appMeta.Config().AddWebhookOption {
+		res = fmt.Sprintf("{{- if .Values.webhook.enabled }}\n%s\n{{- end }}", res)
+	}
 	return true, &result{
 		name:   shortName,
 		data:   res,

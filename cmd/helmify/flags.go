@@ -70,6 +70,8 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.OriginalName, "original-name", false, "Use the object's original name instead of adding the chart's release name as the common prefix.")
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
 	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace")
+	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml")
+
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)

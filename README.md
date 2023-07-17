@@ -112,6 +112,7 @@ Usage:
 | -cert-manager-version     | Allows the user to specify cert-manager subchart version. Only useful with cert-manager-as-subchart. (default "v1.12.2")                                                                                    | `helmify -cert-manager-version=v1.12.2`    |
 | -cert-manager-install-crd     | Allows the user to install cert-manager CRD as part of the cert-manager subchart.(default "true")                                                                                                           | `helmify -cert-manager-install-crd` |
 | -preserve-ns              | Allows users to use the object's original namespace instead of adding all the resources to a common namespace. (default "false")                                                                            | `helmify -preserve-ns`              |
+| -add-webhook-option | Adds an option to enable/disable webhook installation  | `helmify -add-webhook-option`|
 ## Status
 Supported k8s resources:
 - Deployment, DaemonSet, StatefulSet
