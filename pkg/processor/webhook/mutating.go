@@ -66,7 +66,15 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
 	certName = appMeta.TrimName(certName)
-	res := fmt.Sprintf(mwhTempl, appMeta.ChartName(), name, certName, string(webhooks))
+	tmpl := mwhTempl
+	values := helmify.Values{}
+	if appMeta.Config().AddWebhookOption {
+		// Add webhook.enabled value to values.yaml
+		_, _ = values.Add(true, "webhook", "enabled")
+
+		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, mwhTempl, WebhookFooter)
+	}
+	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &mwhResult{
 		name: name,
 		data: []byte(res),
@@ -74,8 +82,9 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 }
 
 type mwhResult struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *mwhResult) Filename() string {
@@ -83,7 +92,7 @@ func (r *mwhResult) Filename() string {
 }
 
 func (r *mwhResult) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *mwhResult) Write(writer io.Writer) error {

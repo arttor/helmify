@@ -109,6 +109,7 @@ Usage:
 | -image-pull-secrets       | Allows the user to use existing secrets as imagePullSecrets                                                                                                                                                 | `helmify -image-pull-secrets`       |
 | -cert-manager-as-subchart | Allows the user to install cert-manager as a subchart                                                                                                                                                       | `helmify -cert-manager-as-subchart` |
 | -cert-manager-version | Allows the user to specify cert-manager subchart version. Only useful with cert-manager-as-subchart. (default "v1.12.2")                                                                                                                                                       | `helmify -cert-manager-as-subchart` |
+| -add-webhook-option | Adds an option to enable/disable webhook installation  | `helmify -add-webhook-option`|
 ## Status
 Supported k8s resources:
 - Deployment, DaemonSet, StatefulSet
