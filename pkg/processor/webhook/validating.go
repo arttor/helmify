@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,13 +48,30 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return false, nil, nil
 	}
 	name := appMeta.TrimName(obj.GetName())
+	nameCamel := strcase.ToLowerCamel(name)
 
 	whConf := v1.ValidatingWebhookConfiguration{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &whConf)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "unable to cast to ValidatingWebhookConfiguration")
 	}
+
+	values := helmify.Values{}
+	err = unstructured.SetNestedMap(values, make(map[string]interface{}), nameCamel)
+	if err != nil {
+		return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameter map for %s", name))
+	}
+
 	for i, whc := range whConf.Webhooks {
+		whcField := strcase.ToLowerCamel(whc.Name)
+		whcValues, err := ProcessVWH(appMeta, &whc, fmt.Sprintf(".Values.%s.%s", nameCamel, whcField))
+		if err != nil {
+			return true, nil, errors.Wrap(err, fmt.Sprintf("unable to Process WebHook config: %s / %s", name, whc.Name))
+		}
+		err = unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
+		if err != nil {
+			return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameters for %s / %s", name, whc.Name))
+		}
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
 		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
 		whConf.Webhooks[i] = whc
@@ -68,14 +86,28 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	certName = appMeta.TrimName(certName)
 	res := fmt.Sprintf(vwhTempl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &vwhResult{
-		name: name,
-		data: []byte(res),
+		values: values,
+		name:   name,
+		data:   []byte(res),
 	}, nil
 }
 
+func ProcessVWH(appMeta helmify.AppMetadata, whc *v1.ValidatingWebhook, valuesRoot string) (map[string]interface{}, error) {
+	values := make(map[string]interface{})
+	failurePolicyField := "failurePolicy"
+	failurePolicy := v1.FailurePolicyType(fmt.Sprintf("{{ %s.%s }}", valuesRoot, failurePolicyField))
+	values[failurePolicyField] = "Fail"
+
+	whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
+	whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+	whc.FailurePolicy = &failurePolicy
+	return values, nil
+}
+
 type vwhResult struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *vwhResult) Filename() string {
@@ -83,7 +115,7 @@ func (r *vwhResult) Filename() string {
 }
 
 func (r *vwhResult) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *vwhResult) Write(writer io.Writer) error {
