@@ -68,7 +68,7 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		if err != nil {
 			return true, nil, errors.Wrap(err, fmt.Sprintf("unable to Process WebHook config: %s / %s", name, whc.Name))
 		}
-		unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
+		err = unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
 		if err != nil {
 			return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameters for %s / %s", name, whc.Name))
 		}
