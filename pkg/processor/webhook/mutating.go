@@ -57,7 +57,10 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 
 	values := helmify.Values{}
-	unstructured.SetNestedMap(values, make(map[string]interface{}), nameCamel)
+	err = unstructured.SetNestedMap(values, make(map[string]interface{}), nameCamel)
+	if err != nil {
+		return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameter map for %s", name))
+	}
 
 	for i, whc := range whConf.Webhooks {
 		whcField := strcase.ToLowerCamel(whc.Name)
@@ -65,7 +68,10 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		if err != nil {
 			return true, nil, errors.Wrap(err, fmt.Sprintf("unable to Process WebHook config: %s / %s", name, whc.Name))
 		}
-		unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
+		err = unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
+		if err != nil {
+			return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameters for %s / %s", name, whc.Name))
+		}
 		whConf.Webhooks[i] = whc
 	}
 	webhooks, _ := yaml.Marshal(whConf.Webhooks)

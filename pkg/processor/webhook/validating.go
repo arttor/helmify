@@ -57,7 +57,10 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 
 	values := helmify.Values{}
-	unstructured.SetNestedMap(values, make(map[string]interface{}), nameCamel)
+	err = unstructured.SetNestedMap(values, make(map[string]interface{}), nameCamel)
+	if err != nil {
+		return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameter map for %s", name))
+	}
 
 	for i, whc := range whConf.Webhooks {
 		whcField := strcase.ToLowerCamel(whc.Name)
@@ -66,6 +69,9 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 			return true, nil, errors.Wrap(err, fmt.Sprintf("unable to Process WebHook config: %s / %s", name, whc.Name))
 		}
 		unstructured.SetNestedField(values, whcValues, nameCamel, whcField)
+		if err != nil {
+			return true, nil, errors.Wrap(err, fmt.Sprintf("can not set webhook parameters for %s / %s", name, whc.Name))
+		}
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
 		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
 		whConf.Webhooks[i] = whc
