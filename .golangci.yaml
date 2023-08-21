@@ -48,4 +48,3 @@ linters:
     - exportloopref
     - errchkjson
     - prealloc
-    - deadcode
