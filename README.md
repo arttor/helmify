@@ -7,7 +7,7 @@
 [![GoDoc](https://godoc.org/github.com/arttor/helmify?status.svg)](https://pkg.go.dev/github.com/arttor/helmify?tab=doc)
 ![GitHub total downloads](https://img.shields.io/github/downloads/arttor/helmify/total)
 
-CLI that creates [Helm](https://github.com/helm/helm) charts from kubernetes yamls.
+CLI that creates [Helm](https://github.com/helm/helm) charts from kubernetes manifests.
 
 Helmify reads a list of [supported k8s objects](#status) from stdin and converts it to a helm chart. 
 Designed to generate charts for [k8s operators](#integrate-to-your-operator-sdkkubebuilder-project) but not limited to.
