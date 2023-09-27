@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -166,12 +165,12 @@ func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubcha
 	cDir := filepath.Join(chartDir, chartName)
 	err := os.MkdirAll(filepath.Join(cDir, "templates"), 0750)
 	if err != nil {
-		return errors.Wrap(err, "unable create chart/templates dir")
+		return fmt.Errorf("%w: unable create chart/templates dir", err)
 	}
 	if crd {
 		err = os.MkdirAll(filepath.Join(cDir, "crds"), 0750)
 		if err != nil {
-			return errors.Wrap(err, "unable create crds dir")
+			return fmt.Errorf("%w: unable create crds dir", err)
 		}
 	}
 	createFile := func(content []byte, path ...string) {

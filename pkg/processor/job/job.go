@@ -7,7 +7,6 @@ import (
 	"github.com/arttor/helmify/pkg/processor/pod"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	"io"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -49,15 +48,15 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	jobObj := batchv1.Job{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &jobObj)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to Job")
+		return true, nil, fmt.Errorf("%w: unable to cast to Job", err)
 	}
 	spec := jobObj.Spec
 	specMap, exists, err := unstructured.NestedMap(obj.Object, "spec")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to get job spec")
+		return true, nil, fmt.Errorf("%w: unable to get job spec", err)
 	}
 	if !exists {
-		return true, nil, errors.New("no job spec presented")
+		return true, nil, fmt.Errorf("no job spec presented")
 	}
 
 	values := helmify.Values{}

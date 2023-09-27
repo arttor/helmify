@@ -1,14 +1,14 @@
 package helm
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/yaml"
@@ -72,7 +72,7 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 		if _, err := os.Stat(filepath.Join(chartDir, "crds")); os.IsNotExist(err) {
 			err = os.MkdirAll(filepath.Join(chartDir, "crds"), 0750)
 			if err != nil {
-				return errors.Wrap(err, "unable create crds dir")
+				return fmt.Errorf("%w: unable create crds dir", err)
 			}
 		}
 	} else {
@@ -81,19 +81,19 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 	file := filepath.Join(chartDir, subdir, filename)
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return errors.Wrap(err, "unable to open "+file)
+		return fmt.Errorf("%w: unable to open %s", err, file)
 	}
 	defer f.Close()
 	for i, t := range templates {
 		logrus.WithField("file", file).Debug("writing a template into")
 		err = t.Write(f)
 		if err != nil {
-			return errors.Wrap(err, "unable to write into "+file)
+			return fmt.Errorf("%w: unable to write into %s", err, file)
 		}
 		if i != len(templates)-1 {
 			_, err = f.Write([]byte("\n---\n"))
 			if err != nil {
-				return errors.Wrap(err, "unable to write into "+file)
+				return fmt.Errorf("%w: unable to write into %s", err, file)
 			}
 		}
 	}
@@ -105,23 +105,23 @@ func overwriteValuesFile(chartDir string, values helmify.Values, certManagerAsSu
 	if certManagerAsSubchart {
 		_, err := values.Add(true, "certmanager", "installCRDs")
 		if err != nil {
-			return errors.Wrap(err, "unable to add cert-manager.installCRDs")
+			return fmt.Errorf("%w: unable to add cert-manager.installCRDs", err)
 		}
 
 		_, err = values.Add(true, "certmanager", "enabled")
 		if err != nil {
-			return errors.Wrap(err, "unable to add cert-manager.enabled")
+			return fmt.Errorf("%w: unable to add cert-manager.enabled", err)
 		}
 	}
 	res, err := yaml.Marshal(values)
 	if err != nil {
-		return errors.Wrap(err, "unable to write marshal values.yaml")
+		return fmt.Errorf("%w: unable to write marshal values.yaml", err)
 	}
 
 	file := filepath.Join(chartDir, "values.yaml")
-	err = ioutil.WriteFile(file, res, 0600)
+	err = os.WriteFile(file, res, 0600)
 	if err != nil {
-		return errors.Wrap(err, "unable to write values.yaml")
+		return fmt.Errorf("%w: unable to write values.yaml", err)
 	}
 	logrus.WithField("file", file).Info("overwritten")
 	return nil

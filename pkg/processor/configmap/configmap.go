@@ -1,6 +1,7 @@
 package configmap
 
 import (
+	"fmt"
 	"github.com/arttor/helmify/pkg/format"
 	"io"
 	"strings"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -129,7 +129,7 @@ func parseProperties(properties interface{}, path []string, values helmify.Value
 	for _, line := range strings.Split(strings.TrimSuffix(properties.(string), "\n"), "\n") {
 		prop := strings.Split(line, "=")
 		if len(prop) != 2 {
-			return "", errors.Errorf("wrong property format in %v: %s", path, line)
+			return "", fmt.Errorf("wrong property format in %v: %s", path, line)
 		}
 		propName, propVal := prop[0], prop[1]
 		propNamePath := strings.Split(propName, ".")
@@ -139,7 +139,7 @@ func parseProperties(properties interface{}, path []string, values helmify.Value
 		}
 		_, err = res.WriteString(propName + "=" + templatedVal + "\n")
 		if err != nil {
-			return "", errors.Wrap(err, "unable to write to string builder")
+			return "", fmt.Errorf("%w: unable to write to string builder", err)
 		}
 	}
 	return res.String(), nil

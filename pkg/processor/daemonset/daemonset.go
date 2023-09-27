@@ -11,7 +11,6 @@ import (
 	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -56,7 +55,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	dae := appsv1.DaemonSet{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &dae)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to daemonset")
+		return true, nil, fmt.Errorf("%w: unable to cast to daemonset", err)
 	}
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {

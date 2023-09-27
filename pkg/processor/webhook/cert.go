@@ -9,7 +9,6 @@ import (
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
@@ -59,7 +58,7 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 
 	dnsNames, _, err := unstructured.NestedSlice(obj.Object, "spec", "dnsNames")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable get cert dnsNames")
+		return true, nil, fmt.Errorf("%w: unable get cert dnsNames", err)
 	}
 
 	processedDnsNames := []interface{}{}
@@ -72,17 +71,17 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	}
 	err = unstructured.SetNestedSlice(obj.Object, processedDnsNames, "spec", "dnsNames")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable set cert dnsNames")
+		return true, nil, fmt.Errorf("%w: unable set cert dnsNames", err)
 	}
 
 	issName, _, err := unstructured.NestedString(obj.Object, "spec", "issuerRef", "name")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable get cert issuerRef")
+		return true, nil, fmt.Errorf("%w: unable get cert issuerRef", err)
 	}
 	issName = appMeta.TemplatedName(issName)
 	err = unstructured.SetNestedField(obj.Object, issName, "spec", "issuerRef", "name")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable set cert issuerRef")
+		return true, nil, fmt.Errorf("%w: unable set cert issuerRef", err)
 	}
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)

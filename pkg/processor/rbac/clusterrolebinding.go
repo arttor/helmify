@@ -1,6 +1,7 @@
 package rbac
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"text/template"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"github.com/pkg/errors"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,7 +43,7 @@ func (r clusterRoleBinding) Process(appMeta helmify.AppMetadata, obj *unstructur
 	rb := rbacv1.ClusterRoleBinding{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &rb)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to RoleBinding")
+		return true, nil, fmt.Errorf("%w: unable to cast to RoleBinding", err)
 	}
 
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
