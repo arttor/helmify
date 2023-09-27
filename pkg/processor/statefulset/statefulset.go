@@ -1,6 +1,7 @@
 package statefulset
 
 import (
+	"fmt"
 	"github.com/arttor/helmify/pkg/processor/pod"
 	"io"
 	"strings"
@@ -10,7 +11,6 @@ import (
 	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,7 +43,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 	ss := appsv1.StatefulSet{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &ss)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to StatefulSet")
+		return true, nil, fmt.Errorf("%w: unable to cast to StatefulSet", err)
 	}
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {

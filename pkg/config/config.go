@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -46,7 +46,7 @@ func (c *Config) Validate() error {
 		for _, e := range err {
 			logrus.Errorf("Invalid chart name %s", e)
 		}
-		return errors.Errorf("Invalid chart name %s", c.ChartName)
+		return fmt.Errorf("invalid chart name %s", c.ChartName)
 	}
 	return nil
 }

@@ -2,7 +2,7 @@ run:
   tests: false
   skip-dirs:
     - internal
-go: 1.20
+go: 1.21
 
 fix: true
 
@@ -10,7 +10,7 @@ linters-settings:
   maligned:
     suggest-new: true
   staticcheck:
-    go: "1.20"
+    go: "1.21"
     checks: [ "all", "-ST1000", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022","-SA6005","-SA1019" ]
   gocritic:
     disabled-checks:

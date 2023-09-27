@@ -11,7 +11,6 @@ import (
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,7 +51,7 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	service := corev1.Service{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &service)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to service")
+		return true, nil, fmt.Errorf("%w: unable to cast to service", err)
 	}
 
 	meta, err := processor.ProcessObjMeta(appMeta, obj)

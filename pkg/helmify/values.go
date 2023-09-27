@@ -1,13 +1,13 @@
 package helmify
 
 import (
+	"dario.cat/mergo"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
-	"github.com/imdario/mergo"
-	"github.com/pkg/errors"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -17,7 +17,7 @@ type Values map[string]interface{}
 // Merge given values with current instance.
 func (v *Values) Merge(values Values) error {
 	if err := mergo.Merge(v, values, mergo.WithAppendSlice); err != nil {
-		return errors.Wrap(err, "unable to merge helm values")
+		return fmt.Errorf("%w: unable to merge helm values", err)
 	}
 	return nil
 }
@@ -38,7 +38,7 @@ func (v *Values) Add(value interface{}, name ...string) (string, error) {
 
 	err := unstructured.SetNestedField(*v, value, name...)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to set value: %v", name)
+		return "", fmt.Errorf("%w: unable to set value: %v", err, name)
 	}
 	_, isString := value.(string)
 	if isString {
@@ -58,7 +58,7 @@ func (v *Values) AddYaml(value interface{}, indent int, newLine bool, name ...st
 	name = toCamelCase(name)
 	err := unstructured.SetNestedField(*v, value, name...)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to set value: %v", name)
+		return "", fmt.Errorf("%w: unable to set value: %v", err, name)
 	}
 	if indent > 0 {
 		if newLine {
@@ -76,7 +76,7 @@ func (v *Values) AddSecret(toBase64 bool, name ...string) (string, error) {
 	nameStr := strings.Join(name, ".")
 	err := unstructured.SetNestedField(*v, "", name...)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to set value: %v", nameStr)
+		return "", fmt.Errorf("%w: unable to set value: %v", err, nameStr)
 	}
 	res := fmt.Sprintf(`{{ required "%[1]s is required" .Values.%[1]s`, nameStr)
 	if toBase64 {

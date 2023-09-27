@@ -1,6 +1,7 @@
 package secret
 
 import (
+	"fmt"
 	"github.com/arttor/helmify/pkg/format"
 	"io"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/arttor/helmify/pkg/helmify"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +51,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	sec := corev1.Secret{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &sec)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to secret")
+		return true, nil, fmt.Errorf("%w: unable to cast to secret", err)
 	}
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
@@ -79,7 +79,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		}
 		templatedName, err := values.AddSecret(true, nameCamelCase, keyCamelCase)
 		if err != nil {
-			return true, nil, errors.Wrap(err, "unable add secret to values")
+			return true, nil, fmt.Errorf("%w: unable add secret to values", err)
 		}
 		templatedData[key] = templatedName
 	}
@@ -100,7 +100,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		}
 		templatedName, err := values.AddSecret(false, nameCamelCase, keyCamelCase)
 		if err != nil {
-			return true, nil, errors.Wrap(err, "unable add secret to values")
+			return true, nil, fmt.Errorf("%w: unable add secret to values", err)
 		}
 		templatedData[key] = templatedName
 	}

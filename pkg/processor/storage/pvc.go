@@ -1,11 +1,11 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"github.com/pkg/errors"
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -49,7 +49,7 @@ func (p pvc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	claim := corev1.PersistentVolumeClaim{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &claim)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to PVC")
+		return true, nil, fmt.Errorf("%w: unable to cast to PVC", err)
 	}
 
 	// template storage class name

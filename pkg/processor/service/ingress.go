@@ -1,10 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
-	"github.com/pkg/errors"
 	"io"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,7 +38,7 @@ func (r ingress) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstruct
 	ing := networkingv1.Ingress{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &ing)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to ingress")
+		return true, nil, fmt.Errorf("%w: unable to cast to ingress", err)
 	}
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {

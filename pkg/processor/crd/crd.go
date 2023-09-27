@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,14 +54,14 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	name, ok, err := unstructured.NestedString(obj.Object, "spec", "names", "singular")
 	if err != nil || !ok {
-		return true, nil, errors.Wrap(err, "unable to create crd template")
+		return true, nil, fmt.Errorf("%w: unable to create crd template", err)
 	}
 	if appMeta.Config().Crd {
 		logrus.WithField("crd", name).Info("put CRD under crds dir without templating")
 		// do not template CRDs when placed to crds dir
 		res, err := yaml.Marshal(obj)
 		if err != nil {
-			return true, nil, errors.Wrap(err, "unable to create crd template")
+			return true, nil, fmt.Errorf("%w: unable to create crd template", err)
 		}
 		return true, &result{
 			name: name + "-crd.yaml",
@@ -103,13 +102,13 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 
 	specUnstr, ok, err := unstructured.NestedMap(obj.Object, "spec")
 	if err != nil || !ok {
-		return true, nil, errors.Wrap(err, "unable to create crd template")
+		return true, nil, fmt.Errorf("%w: unable to create crd template", err)
 	}
 
 	spec := v1.CustomResourceDefinitionSpec{}
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(specUnstr, &spec)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to crd spec")
+		return true, nil, fmt.Errorf("%w: unable to cast to crd spec", err)
 	}
 
 	if spec.Conversion != nil {

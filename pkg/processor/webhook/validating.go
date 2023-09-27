@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +50,7 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	whConf := v1.ValidatingWebhookConfiguration{}
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &whConf)
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable to cast to ValidatingWebhookConfiguration")
+		return true, nil, fmt.Errorf("%w: unable to cast to ValidatingWebhookConfiguration", err)
 	}
 	for i, whc := range whConf.Webhooks {
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
@@ -62,7 +61,7 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	webhooks = bytes.TrimRight(webhooks, "\n ")
 	certName, _, err := unstructured.NestedString(obj.Object, "metadata", "annotations", "cert-manager.io/inject-ca-from")
 	if err != nil {
-		return true, nil, errors.Wrap(err, "unable get webhook certName")
+		return true, nil, fmt.Errorf("%w: unable get webhook certName", err)
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
 	certName = appMeta.TrimName(certName)
