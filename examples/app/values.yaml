@@ -84,6 +84,8 @@ myapp:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
   replicas: 3
+myappPdb:
+  minAvailable: 2
 myappService:
   ports:
   - name: https

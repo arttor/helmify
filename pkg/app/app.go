@@ -2,13 +2,15 @@ package app
 
 import (
 	"context"
-	"github.com/arttor/helmify/pkg/file"
-	"github.com/arttor/helmify/pkg/processor/job"
-	"github.com/arttor/helmify/pkg/processor/statefulset"
 	"io"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/arttor/helmify/pkg/file"
+	"github.com/arttor/helmify/pkg/processor/job"
+	"github.com/arttor/helmify/pkg/processor/poddisruptionbudget"
+	"github.com/arttor/helmify/pkg/processor/statefulset"
 
 	"github.com/sirupsen/logrus"
 
@@ -64,6 +66,7 @@ func Start(stdin io.Reader, config config.Config) error {
 		webhook.MutatingWebhook(),
 		job.NewCron(),
 		job.NewJob(),
+		poddisruptionbudget.New(),
 	).WithDefaultProcessor(processor.Default())
 	if len(config.Files) != 0 {
 		file.Walk(config.Files, config.FilesRecursively, func(filename string, fileReader io.Reader) {
