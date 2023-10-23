@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/arttor/helmify/pkg/processor"
 
@@ -60,30 +59,29 @@ func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 
 	name := appMeta.TrimName(obj.GetName())
-	shortName := strings.TrimPrefix(name, "controller-manager-")
-	shortNameCamel := strcase.ToLowerCamel(shortName)
+	nameCamel := strcase.ToLowerCamel(name)
 
 	selector, _ := yaml.Marshal(pdb.Spec.Selector)
 	selector = yamlformat.Indent(selector, 4)
 	selector = bytes.TrimRight(selector, "\n ")
 
 	if spec.MaxUnavailable != nil {
-		_, err := values.Add(spec.MaxUnavailable.IntValue(), shortNameCamel, "maxUnavailable")
+		_, err := values.Add(spec.MaxUnavailable.IntValue(), nameCamel, "maxUnavailable")
 		if err != nil {
 			return true, nil, err
 		}
 	}
 
 	if spec.MinAvailable != nil {
-		_, err := values.Add(spec.MinAvailable.IntValue(), shortNameCamel, "minAvailable")
+		_, err := values.Add(spec.MinAvailable.IntValue(), nameCamel, "minAvailable")
 		if err != nil {
 			return true, nil, err
 		}
 	}
 
-	res := meta + fmt.Sprintf(pdbTempSpec, shortNameCamel, selector, appMeta.ChartName())
+	res := meta + fmt.Sprintf(pdbTempSpec, nameCamel, selector, appMeta.ChartName())
 	return true, &result{
-		name:   shortName,
+		name:   name,
 		data:   res,
 		values: values,
 	}, nil
