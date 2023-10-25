@@ -14,7 +14,7 @@ metadata:
   creationTimestamp: null
   name: cephvolumes.test.example.com
   labels:
-    example-label: my-app 
+    example-label: my-app
 spec:
   group: test.example.com
   names:
@@ -570,6 +570,7 @@ metadata:
   namespace: my-operator-system
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
   selector:
     matchLabels:
       control-plane: controller-manager

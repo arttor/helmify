@@ -30,6 +30,9 @@ spec:
 {{- if .Replicas }}
 {{ .Replicas }}
 {{- end }}
+{{- if .RevisionHistoryLimit }}
+{{ .RevisionHistoryLimit }}
+{{- end }}
   selector:
 {{ .Selector }}
   template:
@@ -57,6 +60,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return false, nil, nil
 	}
 	depl := appsv1.Deployment{}
+
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &depl)
 	if err != nil {
 		return true, nil, fmt.Errorf("%w: unable to cast to deployment", err)
@@ -70,6 +74,11 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 
 	name := appMeta.TrimName(obj.GetName())
 	replicas, err := processReplicas(name, &depl, &values)
+	if err != nil {
+		return true, nil, err
+	}
+
+	revisionHistoryLimit, err := processRevisionHistoryLimit(name, &depl, &values)
 	if err != nil {
 		return true, nil, err
 	}
@@ -125,19 +134,21 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	return true, &result{
 		values: values,
 		data: struct {
-			Meta           string
-			Replicas       string
-			Selector       string
-			PodLabels      string
-			PodAnnotations string
-			Spec           string
+			Meta                 string
+			Replicas             string
+			RevisionHistoryLimit string
+			Selector             string
+			PodLabels            string
+			PodAnnotations       string
+			Spec                 string
 		}{
-			Meta:           meta,
-			Replicas:       replicas,
-			Selector:       selector,
-			PodLabels:      podLabels,
-			PodAnnotations: podAnnotations,
-			Spec:           spec,
+			Meta:                 meta,
+			Replicas:             replicas,
+			RevisionHistoryLimit: revisionHistoryLimit,
+			Selector:             selector,
+			PodLabels:            podLabels,
+			PodAnnotations:       podAnnotations,
+			Spec:                 spec,
 		},
 	}, nil
 }
@@ -158,14 +169,31 @@ func processReplicas(name string, deployment *appsv1.Deployment, values *helmify
 	return replicas, nil
 }
 
+func processRevisionHistoryLimit(name string, deployment *appsv1.Deployment, values *helmify.Values) (string, error) {
+	if deployment.Spec.RevisionHistoryLimit == nil {
+		return "", nil
+	}
+	revisionHistoryLimitTpl, err := values.Add(int64(*deployment.Spec.RevisionHistoryLimit), name, "revisionHistoryLimit")
+	if err != nil {
+		return "", err
+	}
+	revisionHistoryLimit, err := yamlformat.Marshal(map[string]interface{}{"revisionHistoryLimit": revisionHistoryLimitTpl}, 2)
+	if err != nil {
+		return "", err
+	}
+	revisionHistoryLimit = strings.ReplaceAll(revisionHistoryLimit, "'", "")
+	return revisionHistoryLimit, nil
+}
+
 type result struct {
 	data struct {
-		Meta           string
-		Replicas       string
-		Selector       string
-		PodLabels      string
-		PodAnnotations string
-		Spec           string
+		Meta                 string
+		Replicas             string
+		RevisionHistoryLimit string
+		Selector             string
+		PodLabels            string
+		PodAnnotations       string
+		Spec                 string
 	}
 	values helmify.Values
 }
