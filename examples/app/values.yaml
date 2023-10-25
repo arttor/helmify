@@ -84,6 +84,7 @@ myapp:
       repository: gcr.io/kubebuilder/kube-rbac-proxy
       tag: v0.8.0
   replicas: 3
+  revisionHistoryLimit: 5
 myappPdb:
   minAvailable: 2
 myappService:

@@ -18,6 +18,7 @@ metadata:
   name: my-operator-controller-manager
   namespace: my-operator-system
 spec:
+  revisionHistoryLimit: 5
   replicas: 1
   selector:
     matchLabels:
