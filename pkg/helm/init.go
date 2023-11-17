@@ -2,7 +2,6 @@ package helm
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -178,7 +177,7 @@ func createCommonFiles(chartDir, chartName string, crd bool, certManagerAsSubcha
 			return
 		}
 		file := filepath.Join(path...)
-		err = ioutil.WriteFile(file, content, 0640)
+		err = os.WriteFile(file, content, 0640)
 		if err == nil {
 			logrus.WithField("file", file).Info("created")
 		}
