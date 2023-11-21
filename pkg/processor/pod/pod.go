@@ -166,7 +166,7 @@ func processPodSpec(name string, appMeta helmify.AppMetadata, pod *corev1.PodSpe
 }
 
 func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
-	index := strings.LastIndex(c.Image, ":")
+	index := strings.Index(c.Image, ":")
 	if index < 0 {
 		return c, fmt.Errorf("wrong image format: %q", c.Image)
 	}
