@@ -15,9 +15,10 @@ jobs:
 
 # GO tests
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
         go-version: '1.21'
+        cache: false
 
     - name: Fmt
       run: go fmt ./...
@@ -31,7 +32,7 @@ jobs:
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
       with:
-        version: v1.51.2
+        version: v1.54
 # Dry-run generated charts in cluster
     - name: Install k8s cluster
       uses: helm/kind-action@v1.4.0
