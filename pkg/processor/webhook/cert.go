@@ -15,7 +15,9 @@ import (
 )
 
 const (
-	certTempl = `apiVersion: cert-manager.io/v1
+	WebhookHeader = `{{- if .Values.webhook.enabled }}`
+	WebhookFooter = `{{- end }}`
+	certTempl     = `apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: {{ include "%[1]s.fullname" . }}-%[2]s
@@ -92,16 +94,25 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	} else {
 		tmpl = certTempl
 	}
+	values := helmify.Values{}
+	if appMeta.Config().AddWebhookOption {
+		// Add webhook.enabled value to values.yaml
+		_, _ = values.Add(true, "webhook", "enabled")
+
+		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, tmpl, WebhookFooter)
+	}
 	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
 	return true, &certResult{
-		name: name,
-		data: []byte(res),
+		name:   name,
+		data:   []byte(res),
+		values: values,
 	}, nil
 }
 
 type certResult struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *certResult) Filename() string {
@@ -109,7 +120,7 @@ func (r *certResult) Filename() string {
 }
 
 func (r *certResult) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *certResult) Write(writer io.Writer) error {

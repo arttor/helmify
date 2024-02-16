@@ -53,6 +53,7 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		return false, nil, nil
 	}
 	name := appMeta.TrimName(obj.GetName())
+
 	spec, _ := yaml.Marshal(obj.Object["spec"])
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")
@@ -62,6 +63,13 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	} else {
 		tmpl = issuerTempl
 	}
+	values := helmify.Values{}
+	if appMeta.Config().AddWebhookOption {
+		// Add webhook.enabled value to values.yaml
+		_, _ = values.Add(true, "webhook", "enabled")
+
+		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, tmpl, WebhookFooter)
+	}
 	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
 	return true, &issResult{
 		name: name,
@@ -70,8 +78,9 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 }
 
 type issResult struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *issResult) Filename() string {
@@ -79,7 +88,7 @@ func (r *issResult) Filename() string {
 }
 
 func (r *issResult) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *issResult) Write(writer io.Writer) error {

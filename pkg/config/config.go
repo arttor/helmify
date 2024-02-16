@@ -34,6 +34,8 @@ type Config struct {
 	Files []string
 	// FilesRecursively read Files recursively
 	FilesRecursively bool
+	// AddWebhookOption enables the generation of a webhook option in values.yamlß
+	AddWebhookOption bool
 }
 
 func (c *Config) Validate() error {
