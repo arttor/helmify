@@ -118,7 +118,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeployment)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, deploy.TypeMeta.Kind)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -162,7 +162,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithNoArgs)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, deploy.TypeMeta.Kind)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -201,7 +201,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithTagAndDigest)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, deploy.TypeMeta.Kind)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -240,7 +240,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithPort)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, deploy.TypeMeta.Kind)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{

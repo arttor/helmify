@@ -115,7 +115,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
-	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, depl.Spec.Template.Spec)
+	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, depl.Spec.Template.Spec, depl.TypeMeta.Kind)
 	if err != nil {
 		return true, nil, err
 	}

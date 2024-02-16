@@ -2,10 +2,11 @@ package statefulset
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor/pod"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/processor/pod"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
@@ -108,7 +109,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 	}
 
 	// process pod spec:
-	podSpecMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, ssSpec.Template.Spec)
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, ssSpec.Template.Spec, ss.TypeMeta.Kind)
 	if err != nil {
 		return true, nil, err
 	}

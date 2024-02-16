@@ -18,15 +18,15 @@ const envValue = "{{ quote .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
 
 func CalculateBaseIndent(resourceType string) int {
 	switch resourceType {
-	case "cronJob", "job":
+	case "CronJob", "Job":
 		return 4 // Adjusting for the deeper nesting within a JobTemplate
 	default:
 		return 0 // Regular Template
 	}
 }
 
-func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpec) (map[string]interface{}, helmify.Values, error) {
-	baseIndent := CalculateBaseIndent(objName)
+func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpec, kind string) (map[string]interface{}, helmify.Values, error) {
+	baseIndent := CalculateBaseIndent(kind)
 
 	values, err := processPodSpec(objName, appMeta, &spec)
 	if err != nil {
