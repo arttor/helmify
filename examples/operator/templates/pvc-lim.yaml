@@ -9,5 +9,5 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.pvc.pvcLim.storageRequest | quote }}
-  storageClassName: {{ .Values.pvc.pvcLim.storageClass | quote }}
+      storage: {{ tpl (.Values.pvc.pvcLim.storageRequest) $ | quote }}
+  storageClassName: {{ tpl (.Values.pvc.pvcLim.storageClass) $ | quote }}
