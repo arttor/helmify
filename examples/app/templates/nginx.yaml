@@ -11,4 +11,4 @@ spec:
     app: nginx
   {{- include "app.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.nginx.ports | toYaml | nindent 2 -}}
+	{{- .Values.nginx.ports | toYaml | nindent 2 }}
