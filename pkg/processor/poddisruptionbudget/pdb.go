@@ -16,6 +16,15 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	pdbTempSpec = `
+spec:
+  %[1]s
+  selector:
+%[2]s
+    {{- include "%[3]s.selectorLabels" . | nindent 6 }}`
+)
+
 var pdbGVC = schema.GroupVersionKind{
 	Group:   "policy",
 	Version: "v1",
@@ -78,12 +87,7 @@ func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		}
 	}
 
-	res := meta + fmt.Sprintf(`
-spec:
-  %[1]s
-  selector:
-%[2]s
-	  {{- include "%[3]s.selectorLabels" . | nindent 6 }}`, specSection, selectorIndented, appMeta.ChartName())
+	res := meta + fmt.Sprintf(pdbTempSpec, specSection, selectorIndented, appMeta.ChartName())
 
 	return true, &result{
 		name:   name,
