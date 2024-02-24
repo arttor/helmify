@@ -9,7 +9,8 @@ spec:
   template:
     spec:
       containers:
-      - command:
+      - args: {{- toYaml .Values.batchJob.pi.args | nindent 12 }}
+        command:
         - perl
         - -Mbignum=bpi
         - -wle
@@ -20,5 +21,6 @@ spec:
         image: {{ .Values.batchJob.pi.image.repository }}:{{ .Values.batchJob.pi.image.tag
           | default .Chart.AppVersion }}
         name: pi
-        resources: {}
+        resources: {{- toYaml .Values.batchJob.pi.resources | nindent 14 }}
+      nodeSelector: {{- toYaml .Values.batchJob.nodeSelector | nindent 12 }}
       restartPolicy: Never
