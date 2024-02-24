@@ -16,17 +16,8 @@ import (
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ quote .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
 
-func CalculateBaseIndent(resourceType string) int {
-	switch resourceType {
-	case "CronJob", "Job":
-		return 4 // Adjusting for the deeper nesting within a JobTemplate
-	default:
-		return 0 // Regular Template
-	}
-}
-
 func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpec, kind string) (map[string]interface{}, helmify.Values, error) {
-	baseIndent := CalculateBaseIndent(kind)
+	baseIndent := calculateBaseIndent(kind)
 
 	values, err := processPodSpec(objName, appMeta, &spec)
 	if err != nil {
@@ -106,6 +97,15 @@ func processNestedContainers(specMap map[string]interface{}, objName string, val
 	}
 
 	return specMap, values, nil
+}
+
+func calculateBaseIndent(resourceType string) int {
+	switch resourceType {
+	case "CronJob", "Job":
+		return 4 // Adjusting for the deeper nesting within a JobTemplate
+	default:
+		return 0 // Regular Template
+	}
 }
 
 func processContainers(objName string, values helmify.Values, containerType string, containers []interface{}, baseIndent int) ([]interface{}, helmify.Values, error) {
