@@ -10,10 +10,10 @@ spec:
       template:
         spec:
           containers:
-          - command:
+          - args: {{- toYaml .Values.cronJob.hello.args | nindent 12 }}
+            command:
             - /bin/sh
             - -c
-            - date; echo Hello from the Kubernetes cluster
             env:
             - name: KUBERNETES_CLUSTER_DOMAIN
               value: {{ quote .Values.kubernetesClusterDomain }}
@@ -21,6 +21,7 @@ spec:
               | default .Chart.AppVersion }}
             imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
             name: hello
-            resources: {}
+            resources: {{- toYaml .Values.cronJob.hello.resources | nindent 14 }}
+          nodeSelector: {{- toYaml .Values.cronJob.nodeSelector | nindent 12 }}
           restartPolicy: OnFailure
   schedule: {{ .Values.cronJob.schedule | quote }}
