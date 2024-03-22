@@ -108,11 +108,16 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	selector = strings.Trim(selector, " \n")
 	selector = string(yamlformat.Indent([]byte(selector), 4))
 
+	nameCamel := strcase.ToLowerCamel(name)
 	podLabels, err := yamlformat.Marshal(depl.Spec.Template.ObjectMeta.Labels, 8)
 	if err != nil {
 		return true, nil, err
 	}
-	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
+	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}\n      {{- toYaml .Values.%s.extraPodLabels | nindent 8 }}", appMeta.ChartName(), nameCamel)
+	err = unstructured.SetNestedField(values, make(map[string]interface{}), nameCamel, "podLabels")
+	if err != nil {
+		return true, nil, err
+	}
 
 	podAnnotations := ""
 	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
