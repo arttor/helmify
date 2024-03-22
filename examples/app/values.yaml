@@ -12,6 +12,9 @@ cronJob:
       repository: busybox
       tag: "1.28"
     imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        storage: 1Gi
   schedule: '* * * * *'
 fluentdElasticsearch:
   fluentdElasticsearch:

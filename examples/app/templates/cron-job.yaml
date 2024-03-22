@@ -22,6 +22,6 @@ spec:
               | default .Chart.AppVersion }}
             imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
             name: hello
-            resources: {}
+            resources: {{- toYaml .Values.cronJob.hello.resources | nindent 14 }}
           restartPolicy: OnFailure
   schedule: {{ .Values.cronJob.schedule | quote }}
