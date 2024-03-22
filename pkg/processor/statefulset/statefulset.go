@@ -108,7 +108,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 	}
 
 	// process pod spec:
-	podSpecMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, ssSpec.Template.Spec)
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, ssSpec.Template.Spec, 0)
 	if err != nil {
 		return true, nil, err
 	}

@@ -10,7 +10,8 @@ spec:
       template:
         spec:
           containers:
-          - command:
+          - args: {{- toYaml .Values.cronJob.hello.args | nindent 12 }}
+            command:
             - /bin/sh
             - -c
             - date; echo Hello from the Kubernetes cluster

@@ -98,7 +98,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
-	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, dae.Spec.Template.Spec)
+	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, dae.Spec.Template.Spec, 0)
 	if err != nil {
 		return true, nil, err
 	}

@@ -6,6 +6,8 @@ batchJob:
       tag: 5.34.0
 cronJob:
   hello:
+    args:
+    - --health-probe-bind-address=:8081
     image:
       repository: busybox
       tag: "1.28"

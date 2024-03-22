@@ -287,6 +287,8 @@ spec:
                 - /bin/sh
                 - -c
                 - date; echo Hello from the Kubernetes cluster
+              args:
+              - --health-probe-bind-address=:8081
           restartPolicy: OnFailure
 ---
 apiVersion: v1

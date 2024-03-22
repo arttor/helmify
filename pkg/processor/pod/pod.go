@@ -16,7 +16,12 @@ import (
 const imagePullPolicyTemplate = "{{ .Values.%[1]s.%[2]s.imagePullPolicy }}"
 const envValue = "{{ quote .Values.%[1]s.%[2]s.%[3]s.%[4]s }}"
 
-func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpec) (map[string]interface{}, helmify.Values, error) {
+func ProcessSpec(
+	objName string,
+	appMeta helmify.AppMetadata,
+	spec corev1.PodSpec,
+	indentOffset uint,
+) (map[string]interface{}, helmify.Values, error) {
 	values, err := processPodSpec(objName, appMeta, &spec)
 	if err != nil {
 		return nil, nil, err
@@ -39,12 +44,12 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		return nil, nil, fmt.Errorf("%w: unable to convert podSpec to map", err)
 	}
 
-	specMap, values, err = processNestedContainers(specMap, objName, values, "containers")
+	specMap, values, err = processNestedContainers(specMap, objName, values, "containers", indentOffset)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	specMap, values, err = processNestedContainers(specMap, objName, values, "initContainers")
+	specMap, values, err = processNestedContainers(specMap, objName, values, "initContainers", indentOffset)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,14 +81,20 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	return specMap, values, nil
 }
 
-func processNestedContainers(specMap map[string]interface{}, objName string, values map[string]interface{}, containerKey string) (map[string]interface{}, map[string]interface{}, error) {
+func processNestedContainers(
+	specMap map[string]interface{},
+	objName string,
+	values map[string]interface{},
+	containerKey string,
+	indentOffset uint,
+) (map[string]interface{}, map[string]interface{}, error) {
 	containers, _, err := unstructured.NestedSlice(specMap, containerKey)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if len(containers) > 0 {
-		containers, values, err = processContainers(objName, values, containerKey, containers)
+		containers, values, err = processContainers(objName, values, containerKey, containers, indentOffset)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -97,26 +108,41 @@ func processNestedContainers(specMap map[string]interface{}, objName string, val
 	return specMap, values, nil
 }
 
-func processContainers(objName string, values helmify.Values, containerType string, containers []interface{}) ([]interface{}, helmify.Values, error) {
+func processContainers(
+	objName string,
+	values helmify.Values,
+	containerType string,
+	containers []interface{},
+	indentOffset uint,
+) ([]interface{}, helmify.Values, error) {
 	for i := range containers {
-		containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
+		container := containers[i].(map[string]interface{})
+		containerName := strcase.ToLowerCamel(container["name"].(string))
 		res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
 		if err != nil {
 			return nil, nil, err
 		}
 		if exists && len(res) > 0 {
-			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent 10 }}`, objName, containerName), "resources")
+			err = unstructured.SetNestedField(
+				container,
+				fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent %d }}`, objName, containerName, 10+indentOffset),
+				"resources",
+			)
 			if err != nil {
 				return nil, nil, err
 			}
 		}
 
-		args, exists, err := unstructured.NestedStringSlice(containers[i].(map[string]interface{}), "args")
+		args, exists, err := unstructured.NestedStringSlice(container, "args")
 		if err != nil {
 			return nil, nil, err
 		}
 		if exists && len(args) > 0 {
-			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent 8 }}`, objName, containerName), "args")
+			err = unstructured.SetNestedField(
+				container,
+				fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent %d }}`, objName, containerName, 8+indentOffset),
+				"args",
+			)
 			if err != nil {
 				return nil, nil, err
 			}

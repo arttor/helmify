@@ -105,7 +105,7 @@ func (p cron) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	}
 
 	// process job pod template:
-	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.JobTemplate.Spec.Template.Spec)
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.JobTemplate.Spec.Template.Spec, 4)
 	if err != nil {
 		return true, nil, err
 	}

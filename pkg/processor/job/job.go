@@ -104,7 +104,7 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		}
 	}
 	// process job pod template:
-	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.Template.Spec)
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.Template.Spec, 0)
 	if err != nil {
 		return true, nil, err
 	}
