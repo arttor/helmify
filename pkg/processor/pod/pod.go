@@ -71,6 +71,28 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		if err != nil {
 			return nil, nil, err
 		}
+
+		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.tolerations | nindent 8 }}`, objName), "tolerations")
+		if err != nil {
+			return nil, nil, err
+		}
+		uTolerations := make([]interface{}, 0)
+		for i, toleration := range spec.Tolerations {
+			uTolerations[i] = map[string]interface{}{
+				"value":    toleration.Value,
+				"key":      toleration.Key,
+				"operator": toleration.Operator,
+				"effect":   toleration.Effect,
+			}
+
+			if toleration.TolerationSeconds != nil {
+				uTolerations[i].(map[string]interface{})["tolerationSeconds"] = *toleration.TolerationSeconds
+			}
+		}
+		err = unstructured.SetNestedSlice(values, uTolerations, objName, "tolerations")
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return specMap, values, nil
