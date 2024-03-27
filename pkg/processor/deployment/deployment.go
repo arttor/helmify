@@ -103,7 +103,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	if err != nil {
 		return true, nil, err
 	}
-	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}\n      {{- toYaml .Values.%s.extraPodLabels | nindent 8 }}", appMeta.ChartName(), nameCamel)
+	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}\n      {{- if  .Values.%s.podLabels }}\n      {{- toYaml .Values.%s.podLabels | nindent 8 }}\n      {{- end }}", appMeta.ChartName(), nameCamel, nameCamel)
 	err = unstructured.SetNestedField(values, make(map[string]interface{}), nameCamel, "podLabels")
 	if err != nil {
 		return true, nil, err
