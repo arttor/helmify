@@ -62,7 +62,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.VeryVerbose, "vv", false, "Enable very verbose output. Same as verbose but with DEBUG. Example: helmify -vv")
 	flag.BoolVar(&crd, "crd-dir", false, "Enable crd install into 'crds' directory.\nWarning: CRDs placed in 'crds' directory will not be templated by Helm.\nSee https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations\nExample: helmify -crd-dir")
 	flag.BoolVar(&result.ImagePullSecrets, "image-pull-secrets", false, "Allows the user to use existing secrets as imagePullSecrets in values.yaml")
-	flag.BoolVar(&result.GenerateDefaults, "generate-defaults", false, "Allows the user to add empty placeholders for tipical customization options in values.yaml. Currently covers: topology constraints, node selectors, tolerances")
+	flag.BoolVar(&result.GenerateDefaults, "generate-defaults", false, "Allows the user to add empty placeholders for typical customization options in values.yaml. Currently covers: topology constraints, node selectors, tolerances")
 	flag.BoolVar(&result.CertManagerAsSubchart, "cert-manager-as-subchart", false, "Allows the user to add cert-manager as a subchart")
 	flag.StringVar(&result.CertManagerVersion, "cert-manager-version", "v1.12.2", "Allows the user to specify cert-manager subchart version. Only useful with cert-manager-as-subchart.")
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
