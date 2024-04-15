@@ -82,6 +82,9 @@ func (a *Service) ChartName() string {
 // TemplatedName - converts object name to its Helm templated representation.
 // Adds chart fullname prefix from _helpers.tpl
 func (a *Service) TemplatedName(name string) string {
+	if a.conf.OriginalName {
+		return name
+	}
 	_, contains := a.names[name]
 	if !contains {
 		// template only app objects

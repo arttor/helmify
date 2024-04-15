@@ -34,6 +34,8 @@ type Config struct {
 	Files []string
 	// FilesRecursively read Files recursively
 	FilesRecursively bool
+	// OriginalName retains Kubernetes resource's original name
+	OriginalName bool
 }
 
 func (c *Config) Validate() error {
