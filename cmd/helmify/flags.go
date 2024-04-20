@@ -66,7 +66,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.CertManagerAsSubchart, "cert-manager-as-subchart", false, "Allows the user to add cert-manager as a subchart")
 	flag.StringVar(&result.CertManagerVersion, "cert-manager-version", "v1.12.2", "Allows the user to specify cert-manager subchart version. Only useful with cert-manager-as-subchart.")
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
-	flag.BoolVar(&result.OriginalName, "original-name", false, "Retains Kubernetes resource's original name.")
+	flag.BoolVar(&result.OriginalName, "original-name", false, "Use the object's original name instead of adding the chart's release name as the common prefix.")
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
 
 	flag.Parse()
