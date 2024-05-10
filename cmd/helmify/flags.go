@@ -54,7 +54,7 @@ func (i *arrayFlags) Set(value string) error {
 func ReadFlags() config.Config {
 	files := arrayFlags{}
 	result := config.Config{}
-	var h, help, version, crd bool
+	var h, help, version, crd , preservens bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
 	flag.BoolVar(&help, "help", false, "Print help. Example: helmify -help")
 	flag.BoolVar(&version, "version", false, "Print helmify version. Example: helmify -version")
@@ -68,7 +68,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
 	flag.BoolVar(&result.OriginalName, "original-name", false, "Use the object's original name instead of adding the chart's release name as the common prefix.")
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
-
+	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace")
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)
@@ -86,6 +86,9 @@ func ReadFlags() config.Config {
 	}
 	if crd {
 		result.Crd = crd
+	}
+	if preservens {
+		result.PreserveNs = true
 	}
 	result.Files = files
 	return result

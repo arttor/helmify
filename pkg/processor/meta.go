@@ -16,7 +16,7 @@ const metaTemplate = `apiVersion: %[1]s
 kind: %[2]s
 metadata:
   name: %[3]s
-  %[7]s  	
+%[7]s
   labels:
 %[5]s
   {{- include "%[4]s.labels" . | nindent 4 }}
@@ -82,8 +82,8 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 		}
 	}
 
-	if obj.GetNamespace() != "" {
-		namespace, err = yamlformat.Marshal(map[string]interface{}{"namespace": obj.GetNamespace()}, 0)
+	if (obj.GetNamespace() != "") && (appMeta.Config().PreserveNs){
+		namespace, err = yamlformat.Marshal(map[string]interface{}{"namespace": obj.GetNamespace()}, 2)
 		if err != nil {
 			return "", err
 		}
