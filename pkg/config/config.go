@@ -36,6 +36,8 @@ type Config struct {
 	FilesRecursively bool
 	// OriginalName retains Kubernetes resource's original name
 	OriginalName bool
+	// PreserveNs retains the namespaces on the Kubernetes manifests
+	PreserveNs bool
 }
 
 func (c *Config) Validate() error {
