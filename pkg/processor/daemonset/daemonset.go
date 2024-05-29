@@ -2,10 +2,11 @@ package daemonset
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/processor/pod"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/processor/pod"
 
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
@@ -98,7 +99,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
-	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, dae.Spec.Template.Spec)
+	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, dae.Spec.Template.Spec, dae.TypeMeta.Kind)
 	if err != nil {
 		return true, nil, err
 	}
