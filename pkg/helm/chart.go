@@ -31,7 +31,7 @@ type output struct{}
 //	    └── _helpers.tp   # Helm default template partials
 //
 // Overwrites existing values.yaml and templates in templates dir on every run.
-func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, certManagerVersion string, templates []helmify.Template, filenames []string) error {
+func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubchart bool, certManagerVersion string, certManagerInstallCRD bool, templates []helmify.Template, filenames []string) error {
 	err := initChartDir(chartDir, chartName, crd, certManagerAsSubchart, certManagerVersion)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (o output) Create(chartDir, chartName string, crd bool, certManagerAsSubcha
 			return err
 		}
 	}
-	err = overwriteValuesFile(cDir, values, certManagerAsSubchart)
+	err = overwriteValuesFile(cDir, values, certManagerAsSubchart, certManagerInstallCRD)
 	if err != nil {
 		return err
 	}
@@ -101,9 +101,9 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 	return nil
 }
 
-func overwriteValuesFile(chartDir string, values helmify.Values, certManagerAsSubchart bool) error {
+func overwriteValuesFile(chartDir string, values helmify.Values, certManagerAsSubchart bool, certManagerInstallCRD bool) error {
 	if certManagerAsSubchart {
-		_, err := values.Add(true, "certmanager", "installCRDs")
+		_, err := values.Add(certManagerInstallCRD, "certmanager", "installCRDs")
 		if err != nil {
 			return fmt.Errorf("%w: unable to add cert-manager.installCRDs", err)
 		}
