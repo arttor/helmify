@@ -30,6 +30,8 @@ type Config struct {
 	CertManagerAsSubchart bool
 	// CertManagerVersion sets cert-manager version in dependency
 	CertManagerVersion string
+	// CertManagerVersion enables installation of cert-manager CRD
+	CertManagerInstallCRD bool
 	// Files - directories or files with k8s manifests
 	Files []string
 	// FilesRecursively read Files recursively
