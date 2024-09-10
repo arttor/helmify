@@ -60,6 +60,23 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	if err != nil {
 		return nil, nil, err
 	}
+	if spec.SecurityContext != nil {
+		securityContextMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&spec.SecurityContext)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(securityContextMap) > 0 {
+			err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%[1]s.podSecurityPolicy | nindent 8 }}`, objName), "securityContext")
+			if err != nil {
+				return nil, nil, err
+			}
+
+			err = unstructured.SetNestedField(values, securityContextMap, objName, "podSecurityPolicy")
+			if err != nil {
+				return nil, nil, fmt.Errorf("%w: unable to set deployment value field", err)
+			}
+		}
+	}
 
 	// process nodeSelector if presented:
 	if spec.NodeSelector != nil {
