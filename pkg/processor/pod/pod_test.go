@@ -111,6 +111,33 @@ spec:
         ports:
         - containerPort: 80
 `
+	strDeploymentWithPodSecurityContext = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: localhost:6001/my_project:latest
+      securityContext:
+        fsGroup: 20000
+        runAsGroup: 30000
+        runAsNonRoot: true
+        runAsUser: 65532
+
+`
 )
 
 func Test_pod_Process(t *testing.T) {
@@ -265,6 +292,46 @@ func Test_pod_Process(t *testing.T) {
 
 		assert.Equal(t, helmify.Values{
 			"nginx": map[string]interface{}{
+				"nginx": map[string]interface{}{
+					"image": map[string]interface{}{
+						"repository": "localhost:6001/my_project",
+						"tag":        "latest",
+					},
+				},
+			},
+		}, tmpl)
+	})
+	t.Run("deployment with securityContext", func(t *testing.T) {
+		var deploy appsv1.Deployment
+		obj := internal.GenerateObj(strDeploymentWithPodSecurityContext)
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]interface{}{
+			"containers": []interface{}{
+				map[string]interface{}{
+					"env": []interface{}{
+						map[string]interface{}{
+							"name":  "KUBERNETES_CLUSTER_DOMAIN",
+							"value": "{{ quote .Values.kubernetesClusterDomain }}",
+						},
+					},
+					"image":     "{{ .Values.nginx.nginx.image.repository }}:{{ .Values.nginx.nginx.image.tag | default .Chart.AppVersion }}",
+					"name":      "nginx",
+					"resources": map[string]interface{}{},
+				},
+			},
+			"securityContext": "{{- toYaml .Values.nginx.podSecurityPolicy | nindent 8 }}",
+		}, specMap)
+
+		assert.Equal(t, helmify.Values{
+			"nginx": map[string]interface{}{
+				"podSecurityPolicy": map[string]interface{}{
+					"fsGroup":      int64(20000),
+					"runAsGroup":   int64(30000),
+					"runAsNonRoot": true,
+					"runAsUser":    int64(65532),
+				},
 				"nginx": map[string]interface{}{
 					"image": map[string]interface{}{
 						"repository": "localhost:6001/my_project",
