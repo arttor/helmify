@@ -321,12 +321,12 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
-			"securityContext": "{{- toYaml .Values.nginx.podSecurityPolicy | nindent 8 }}",
+			"securityContext": "{{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
 			"nginx": map[string]interface{}{
-				"podSecurityPolicy": map[string]interface{}{
+				"podSecurityContext": map[string]interface{}{
 					"fsGroup":      int64(20000),
 					"runAsGroup":   int64(30000),
 					"runAsNonRoot": true,
