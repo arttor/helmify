@@ -81,6 +81,8 @@ spec:
               name: https
       securityContext:
         runAsNonRoot: true
+        fsGroup: 20000
+        runAsUser: 65532
       nodeSelector:
         region: east
         type: user-node
