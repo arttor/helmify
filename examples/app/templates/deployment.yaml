@@ -87,8 +87,7 @@ spec:
         name: init-container
         resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
-      securityContext:
-        runAsNonRoot: true
+      securityContext: {{- toYaml .Values.myapp.podSecurityContext | nindent 8 }}
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:

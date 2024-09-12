@@ -87,8 +87,8 @@ spec:
       imagePullSecrets:
       - name: {{ include "operator.fullname" . }}-secret-registry-credentials
       nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
-      securityContext:
-        runAsNonRoot: true
+      securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
+        8 }}
       serviceAccountName: {{ include "operator.fullname" . }}-controller-manager
       terminationGracePeriodSeconds: 10
       topologySpreadConstraints:

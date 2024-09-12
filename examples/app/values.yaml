@@ -76,6 +76,10 @@ myapp:
   nodeSelector:
     region: east
     type: user-node
+  podSecurityContext:
+    fsGroup: 20000
+    runAsNonRoot: true
+    runAsUser: 65532
   proxySidecar:
     args:
     - --secure-listen-address=0.0.0.0:8443
