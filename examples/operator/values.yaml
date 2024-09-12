@@ -43,6 +43,8 @@ controllerManager:
   nodeSelector:
     region: east
     type: user-node
+  podSecurityContext:
+    runAsNonRoot: true
   replicas: 1
   serviceAccount:
     annotations:
