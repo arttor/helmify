@@ -5,7 +5,7 @@ metadata:
   labels:
   {{- include "app.labels" . | nindent 4 }}
 data:
-  my.prop1: {{ .Values.myConfigProps.myProp1 | quote }}
-  my.prop2: {{ .Values.myConfigProps.myProp2 | quote }}
-  my.prop3: {{ .Values.myConfigProps.myProp3 | quote }}
+  my.prop1: {{ tpl (.Values.myConfigProps.myProp1) $ | quote }}
+  my.prop2: {{ tpl (.Values.myConfigProps.myProp2) $ | quote }}
+  my.prop3: {{ tpl (.Values.myConfigProps.myProp3) $ | quote }}
   myval.yaml: {{ .Values.myConfigProps.myvalYaml | toYaml | indent 1 }}

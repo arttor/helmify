@@ -6,7 +6,7 @@ metadata:
   {{- include "app.labels" . | nindent 4 }}
 immutable: true
 data:
-  dummyconfigmapkey: {{ .Values.myConfig.dummyconfigmapkey | quote }}
+  dummyconfigmapkey: {{ tpl (.Values.myConfig.dummyconfigmapkey) $ | quote }}
   my_config.properties: |
-    health.healthProbeBindAddress={{ .Values.myConfig.myConfigProperties.health.healthProbeBindAddress | quote }}
-    metrics.bindAddress={{ .Values.myConfig.myConfigProperties.metrics.bindAddress | quote }}
+    health.healthProbeBindAddress={{ tpl (.Values.myConfig.myConfigProperties.health.healthProbeBindAddress) $ | quote }}
+    metrics.bindAddress={{ tpl (.Values.myConfig.myConfigProperties.metrics.bindAddress) $ | quote }}
