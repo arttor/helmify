@@ -25,9 +25,9 @@ spec:
   type: {{ .Values.%[1]s.type }}
   selector:
 %[2]s
-  {{- include "%[3]s.selectorLabels" . | nindent 4 }}
+    {{- include "%[3]s.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.%[1]s.ports | toYaml | nindent 2 }}`
+  {{- .Values.%[1]s.ports | toYaml | nindent 2 }}`
 )
 
 var svcGVC = schema.GroupVersionKind{
