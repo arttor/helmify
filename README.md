@@ -162,3 +162,26 @@ go test ./...
 Beside unit-tests, project contains e2e test `pkg/app/app_e2e_test.go`.
 It's a go test, which uses `test_data/*` to generate a chart in temporary directory. 
 Then runs `helm lint --strict` to check if generated chart is valid.
+
+## Contribute
+
+Following rules will help changes to be accepted faster:
+- For more than one-line bugfixes consider creating an issue with bug description or feature request
+- For feature request try to think about and cover following topics (when applicable):
+  - Motivation: why feature is needed? Which problem does it solve? What is current workaround?
+  - Backward-compatibility: existing users expect that after upgrading helmify version their existing generated charts wont be changed without consent.
+- For bugfix PR consider adding example to [/test_data](./test_data/) source yamls reproducing bug.
+
+### Contribution flow
+
+Check list before submitting PR:
+1. Run `go fmt ./...`
+2. Run tests `go test ./...`
+3. Update chart examples:
+   ```shell
+   cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app
+   ```
+   ```shell
+   cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
+   ```
+4. In case of long commit history (more than 3) squash local commits into one
