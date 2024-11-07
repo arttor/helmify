@@ -82,7 +82,7 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 		}
 	}
 
-	if (obj.GetNamespace() != "") && (appMeta.Config().PreserveNs){
+	if (obj.GetNamespace() != "") && (appMeta.Config().PreserveNs) {
 		namespace, err = yamlformat.Marshal(map[string]interface{}{"namespace": obj.GetNamespace()}, 2)
 		if err != nil {
 			return "", err

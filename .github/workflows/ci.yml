@@ -21,8 +21,18 @@ jobs:
         cache: false
 
     - name: Fmt
-      run: go fmt ./...
-
+      run: |
+          # Run gofmt in "diff" mode to check for unformatted code
+          UNFORMATTED_FILES=$(gofmt -l .)
+          # Check if any files are unformatted
+          if [[ -n "$UNFORMATTED_FILES" ]]; then
+            echo "::error::The following Go files are not formatted correctly:"
+            echo "$UNFORMATTED_FILES"  # List unformatted files in the log
+            echo "::error::Please format your Go code by running \`go fmt ./...\` and commit the changes."
+            exit 1  # Fail the check
+          else
+            echo "All Go files are properly formatted."
+          fi
     - name: Vet
       run: go vet ./...
 
@@ -33,6 +43,24 @@ jobs:
       uses: golangci/golangci-lint-action@v3
       with:
         version: v1.54
+# Generate example charts
+    - name: Generate example charts
+      run: |
+          cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app
+          cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
+    - name: Check that chart examples were commited
+      run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            # Capture the list of uncommitted files
+            UNCOMMITTED_FILES=$(git status --porcelain)
+            echo "::error::Chart examples generation step has uncommitted changes: $UNCOMMITTED_FILES
+          Please run following commands and commit the results:
+          - \`cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app\`
+          - \`cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator\`"
+            exit 1
+          else
+            echo "Chart examples generation check passed. No uncommitted changes."
+          fi
 # Dry-run generated charts in cluster
     - name: Install k8s cluster
       uses: helm/kind-action@v1.4.0
