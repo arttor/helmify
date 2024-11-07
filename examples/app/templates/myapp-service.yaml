@@ -9,6 +9,6 @@ spec:
   type: {{ .Values.myappService.type }}
   selector:
     app: myapp
-  {{- include "app.selectorLabels" . | nindent 4 }}
+    {{- include "app.selectorLabels" . | nindent 4 }}
   ports:
-	{{- .Values.myappService.ports | toYaml | nindent 2 }}
+  {{- .Values.myappService.ports | toYaml | nindent 2 }}
