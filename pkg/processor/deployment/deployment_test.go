@@ -74,6 +74,10 @@ spec:
               resource: limits.cpu
         - name: VAR5
           value: "123"
+        - name: VAR6
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app.kubernetes.io/something']
         image: controller:latest
         livenessProbe:
           httpGet:

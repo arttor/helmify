@@ -49,6 +49,14 @@ spec:
                 secretKeyRef:
                   name: my-secret-vars
                   key: VAR2
+            - name: APP_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/name']
+            - name: INSTANCE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/instance']
           image: controller:latest
           livenessProbe:
             httpGet:
