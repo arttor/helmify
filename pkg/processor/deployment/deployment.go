@@ -130,8 +130,8 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	match := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
-	spec = match.ReplaceAllString(spec, "${1}")
+	r := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
+	spec = r.ReplaceAllString(spec, "${1}")
 
 	return true, &result{
 		values: values,
