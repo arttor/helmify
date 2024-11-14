@@ -3,6 +3,7 @@ package deployment
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -129,7 +130,8 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	spec = strings.ReplaceAll(spec, "'", "")
+	match := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
+	spec = match.ReplaceAllString(spec, "${1}")
 
 	return true, &result{
 		values: values,
