@@ -134,3 +134,84 @@ func Test_deployment_Process(t *testing.T) {
 		assert.Equal(t, false, processed)
 	})
 }
+
+var singleQuotesTest = []struct {
+	input    string
+	expected string
+}{
+	{
+		"{{ .Values.x }}",
+		"{{ .Values.x }}",
+	},
+	{
+		"'{{ .Values.x }}'",
+		"{{ .Values.x }}",
+	},
+	{
+		"'{{ .Values.x }}:{{ .Values.y }}'",
+		"{{ .Values.x }}:{{ .Values.y }}",
+	},
+	{
+		"'{{ .Values.x }}:{{ .Values.y \n\t| default .Chart.AppVersion}}'",
+		"{{ .Values.x }}:{{ .Values.y \n\t| default .Chart.AppVersion}}",
+	},
+	{
+		"echo 'x'",
+		"echo 'x'",
+	},
+	{
+		"abcd: x.y['x/y']",
+		"abcd: x.y['x/y']",
+	},
+	{
+		"abcd: x.y[\"'{{}}'\"]",
+		"abcd: x.y[\"{{}}\"]",
+	},
+	{
+		"image: '{{ .Values.x }}'",
+		"image: {{ .Values.x }}",
+	},
+	{
+		"'{{ .Values.x }} y'",
+		"{{ .Values.x }} y",
+	},
+	{
+		"\t\t- mountPath: './x.y'",
+		"\t\t- mountPath: './x.y'",
+	},
+	{
+		"'{{}}'",
+		"{{}}",
+	},
+	{
+		"'{{ {nested} }}'",
+		"{{ {nested} }}",
+	},
+	{
+		"'{{ '{{nested}}' }}'",
+		"{{ '{{nested}}' }}",
+	},
+	{
+		"'{{ unbalanced }'",
+		"'{{ unbalanced }'",
+	},
+	{
+		"'{{\nincomplete content'",
+		"'{{\nincomplete content'",
+	},
+	{
+		"'{{ @#$%^&*() }}'",
+		"{{ @#$%^&*() }}",
+	},
+}
+
+func Test_replaceSingleQuotes(t *testing.T) {
+	for _, tt := range singleQuotesTest {
+		t.Run(tt.input, func(t *testing.T) {
+			s := replaceSingleQuotes(tt.input)
+			if s != tt.expected {
+				t.Errorf("got %q, want %q", s, tt.expected)
+			}
+		})
+	}
+}
