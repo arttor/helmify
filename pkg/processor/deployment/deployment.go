@@ -130,8 +130,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	r := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
-	spec = r.ReplaceAllString(spec, "${1}")
+	spec = replaceSingleQuotes(spec)
 
 	return true, &result{
 		values: values,
@@ -153,6 +152,11 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 			Spec:                 spec,
 		},
 	}, nil
+}
+
+func replaceSingleQuotes(s string) string {
+	r := regexp.MustCompile(`'({{((.*|.*\n.*))}}.*)'`)
+	return r.ReplaceAllString(s, "${1}")
 }
 
 func processReplicas(name string, deployment *appsv1.Deployment, values *helmify.Values) (string, error) {
