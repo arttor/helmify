@@ -13,4 +13,4 @@ spec:
   ports:
   {{- .Values.myappLbService.ports | toYaml | nindent 2 }}
   loadBalancerSourceRanges:
-  {{ - .Values.myappLbService.loadBalancerSourceRanges | toYaml | nindent 2 }}
+  {{- .Values.myappLbService.loadBalancerSourceRanges | toYaml | nindent 2 }}
