@@ -30,6 +30,12 @@ spec:
   {{- .Values.%[1]s.ports | toYaml | nindent 2 }}`
 )
 
+const (
+	lbSourceRangesTempSpec = `
+  loadBalancerSourceRanges:
+  {{ - .Values.%[1]s.loadBalancerSourceRanges | toYaml | nindent 2 }}`
+)
+
 var svcGVC = schema.GroupVersionKind{
 	Group:   "",
 	Version: "v1",
@@ -97,6 +103,9 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
 	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName())
+
+	res += parseLoadBalancerSourceRanges(values, service, shortNameCamel)
+
 	if shortNameCamel == "webhookService" && appMeta.Config().AddWebhookOption {
 		res = fmt.Sprintf("{{- if .Values.webhook.enabled }}\n%s\n{{- end }}", res)
 	}
@@ -105,6 +114,18 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		data:   res,
 		values: values,
 	}, nil
+}
+
+func parseLoadBalancerSourceRanges(values helmify.Values, service corev1.Service, shortNameCamel string) string {
+	if len(service.Spec.LoadBalancerSourceRanges) < 1 {
+		return ""
+	}
+	lbSourceRanges := make([]interface{}, len(service.Spec.LoadBalancerSourceRanges))
+	for i, ip := range service.Spec.LoadBalancerSourceRanges {
+		lbSourceRanges[i] = ip
+	}
+	_ = unstructured.SetNestedSlice(values, lbSourceRanges, shortNameCamel, "loadBalancerSourceRanges")
+	return fmt.Sprintf(lbSourceRangesTempSpec, shortNameCamel)
 }
 
 type result struct {
