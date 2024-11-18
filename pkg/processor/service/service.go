@@ -33,7 +33,7 @@ spec:
 const (
 	lbSourceRangesTempSpec = `
   loadBalancerSourceRanges:
-  {{ - .Values.%[1]s.loadBalancerSourceRanges | toYaml | nindent 2 }}`
+  {{- .Values.%[1]s.loadBalancerSourceRanges | toYaml | nindent 2 }}`
 )
 
 var svcGVC = schema.GroupVersionKind{
