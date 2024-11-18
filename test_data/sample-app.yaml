@@ -138,6 +138,24 @@ spec:
   selector:
     app: myapp
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: myapp
+  name: myapp-lb-service
+  namespace: my-ns
+spec:
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+  selector:
+    app: myapp
+  type: LoadBalancer
+  loadBalancerSourceRanges:
+  - 10.0.0.0/8
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
