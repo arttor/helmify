@@ -23,4 +23,4 @@ spec:
             name: hello
             resources: {}
           restartPolicy: OnFailure
-  schedule: {{ .Values.cronJob.schedule | quote }}
+  schedule: {{ tpl (.Values.cronJob.schedule) $ | quote }}
