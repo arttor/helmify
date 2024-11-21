@@ -37,6 +37,8 @@ import (
 {{- if .Optional }}
 {{ -end }}`
 */
+// Template uses << and >> as delimiters because if we used the default ones "{{" and ""}}"
+// we would not be able ton insert {{- end }} in the template.
 var secretTempl, _ = template.New("secret").Delims("<<", ">>").Parse(
 	`<<- if .Optional >>
 << .Optional >>
