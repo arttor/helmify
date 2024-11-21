@@ -53,6 +53,7 @@ func (i *arrayFlags) Set(value string) error {
 // ReadFlags command-line flags into app config.
 func ReadFlags() config.Config {
 	files := arrayFlags{}
+	optionalSecrets := arrayFlags{}
 	result := config.Config{}
 	var h, help, version, crd, preservens bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
@@ -69,6 +70,7 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
 	flag.BoolVar(&result.OriginalName, "original-name", false, "Use the object's original name instead of adding the chart's release name as the common prefix.")
 	flag.Var(&files, "f", "File or directory containing k8s manifests")
+	flag.Var(&optionalSecrets, "optional-secrets", "List of secrets to be templated as optional (their values will not be required).")
 	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace")
 	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml")
 
@@ -94,5 +96,6 @@ func ReadFlags() config.Config {
 		result.PreserveNs = true
 	}
 	result.Files = files
+	result.OptionalSecrets = optionalSecrets
 	return result
 }
