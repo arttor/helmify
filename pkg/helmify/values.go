@@ -1,10 +1,11 @@
 package helmify
 
 import (
-	"dario.cat/mergo"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"dario.cat/mergo"
 
 	"github.com/iancoleman/strcase"
 
@@ -71,12 +72,15 @@ func (v *Values) AddYaml(value interface{}, indent int, newLine bool, name ...st
 
 // AddSecret - adds empty value to values and returns its helm template representation {{ required "<valueName>" .Values.<valueName> }}.
 // Set toBase64=true for Secret data to be base64 encoded and set false for Secret stringData.
-func (v *Values) AddSecret(toBase64 bool, name ...string) (string, error) {
+func (v *Values) AddSecret(toBase64 bool, optionalSecret bool, name ...string) (string, error) {
 	name = toCamelCase(name)
 	nameStr := strings.Join(name, ".")
-	err := unstructured.SetNestedField(*v, "", name...)
-	if err != nil {
-		return "", fmt.Errorf("%w: unable to set value: %v", err, nameStr)
+	var err error = nil
+	if !optionalSecret {
+		err = unstructured.SetNestedField(*v, "", name...)
+		if err != nil {
+			return "", fmt.Errorf("%w: unable to set value: %v", err, nameStr)
+		}
 	}
 	res := fmt.Sprintf(`{{ required "%[1]s is required" .Values.%[1]s`, nameStr)
 	if toBase64 {

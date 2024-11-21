@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -40,6 +41,8 @@ type Config struct {
 	OriginalName bool
 	// PreserveNs retains the namespaces on the Kubernetes manifests
 	PreserveNs bool
+	// OptionalSecrets - list of secrets that are optional and should only be generated if values are given
+	OptionalSecrets []string
 }
 
 func (c *Config) Validate() error {
