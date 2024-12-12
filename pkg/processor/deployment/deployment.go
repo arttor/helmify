@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var deploymentGVC = schema.GroupVersionKind{
@@ -33,6 +34,9 @@ spec:
 {{- end }}
 {{- if .RevisionHistoryLimit }}
 {{ .RevisionHistoryLimit }}
+{{- end }}
+{{- if .Strategy }}
+{{ .Strategy }}
 {{- end }}
   selector:
 {{ .Selector }}
@@ -80,6 +84,11 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	}
 
 	revisionHistoryLimit, err := processRevisionHistoryLimit(name, &depl, &values)
+	if err != nil {
+		return true, nil, err
+	}
+
+	strategy, err := processStrategy(name, &depl, &values)
 	if err != nil {
 		return true, nil, err
 	}
@@ -141,6 +150,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 			Meta                 string
 			Replicas             string
 			RevisionHistoryLimit string
+			Strategy             string
 			Selector             string
 			PodLabels            string
 			PodAnnotations       string
@@ -149,6 +159,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 			Meta:                 meta,
 			Replicas:             replicas,
 			RevisionHistoryLimit: revisionHistoryLimit,
+			Strategy:             strategy,
 			Selector:             selector,
 			PodLabels:            podLabels,
 			PodAnnotations:       podAnnotations,
@@ -218,11 +229,68 @@ func processRevisionHistoryLimit(name string, deployment *appsv1.Deployment, val
 	return revisionHistoryLimit, nil
 }
 
+func processStrategy(name string, deployment *appsv1.Deployment, values *helmify.Values) (string, error) {
+	if deployment.Spec.Strategy.Type == "" {
+		return "", nil
+	}
+	allowedStrategyTypes := map[appsv1.DeploymentStrategyType]bool{
+		appsv1.RecreateDeploymentStrategyType:      true,
+		appsv1.RollingUpdateDeploymentStrategyType: true,
+	}
+	if !allowedStrategyTypes[deployment.Spec.Strategy.Type] {
+		return "", fmt.Errorf("invalid deployment strategy type: %s", deployment.Spec.Strategy.Type)
+	}
+	strategyTypeTpl, err := values.Add(string(deployment.Spec.Strategy.Type), name, "strategy", "type")
+	if err != nil {
+		return "", err
+	}
+	strategyMap := map[string]interface{}{
+		"type": strategyTypeTpl,
+	}
+	if deployment.Spec.Strategy.Type == appsv1.RollingUpdateDeploymentStrategyType {
+		if rollingUpdate := deployment.Spec.Strategy.RollingUpdate; rollingUpdate != nil {
+			rollingUpdateMap := map[string]interface{}{}
+			setRollingUpdateField := func(value *intstr.IntOrString, fieldName string) error {
+				var tpl string
+				var err error
+				if value.Type == intstr.Int {
+					tpl, err = values.Add(value.IntValue(), name, "strategy", "rollingUpdate", fieldName)
+				} else {
+					tpl, err = values.Add(value.String(), name, "strategy", "rollingUpdate", fieldName)
+				}
+				if err != nil {
+					return err
+				}
+				rollingUpdateMap[fieldName] = tpl
+				return nil
+			}
+			if rollingUpdate.MaxSurge != nil {
+				if err := setRollingUpdateField(rollingUpdate.MaxSurge, "maxSurge"); err != nil {
+					return "", err
+				}
+			}
+			if rollingUpdate.MaxUnavailable != nil {
+				if err := setRollingUpdateField(rollingUpdate.MaxUnavailable, "maxUnavailable"); err != nil {
+					return "", err
+				}
+			}
+			strategyMap["rollingUpdate"] = rollingUpdateMap
+		}
+	}
+	strategy, err := yamlformat.Marshal(map[string]interface{}{"strategy": strategyMap}, 2)
+	if err != nil {
+		return "", err
+	}
+	strategy = strings.ReplaceAll(strategy, "'", "")
+	return strategy, nil
+}
+
 type result struct {
 	data struct {
 		Meta                 string
 		Replicas             string
 		RevisionHistoryLimit string
+		Strategy             string
 		Selector             string
 		PodLabels            string
 		PodAnnotations       string
