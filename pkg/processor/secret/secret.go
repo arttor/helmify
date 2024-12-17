@@ -22,9 +22,9 @@ import (
 
 // Template uses << and >> as delimiters because if we used the default ones "{{" and ""}}"
 // we would not be able ton insert {{- end }} in the template.
-var secretTempl, _ = template.New("secret").Delims("<<", ">>").Parse(`<<- if .Optional >>
+var secretTempl, _ = template.New("secret").Delims("<<", ">>").Parse(`<< if .Optional ->>
 << .Optional >>
-<<- end >>
+<< end ->>
 << .Meta >>
 <<- if .Data >>
 << .Data >>
@@ -70,8 +70,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
 	isOptional := slices.Contains(appMeta.Config().OptionalSecrets, obj.GetName())
-	//isOptional := false
-	optionalData := ""
+	var optionalData string
 	if isOptional {
 		optionalData = fmt.Sprintf("{{- if not (empty .Values.%s) }}", nameCamelCase)
 	}
