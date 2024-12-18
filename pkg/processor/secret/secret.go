@@ -2,10 +2,12 @@ package secret
 
 import (
 	"fmt"
-	"github.com/arttor/helmify/pkg/format"
 	"io"
+	"slices"
 	"strings"
 	"text/template"
+
+	"github.com/arttor/helmify/pkg/format"
 
 	"github.com/arttor/helmify/pkg/processor"
 
@@ -18,17 +20,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var secretTempl, _ = template.New("secret").Parse(
-	`{{ .Meta }}
-{{- if .Data }}
-{{ .Data }}
+// Template uses << and >> as delimiters because if we used the default ones "{{" and ""}}"
+// we would not be able ton insert {{- end }} in the template.
+var secretTempl, _ = template.New("secret").Delims("<<", ">>").Parse(`<< if .Optional ->>
+<< .Optional >>
+<< end ->>
+<< .Meta >>
+<<- if .Data >>
+<< .Data >>
+<<- end >>
+<<- if .StringData >>
+<< .StringData >>
+<<- end >>
+<<- if .Type >>
+<< .Type >>
+<<- end >>
+<<- if .Optional >>
 {{- end }}
-{{- if .StringData }}
-{{ .StringData }}
-{{- end }}
-{{- if .Type }}
-{{ .Type }}
-{{- end }}`)
+<<- end >>`)
 
 var configMapGVC = schema.GroupVersionKind{
 	Group:   "",
@@ -60,7 +69,11 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 
 	name := appMeta.TrimName(obj.GetName())
 	nameCamelCase := strcase.ToLowerCamel(name)
-
+	isOptional := slices.Contains(appMeta.Config().OptionalSecrets, obj.GetName())
+	var optionalData string
+	if isOptional {
+		optionalData = fmt.Sprintf("{{- if not (empty .Values.%s) }}", nameCamelCase)
+	}
 	secretType := string(sec.Type)
 	if secretType != "" {
 		secretType, err = yamlformat.Marshal(map[string]interface{}{"type": secretType}, 0)
@@ -77,7 +90,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		if key == strings.ToUpper(key) {
 			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
 		}
-		templatedName, err := values.AddSecret(true, nameCamelCase, keyCamelCase)
+		templatedName, err := values.AddSecret(true, isOptional, nameCamelCase, keyCamelCase)
 		if err != nil {
 			return true, nil, fmt.Errorf("%w: unable add secret to values", err)
 		}
@@ -98,7 +111,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		if key == strings.ToUpper(key) {
 			keyCamelCase = strcase.ToLowerCamel(strings.ToLower(key))
 		}
-		templatedName, err := values.AddSecret(false, nameCamelCase, keyCamelCase)
+		templatedName, err := values.AddSecret(false, isOptional, nameCamelCase, keyCamelCase)
 		if err != nil {
 			return true, nil, fmt.Errorf("%w: unable add secret to values", err)
 		}
@@ -120,7 +133,8 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 			Meta       string
 			Data       string
 			StringData string
-		}{Type: secretType, Meta: meta, Data: data, StringData: stringData},
+			Optional   string
+		}{Type: secretType, Meta: meta, Data: data, StringData: stringData, Optional: optionalData},
 		values: values,
 	}, nil
 }
@@ -132,6 +146,7 @@ type result struct {
 		Meta       string
 		Data       string
 		StringData string
+		Optional   string
 	}
 	values helmify.Values
 }
