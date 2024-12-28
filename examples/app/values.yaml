@@ -1,15 +1,37 @@
 batchJob:
   backoffLimit: 4
+  nodeSelector:
+    disktype: ssd
   pi:
+    args:
+    - date; echo Hello from the Kubernetes cluster
     image:
       repository: perl
       tag: 5.34.0
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
 cronJob:
   hello:
+    args:
+    - date; echo Hello from the Kubernetes cluster
     image:
       repository: busybox
       tag: "1.28"
     imagePullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  nodeSelector:
+    disktype: ssd
   schedule: '* * * * *'
 fluentdElasticsearch:
   fluentdElasticsearch:

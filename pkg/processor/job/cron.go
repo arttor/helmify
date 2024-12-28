@@ -2,18 +2,19 @@ package job
 
 import (
 	"fmt"
+	"io"
+	"strings"
+	"text/template"
+
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/pod"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
-	"io"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"strings"
-	"text/template"
 )
 
 var cronTempl, _ = template.New("cron").Parse(
@@ -105,7 +106,7 @@ func (p cron) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	}
 
 	// process job pod template:
-	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.JobTemplate.Spec.Template.Spec)
+	podSpecMap, podValues, err := pod.ProcessSpec(nameCamelCase, appMeta, jobObj.Spec.JobTemplate.Spec.Template.Spec, jobObj.TypeMeta.Kind)
 	if err != nil {
 		return true, nil, err
 	}

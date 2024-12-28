@@ -233,7 +233,7 @@ data:
       name: default-oneperhost-pod-template
     spec:
       templates:
-        podTemplates: 
+        podTemplates:
           - name: default-oneperhost-pod-template
             distribution: "OnePerHost"
 ---
@@ -294,7 +294,18 @@ spec:
         - name: pi
           image: perl:5.34.0
           command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+          args:
+            - "date; echo Hello from the Kubernetes cluster"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
       restartPolicy: Never
+      nodeSelector:
+        disktype: ssd
   backoffLimit: 4
 ---
 apiVersion: batch/v1
@@ -311,11 +322,19 @@ spec:
             - name: hello
               image: busybox:1.28
               imagePullPolicy: IfNotPresent
-              command:
-                - /bin/sh
-                - -c
-                - date; echo Hello from the Kubernetes cluster
+              command: ["/bin/sh", "-c"]
+              args:
+                - "date; echo Hello from the Kubernetes cluster"
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "200m"
+                  memory: "256Mi"
           restartPolicy: OnFailure
+          nodeSelector:
+            disktype: ssd
 ---
 apiVersion: v1
 kind: Service
