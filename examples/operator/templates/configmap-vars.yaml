@@ -5,4 +5,4 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 data:
-  VAR4: {{ .Values.configmapVars.var4 | quote }}
+  VAR4: {{ tpl (.Values.configmapVars.var4) $ | quote }}

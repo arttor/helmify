@@ -9,7 +9,7 @@ spec:
   - ReadWriteOnce
   resources:
     limits:
-      storage: {{ .Values.pvc.mySamplePvClaim.storageLimit | quote }}
+      storage: {{ tpl (.Values.pvc.mySamplePvClaim.storageLimit) $ | quote }}
     requests:
-      storage: {{ .Values.pvc.mySamplePvClaim.storageRequest | quote }}
-  storageClassName: {{ .Values.pvc.mySamplePvClaim.storageClass | quote }}
+      storage: {{ tpl (.Values.pvc.mySamplePvClaim.storageRequest) $ | quote }}
+  storageClassName: {{ tpl (.Values.pvc.mySamplePvClaim.storageClass) $ | quote }}
