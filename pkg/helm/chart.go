@@ -97,6 +97,12 @@ func overwriteTemplateFile(filename, chartDir string, crd bool, templates []helm
 			}
 		}
 	}
+	if len(templates) != 0 {
+		_, err = f.Write([]byte("\n"))
+		if err != nil {
+			return fmt.Errorf("%w: unable to write newline into %s", err, file)
+		}
+	}
 	logrus.WithField("file", file).Info("overwritten")
 	return nil
 }
