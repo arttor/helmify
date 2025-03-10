@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/arttor/helmify/pkg/processor"
-
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"github.com/iancoleman/strcase"
 	policyv1 "k8s.io/api/policy/v1"
@@ -20,8 +19,7 @@ import (
 const (
 	pdbTempSpec = `
 spec:
-  minAvailable: {{ .Values.%[1]s.minAvailable }}
-  maxUnavailable: {{ .Values.%[1]s.maxUnavailable }}
+  %[1]s
   selector:
 %[2]s
     {{- include "%[3]s.selectorLabels" . | nindent 6 }}`
@@ -33,14 +31,12 @@ var pdbGVC = schema.GroupVersionKind{
 	Kind:    "PodDisruptionBudget",
 }
 
-// New creates processor for k8s Service resource.
 func New() helmify.Processor {
 	return &pdb{}
 }
 
 type pdb struct{}
 
-// Process k8s Service object into template. Returns false if not capable of processing given resource type.
 func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) (bool, helmify.Template, error) {
 	if obj.GroupVersionKind() != pdbGVC {
 		return false, nil, nil
@@ -50,36 +46,49 @@ func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if err != nil {
 		return true, nil, fmt.Errorf("%w: unable to cast to pdb", err)
 	}
-	spec := pdb.Spec
-	values := helmify.Values{}
+
+	// Extract the name and namespace for use in the error message
+	name := pdb.GetName()
+	namespace := pdb.GetNamespace()
+	if namespace == "" {
+		namespace = "default" // Assuming 'default' if no namespace is specified
+	}
+
+	// Check if both MinAvailable and MaxUnavailable are specified
+	if pdb.Spec.MinAvailable != nil && pdb.Spec.MaxUnavailable != nil {
+		return true, nil, fmt.Errorf("error in PodDisruptionBudget '%s' in namespace '%s': both MinAvailable and MaxUnavailable are specified, but only one is allowed", name, namespace)
+	}
 
 	meta, err := processor.ProcessObjMeta(appMeta, obj)
 	if err != nil {
 		return true, nil, err
 	}
 
-	name := appMeta.TrimName(obj.GetName())
 	nameCamel := strcase.ToLowerCamel(name)
 
 	selector, _ := yaml.Marshal(pdb.Spec.Selector)
-	selector = yamlformat.Indent(selector, 4)
-	selector = bytes.TrimRight(selector, "\n ")
+	selectorIndented := yamlformat.Indent(selector, 4)
+	selectorIndented = bytes.TrimRight(selectorIndented, "\n ")
 
-	if spec.MaxUnavailable != nil {
-		_, err := values.Add(spec.MaxUnavailable.IntValue(), nameCamel, "maxUnavailable")
+	values := helmify.Values{}
+	specSection := ""
+
+	if pdb.Spec.MaxUnavailable != nil {
+		specSection = "maxUnavailable: {{ .Values." + nameCamel + ".maxUnavailable }}"
+		_, err := values.Add(pdb.Spec.MaxUnavailable.IntValue(), nameCamel, "maxUnavailable")
+		if err != nil {
+			return true, nil, err
+		}
+	} else if pdb.Spec.MinAvailable != nil {
+		specSection = "minAvailable: {{ .Values." + nameCamel + ".minAvailable }}"
+		_, err := values.Add(pdb.Spec.MinAvailable.IntValue(), nameCamel, "minAvailable")
 		if err != nil {
 			return true, nil, err
 		}
 	}
 
-	if spec.MinAvailable != nil {
-		_, err := values.Add(spec.MinAvailable.IntValue(), nameCamel, "minAvailable")
-		if err != nil {
-			return true, nil, err
-		}
-	}
+	res := meta + fmt.Sprintf(pdbTempSpec, specSection, selectorIndented, appMeta.ChartName())
 
-	res := meta + fmt.Sprintf(pdbTempSpec, nameCamel, selector, appMeta.ChartName())
 	return true, &result{
 		name:   name,
 		data:   res,
