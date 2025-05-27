@@ -30,7 +30,7 @@ func New(conf config.Config) *Service {
 }
 
 type Service struct {
-	commonPrefix string
+	commonPrefix *string
 	namespace    string
 	names        map[string]struct{}
 	conf         config.Config
@@ -44,7 +44,7 @@ func (a *Service) Config() config.Config {
 // If no common prefix - returns name as it is.
 // It is better to trim common prefix because Helm also adds release name as common prefix.
 func (a *Service) TrimName(objName string) string {
-	trimmed := strings.TrimPrefix(objName, a.commonPrefix)
+	trimmed := strings.TrimPrefix(objName, *a.commonPrefix)
 	trimmed = strings.TrimLeft(trimmed, "-./_ ")
 	if trimmed == "" {
 		return objName
@@ -58,7 +58,8 @@ var _ helmify.AppMetadata = &Service{}
 // other app meta information.
 func (a *Service) Load(obj *unstructured.Unstructured) {
 	a.names[obj.GetName()] = struct{}{}
-	a.commonPrefix = detectCommonPrefix(obj, a.commonPrefix)
+	newCommonPrefix := detectCommonPrefix(obj, a.commonPrefix)
+	a.commonPrefix = &newCommonPrefix
 	objNs := extractAppNamespace(obj)
 	if objNs == "" {
 		return
@@ -106,14 +107,14 @@ func extractAppNamespace(obj *unstructured.Unstructured) string {
 	return obj.GetNamespace()
 }
 
-func detectCommonPrefix(obj *unstructured.Unstructured, prevName string) string {
+func detectCommonPrefix(obj *unstructured.Unstructured, prevName *string) string {
 	if obj.GroupVersionKind() == crdGVK || obj.GroupVersionKind() == nsGVK {
-		return prevName
+		return *prevName
 	}
-	if prevName == "" {
+	if prevName == nil {
 		return obj.GetName()
 	}
-	return commonPrefix(obj.GetName(), prevName)
+	return commonPrefix(obj.GetName(), *prevName)
 }
 
 func commonPrefix(one, two string) string {
