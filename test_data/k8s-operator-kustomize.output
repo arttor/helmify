@@ -580,6 +580,11 @@ metadata:
   namespace: my-operator-system
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
   selector:
     matchLabels:
       control-plane: controller-manager

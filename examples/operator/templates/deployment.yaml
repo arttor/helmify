@@ -7,6 +7,13 @@ metadata:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.controllerManager.replicas }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.controllerManager.strategy.rollingUpdate.maxSurge | quote
+        }}
+      maxUnavailable: {{ .Values.controllerManager.strategy.rollingUpdate.maxUnavailable
+        | quote }}
+    type: {{ .Values.controllerManager.strategy.type | quote }}
   selector:
     matchLabels:
       control-plane: controller-manager

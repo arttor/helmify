@@ -20,6 +20,8 @@ metadata:
 spec:
   revisionHistoryLimit: 5
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       control-plane: controller-manager

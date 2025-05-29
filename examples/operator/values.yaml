@@ -49,6 +49,11 @@ controllerManager:
   serviceAccount:
     annotations:
       k8s.acme.org/some-meta-data: ACME Inc.
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
