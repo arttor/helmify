@@ -61,7 +61,10 @@ func (r hpa) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	name := appMeta.TrimName(obj.GetName())
 	nameCamel := strcase.ToLowerCamel(name)
 
-	scaleTargetRef, _ := yaml.Marshal(hpa.Spec.ScaleTargetRef)
+	scaleTargetRef, err := yaml.Marshal(hpa.Spec.ScaleTargetRef)
+	if err != nil {
+		return true, nil, fmt.Errorf("error marshaling scaleTargetRef: %w", err)
+	}
 	scaleTargetRef = yamlformat.Indent(scaleTargetRef, 4)
 	scaleTargetRef = bytes.TrimRight(scaleTargetRef, "\n ")
 
