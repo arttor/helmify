@@ -5,10 +5,10 @@ metadata:
   labels:
   {{- include "operator.labels" . | nindent 4 }}
 spec:
-  maxReplicas: 10
-  minReplicas: 2
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: myapp
-  targetCPUUtilizationPercentage: 80
+  minReplicas: {{ .Values.appHpa.minReplicas }}
+  maxReplicas: {{ .Values.appHpa.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.appHpa.targetCPUUtilizationPercentage }}

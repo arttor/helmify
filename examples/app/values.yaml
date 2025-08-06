@@ -22,6 +22,10 @@ fluentdElasticsearch:
       requests:
         cpu: 100m
         memory: 200Mi
+hpa:
+  maxReplicas: 10
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 80
 kubernetesClusterDomain: cluster.local
 myConfig:
   dummyconfigmapkey: dummyconfigmapvalue
