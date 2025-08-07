@@ -27,6 +27,14 @@ hpa:
   minReplicas: 2
   targetCPUUtilizationPercentage: 80
 kubernetesClusterDomain: cluster.local
+lbService:
+  loadBalancerSourceRanges:
+  - 10.0.0.0/8
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  type: LoadBalancer
 myConfig:
   dummyconfigmapkey: dummyconfigmapvalue
   myConfigProperties:
@@ -93,33 +101,25 @@ myapp:
       tag: v0.8.0
   replicas: 3
   revisionHistoryLimit: 5
-myappLbService:
-  loadBalancerSourceRanges:
-  - 10.0.0.0/8
-  ports:
-  - name: https
-    port: 8443
-    targetPort: https
-  type: LoadBalancer
-myappPdb:
-  minAvailable: 2
-myappService:
-  ports:
-  - name: https
-    port: 8443
-    targetPort: https
-  type: ClusterIP
 nginx:
   ports:
   - name: web
     port: 80
     targetPort: 0
   type: ClusterIP
+pdb:
+  minAvailable: 2
 pvc:
   mySamplePvClaim:
     storageClass: manual
     storageLimit: 5Gi
     storageRequest: 3Gi
+service:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  type: ClusterIP
 web:
   nginx:
     image:

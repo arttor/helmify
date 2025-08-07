@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-lb-service
+  labels:
+    app: myapp
+  {{- include "app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.lbService.type }}
+  selector:
+    app: myapp
+    {{- include "app.selectorLabels" . | nindent 4 }}
+  ports:
+  {{- .Values.lbService.ports | toYaml | nindent 2 }}
+  loadBalancerSourceRanges:
+  {{- .Values.lbService.loadBalancerSourceRanges | toYaml | nindent 2 }}
