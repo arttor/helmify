@@ -369,7 +369,7 @@ kind: PodDisruptionBudget
 metadata:
   labels:
     app: nginx
-  name: myapp-pdb
+  name: my-pdb
 spec:
   minAvailable: 2
   selector:
