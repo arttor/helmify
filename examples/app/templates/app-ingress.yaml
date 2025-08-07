@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "app.fullname" . }}-myapp-ingress
+  name: {{ include "app.fullname" . }}-app-ingress
   labels:
   {{- include "app.labels" . | nindent 4 }}
   annotations:
@@ -12,7 +12,7 @@ spec:
       paths:
       - backend:
           service:
-            name: '{{ include "app.fullname" . }}-myapp-service'
+            name: '{{ include "app.fullname" . }}-app-service'
             port:
               number: 8443
         path: /testpath

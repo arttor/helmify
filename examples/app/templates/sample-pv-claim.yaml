@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.fullname" . }}-sample-pv-claim
+  labels:
+  {{- include "app.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    limits:
+      storage: {{ .Values.pvc.samplePvClaim.storageLimit | quote }}
+    requests:
+      storage: {{ .Values.pvc.samplePvClaim.storageRequest | quote }}
+  storageClassName: {{ .Values.pvc.samplePvClaim.storageClass | quote }}

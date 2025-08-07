@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "app.fullname" . }}-myapp
+  name: {{ include "app.fullname" . }}-app
   labels:
     app: myapp
   {{- include "app.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.myapp.replicas }}
-  revisionHistoryLimit: {{ .Values.myapp.revisionHistoryLimit }}
+  replicas: {{ .Values.app.replicas }}
+  revisionHistoryLimit: {{ .Values.app.revisionHistoryLimit }}
   selector:
     matchLabels:
       app: myapp
@@ -19,7 +19,7 @@ spec:
       {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-      - args: {{- toYaml .Values.myapp.app.args | nindent 8 }}
+      - args: {{- toYaml .Values.app.app.args | nindent 8 }}
         command:
         - /manager
         env:
@@ -27,12 +27,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: VAR1
-              name: {{ include "app.fullname" . }}-my-secret-vars
+              name: {{ include "app.fullname" . }}-secret-vars
         - name: VAR2
           valueFrom:
             secretKeyRef:
               key: VAR2
-              name: {{ include "app.fullname" . }}-my-secret-vars
+              name: {{ include "app.fullname" . }}-secret-vars
         - name: APP_NAME
           valueFrom:
             fieldRef:
@@ -43,8 +43,8 @@ spec:
               fieldPath: metadata.labels['app.kubernetes.io/instance']
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.myapp.app.image.repository }}:{{ .Values.myapp.app.image.tag
-          | default .Chart.AppVersion }}
+        image: {{ .Values.app.app.image.repository }}:{{ .Values.app.app.image.tag | default
+          .Chart.AppVersion }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -58,8 +58,8 @@ spec:
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
-        resources: {{- toYaml .Values.myapp.app.resources | nindent 10 }}
-        securityContext: {{- toYaml .Values.myapp.app.containerSecurityContext | nindent
+        resources: {{- toYaml .Values.app.app.resources | nindent 10 }}
+        securityContext: {{- toYaml .Values.app.app.containerSecurityContext | nindent
           10 }}
         volumeMounts:
         - mountPath: /my_config.properties
@@ -71,11 +71,11 @@ spec:
           name: props
         - mountPath: /usr/share/nginx/html
           name: sample-pv-storage
-      - args: {{- toYaml .Values.myapp.proxySidecar.args | nindent 8 }}
+      - args: {{- toYaml .Values.app.proxySidecar.args | nindent 8 }}
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.myapp.proxySidecar.image.repository }}:{{ .Values.myapp.proxySidecar.image.tag
+        image: {{ .Values.app.proxySidecar.image.repository }}:{{ .Values.app.proxySidecar.image.tag
           | default .Chart.AppVersion }}
         name: proxy-sidecar
         ports:
@@ -90,23 +90,23 @@ spec:
         env:
         - name: KUBERNETES_CLUSTER_DOMAIN
           value: {{ quote .Values.kubernetesClusterDomain }}
-        image: {{ .Values.myapp.initContainer.image.repository }}:{{ .Values.myapp.initContainer.image.tag
+        image: {{ .Values.app.initContainer.image.repository }}:{{ .Values.app.initContainer.image.tag
           | default .Chart.AppVersion }}
         name: init-container
         resources: {}
-      nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
-      securityContext: {{- toYaml .Values.myapp.podSecurityContext | nindent 8 }}
+      nodeSelector: {{- toYaml .Values.app.nodeSelector | nindent 8 }}
+      securityContext: {{- toYaml .Values.app.podSecurityContext | nindent 8 }}
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
-          name: {{ include "app.fullname" . }}-my-config
+          name: {{ include "app.fullname" . }}-config
         name: manager-config
       - configMap:
-          name: {{ include "app.fullname" . }}-my-config-props
+          name: {{ include "app.fullname" . }}-config-props
         name: props
       - name: secret-volume
         secret:
-          secretName: {{ include "app.fullname" . }}-my-secret-ca
+          secretName: {{ include "app.fullname" . }}-secret-ca
       - name: sample-pv-storage
         persistentVolumeClaim:
-          claimName: {{ include "app.fullname" . }}-my-sample-pv-claim
+          claimName: {{ include "app.fullname" . }}-sample-pv-claim

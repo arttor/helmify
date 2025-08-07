@@ -1,57 +1,4 @@
-batchJob:
-  backoffLimit: 4
-  pi:
-    image:
-      repository: perl
-      tag: 5.34.0
-cronJob:
-  hello:
-    image:
-      repository: busybox
-      tag: "1.28"
-    imagePullPolicy: IfNotPresent
-  schedule: '* * * * *'
-fluentdElasticsearch:
-  fluentdElasticsearch:
-    image:
-      repository: quay.io/fluentd_elasticsearch/fluentd
-      tag: v2.5.2
-    resources:
-      limits:
-        memory: 200Mi
-      requests:
-        cpu: 100m
-        memory: 200Mi
-kubernetesClusterDomain: cluster.local
-myConfig:
-  dummyconfigmapkey: dummyconfigmapvalue
-  myConfigProperties:
-    health:
-      healthProbeBindAddress: "8081"
-    metrics:
-      bindAddress: 127.0.0.1:8080
-myConfigProps:
-  myProp1: "1"
-  myProp2: val 1
-  myProp3: "true"
-  myvalYaml: |-
-    apiVersion: clickhouse.altinity.com/v1
-    kind: ClickHouseInstallationTemplate
-    metadata:
-      name: default-oneperhost-pod-template
-    spec:
-      templates:
-        podTemplates:
-          - name: default-oneperhost-pod-template
-            distribution: "OnePerHost"
-mySecretCa:
-  caCrt: ""
-mySecretVars:
-  elasticFoobarHunter123MeowtownVerify: ""
-  str: ""
-  var1: ""
-  var2: ""
-myapp:
+app:
   app:
     args:
     - --health-probe-bind-address=:8081
@@ -89,7 +36,7 @@ myapp:
       tag: v0.8.0
   replicas: 3
   revisionHistoryLimit: 5
-myappLbService:
+appLbService:
   loadBalancerSourceRanges:
   - 10.0.0.0/8
   ports:
@@ -97,14 +44,64 @@ myappLbService:
     port: 8443
     targetPort: https
   type: LoadBalancer
-myappPdb:
+appPdb:
   minAvailable: 2
-myappService:
+appService:
   ports:
   - name: https
     port: 8443
     targetPort: https
   type: ClusterIP
+batchJob:
+  backoffLimit: 4
+  pi:
+    image:
+      repository: perl
+      tag: 5.34.0
+config:
+  dummyconfigmapkey: dummyconfigmapvalue
+  myConfigProperties:
+    health:
+      healthProbeBindAddress: "8081"
+    metrics:
+      bindAddress: 127.0.0.1:8080
+configProps:
+  myProp1: "1"
+  myProp2: val 1
+  myProp3: "true"
+  myvalYaml: |-
+    apiVersion: clickhouse.altinity.com/v1
+    kind: ClickHouseInstallationTemplate
+    metadata:
+      name: default-oneperhost-pod-template
+    spec:
+      templates:
+        podTemplates:
+          - name: default-oneperhost-pod-template
+            distribution: "OnePerHost"
+cronJob:
+  hello:
+    image:
+      repository: busybox
+      tag: "1.28"
+    imagePullPolicy: IfNotPresent
+  schedule: '* * * * *'
+fluentdElasticsearch:
+  fluentdElasticsearch:
+    image:
+      repository: quay.io/fluentd_elasticsearch/fluentd
+      tag: v2.5.2
+    resources:
+      limits:
+        memory: 200Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+hpa:
+  maxReplicas: 10
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 80
+kubernetesClusterDomain: cluster.local
 nginx:
   ports:
   - name: web
@@ -112,10 +109,17 @@ nginx:
     targetPort: 0
   type: ClusterIP
 pvc:
-  mySamplePvClaim:
+  samplePvClaim:
     storageClass: manual
     storageLimit: 5Gi
     storageRequest: 3Gi
+secretCa:
+  caCrt: ""
+secretVars:
+  elasticFoobarHunter123MeowtownVerify: ""
+  str: ""
+  var1: ""
+  var2: ""
 web:
   nginx:
     image:
