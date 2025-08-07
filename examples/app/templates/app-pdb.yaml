@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "app.fullname" . }}-app-pdb
+  labels:
+    app: nginx
+  {{- include "app.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.appPdb.minAvailable }}
+  maxUnavailable: {{ .Values.appPdb.maxUnavailable }}
+  selector:
+    matchLabels:
+      app: nginx
+    {{- include "app.selectorLabels" . | nindent 6 }}

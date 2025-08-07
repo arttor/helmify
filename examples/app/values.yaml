@@ -36,10 +36,6 @@ app:
       tag: v0.8.0
   replicas: 3
   revisionHistoryLimit: 5
-appHpa:
-  maxReplicas: 10
-  minReplicas: 2
-  targetCPUUtilizationPercentage: 80
 appLbService:
   loadBalancerSourceRanges:
   - 10.0.0.0/8
@@ -48,6 +44,8 @@ appLbService:
     port: 8443
     targetPort: https
   type: LoadBalancer
+appPdb:
+  minAvailable: 2
 appService:
   ports:
   - name: https
@@ -99,6 +97,10 @@ fluentdElasticsearch:
       requests:
         cpu: 100m
         memory: 200Mi
+hpa:
+  maxReplicas: 10
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 80
 kubernetesClusterDomain: cluster.local
 nginx:
   ports:
@@ -106,8 +108,6 @@ nginx:
     port: 80
     targetPort: 0
   type: ClusterIP
-pdb:
-  minAvailable: 2
 pvc:
   samplePvClaim:
     storageClass: manual

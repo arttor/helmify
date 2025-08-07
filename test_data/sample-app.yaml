@@ -369,7 +369,7 @@ kind: PodDisruptionBudget
 metadata:
   labels:
     app: nginx
-  name: my-pdb
+  name: myapp-pdb
 spec:
   minAvailable: 2
   selector:
@@ -379,12 +379,12 @@ spec:
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: myapp-hpa
+  name: my-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: myapp
+    name: mydep
   minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
