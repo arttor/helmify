@@ -1,7 +1,3 @@
-appHpa:
-  maxReplicas: 10
-  minReplicas: 2
-  targetCPUUtilizationPercentage: 80
 configmapVars:
   var4: value for var4
 controllerManager:
