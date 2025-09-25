@@ -145,7 +145,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeployment)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -167,6 +167,10 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -181,6 +185,9 @@ func Test_pod_Process(t *testing.T) {
 						"--arg",
 					},
 				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
 			},
 		}, tmpl)
 	})
@@ -189,7 +196,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithNoArgs)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -210,6 +217,10 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -220,6 +231,9 @@ func Test_pod_Process(t *testing.T) {
 						"tag":        "1.14.2",
 					},
 				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
 			},
 		}, tmpl)
 	})
@@ -228,7 +242,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithTagAndDigest)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -249,6 +263,10 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -259,6 +277,9 @@ func Test_pod_Process(t *testing.T) {
 						"tag":        "1.14.2@sha256:cb5c1bddd1b5665e1867a7fa1b5fa843a47ee433bbb75d4293888b71def53229",
 					},
 				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
 			},
 		}, tmpl)
 	})
@@ -267,7 +288,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithPort)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
 		assert.NoError(t, err)
 
 		assert.Equal(t, map[string]interface{}{
@@ -288,6 +309,10 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -298,6 +323,9 @@ func Test_pod_Process(t *testing.T) {
 						"tag":        "latest",
 					},
 				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
 			},
 		}, tmpl)
 	})
@@ -305,7 +333,7 @@ func Test_pod_Process(t *testing.T) {
 		var deploy appsv1.Deployment
 		obj := internal.GenerateObj(strDeploymentWithPodSecurityContext)
 		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
-		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
 		assert.NoError(t, err)
 		assert.Equal(t, map[string]interface{}{
 			"containers": []interface{}{
@@ -321,7 +349,11 @@ func Test_pod_Process(t *testing.T) {
 					"resources": map[string]interface{}{},
 				},
 			},
-			"securityContext": "{{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}",
+			"securityContext":           "{{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}",
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -338,6 +370,9 @@ func Test_pod_Process(t *testing.T) {
 						"tag":        "latest",
 					},
 				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
 			},
 		}, tmpl)
 	})

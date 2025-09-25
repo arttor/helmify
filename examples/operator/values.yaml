@@ -46,14 +46,19 @@ controllerManager:
   podSecurityContext:
     runAsNonRoot: true
   replicas: 1
-  serviceAccount:
-    annotations:
-      k8s.acme.org/some-meta-data: ACME Inc.
   strategy:
     rollingUpdate:
       maxSurge: 25%
       maxUnavailable: 25%
     type: RollingUpdate
+  tolerations: []
+  topologySpreadConstraints:
+  - matchLabelKeys:
+    - app
+    - pod-template-hash
+    maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: DoNotSchedule
 kubernetesClusterDomain: cluster.local
 managerConfig:
   controllerManagerConfigYaml: |-
@@ -89,6 +94,11 @@ secretRegistryCredentials:
 secretVars:
   var1: ""
   var2: ""
+serviceAccount:
+  annotations:
+    k8s.acme.org/some-meta-data: ACME Inc.
+  create: true
+  name: ""
 webhookService:
   ports:
   - port: 443
