@@ -96,7 +96,11 @@ spec:
         resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
       securityContext: {{- toYaml .Values.myapp.podSecurityContext | nindent 8 }}
+      serviceAccountName: {{ default "default" (include "app.serviceAccountName" .) }}
       terminationGracePeriodSeconds: 10
+      tolerations: {{- toYaml .Values.myapp.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.myapp.topologySpreadConstraints | nindent
+        8 }}
       volumes:
       - configMap:
           name: {{ include "app.fullname" . }}-my-config

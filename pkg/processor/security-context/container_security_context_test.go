@@ -93,7 +93,7 @@ func TestProcessContainerSecurityContext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ProcessContainerSecurityContext(tt.args.nameCamel, tt.args.specMap, tt.args.values)
+			ProcessContainerSecurityContext(tt.args.nameCamel, tt.args.specMap, tt.args.values, 8)
 			assert.Equal(t, tt.want, tt.args.values)
 		})
 	}
@@ -140,7 +140,7 @@ func Test_setSecContextValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setSecContextValue(tt.args.resourceName, tt.args.containerName, tt.args.castedContainer, tt.args.values)
+			setSecContextValue(tt.args.resourceName, tt.args.containerName, tt.args.castedContainer, tt.args.values, 8)
 			assert.Equal(t, tt.want, tt.args.values)
 		})
 	}
