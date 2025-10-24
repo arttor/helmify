@@ -17,8 +17,11 @@ metadata:
   name: {{ include "%[1]s.serviceAccountName" . }}
   labels:
   {{- include "%[1]s.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
   annotations:
-  {{- toYaml .Values.serviceAccount.annotations | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
 {{- end }}`
 )
 
@@ -43,6 +46,7 @@ func (sa serviceAccount) Process(appMeta helmify.AppMetadata, obj *unstructured.
 	values := helmify.Values{}
 	_, _ = values.Add(true, "serviceAccount", "create")
 	_, _ = values.Add("", "serviceAccount", "name")
+	_, _ = values.Add(true, "serviceAccount", "automount")
 	valuesAnnotations := make(map[string]interface{})
 	for k, v := range obj.GetAnnotations() {
 		valuesAnnotations[k] = v
