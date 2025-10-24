@@ -170,7 +170,7 @@ func Test_pod_Process(t *testing.T) {
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
-			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -218,7 +218,7 @@ func Test_pod_Process(t *testing.T) {
 				},
 			},
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
-			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
@@ -264,7 +264,7 @@ func Test_pod_Process(t *testing.T) {
 				},
 			},
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
-			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
@@ -310,7 +310,7 @@ func Test_pod_Process(t *testing.T) {
 				},
 			},
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
-			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
@@ -351,7 +351,7 @@ func Test_pod_Process(t *testing.T) {
 			},
 			"securityContext":           "{{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}",
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
-			"serviceAccountName":        "{{ default \"default\" (include \".serviceAccountName\" .) }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 		}, specMap)
