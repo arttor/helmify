@@ -143,26 +143,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-	name: nginx-deployment
-	labels:
-		app: nginx
+  name: nginx-deployment
+  labels:
+    app: nginx
 spec:
-	replicas: 3
-	selector:
-		matchLabels:
-			app: nginx
-	template:
-		metadata:
-			labels:
-				app: nginx
-		spec:
-			imagePullSecrets:
-			- name: myregistrykey
-			containers:
-			- name: nginx
-				image: nginx:1.14.2
-				ports:
-				- containerPort: 80
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        args:
+        - --test
+        - --arg
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: myregistrykey
 `
 )
 
@@ -380,6 +383,22 @@ func Test_pod_Process(t *testing.T) {
 		assert.False(t, ok)
 	})
 
+	t.Run("deployment with imagePullSecrets enabled but not provided in source", func(t *testing.T) {
+		var deploy appsv1.Deployment
+		obj := internal.GenerateObj(strDeployment)
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
+		assert.NoError(t, err)
+		// enable ImagePullSecrets in config via metadata.New but source doesn't include imagePullSecrets
+		svc := metadata.New(config.Config{ImagePullSecrets: true})
+		specMap, tmpl, err := ProcessSpec("nginx", svc, deploy.Spec.Template.Spec)
+		assert.NoError(t, err)
+
+		// spec should contain templated imagePullSecrets
+		assert.Equal(t, "{{ .Values.imagePullSecrets | default list | toJson }}", specMap["imagePullSecrets"])
+
+		assert.Equal(t, []interface{}{}, tmpl["imagePullSecrets"])
+	})
+
 	t.Run("deployment with imagePullSecrets", func(t *testing.T) {
 
 		var deploy appsv1.Deployment
@@ -395,11 +414,9 @@ func Test_pod_Process(t *testing.T) {
 		assert.Equal(t, "{{ .Values.imagePullSecrets | default list | toJson }}", specMap["imagePullSecrets"])
 
 		// values should contain the original imagePullSecrets slice
-		assert.Equal(t, helmify.Values{
-			"imagePullSecrets": []interface{}{
-				map[string]interface{}{"name": "myregistrykey"},
-			},
-		}, tmpl)
+		assert.Equal(t, []interface{}{
+			map[string]interface{}{"name": "myregistrykey"},
+		}, tmpl["imagePullSecrets"])
 	})
 
 }
