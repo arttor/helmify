@@ -3,6 +3,7 @@ package pod
 import (
 	"testing"
 
+	"github.com/arttor/helmify/pkg/config"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/metadata"
 	appsv1 "k8s.io/api/apps/v1"
@@ -137,6 +138,31 @@ spec:
         runAsNonRoot: true
         runAsUser: 65532
 
+`
+	strDeploymentWithImagePullSecrets = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+	name: nginx-deployment
+	labels:
+		app: nginx
+spec:
+	replicas: 3
+	selector:
+		matchLabels:
+			app: nginx
+	template:
+		metadata:
+			labels:
+				app: nginx
+		spec:
+			imagePullSecrets:
+			- name: myregistrykey
+			containers:
+			- name: nginx
+				image: nginx:1.14.2
+				ports:
+				- containerPort: 80
 `
 )
 
@@ -338,6 +364,40 @@ func Test_pod_Process(t *testing.T) {
 						"tag":        "latest",
 					},
 				},
+			},
+		}, tmpl)
+	})
+	t.Run("deployment without imagePullSecrets", func(t *testing.T) {
+		var deploy appsv1.Deployment
+		obj := internal.GenerateObj(strDeployment)
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
+		assert.NoError(t, err)
+		specMap, _, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec)
+		assert.NoError(t, err)
+
+		// when ImagePullSecrets is disabled in config, spec should not contain imagePullSecrets key
+		_, ok := specMap["imagePullSecrets"]
+		assert.False(t, ok)
+	})
+
+	t.Run("deployment with imagePullSecrets", func(t *testing.T) {
+
+		var deploy appsv1.Deployment
+		obj := internal.GenerateObj(strDeploymentWithImagePullSecrets)
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
+		assert.NoError(t, err)
+		// enable ImagePullSecrets in config via metadata.New
+		svc := metadata.New(config.Config{ImagePullSecrets: true})
+		specMap, tmpl, err := ProcessSpec("nginx", svc, deploy.Spec.Template.Spec)
+		assert.NoError(t, err)
+
+		// spec should contain templated imagePullSecrets
+		assert.Equal(t, "{{ .Values.imagePullSecrets | default list | toJson }}", specMap["imagePullSecrets"])
+
+		// values should contain the original imagePullSecrets slice
+		assert.Equal(t, helmify.Values{
+			"imagePullSecrets": []interface{}{
+				map[string]interface{}{"name": "myregistrykey"},
 			},
 		}, tmpl)
 	})
