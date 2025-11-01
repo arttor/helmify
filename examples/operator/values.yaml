@@ -97,6 +97,7 @@ secretVars:
 serviceAccount:
   annotations:
     k8s.acme.org/some-meta-data: ACME Inc.
+  automount: true
   create: true
   name: ""
 webhookService:

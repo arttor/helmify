@@ -33,7 +33,7 @@ spec:
           name: varlibdockercontainers
           readOnly: true
       nodeSelector: {{- toYaml .Values.fluentdElasticsearch.nodeSelector | nindent 8 }}
-      serviceAccountName: {{ default "default" (include "app.serviceAccountName" .) }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
       terminationGracePeriodSeconds: 30
       tolerations: {{- toYaml .Values.fluentdElasticsearch.tolerations | nindent 8 }}
       topologySpreadConstraints: {{- toYaml .Values.fluentdElasticsearch.topologySpreadConstraints
