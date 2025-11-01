@@ -24,8 +24,7 @@ spec:
             resources: {}
           nodeSelector: {{- toYaml .Values.cronJob.nodeSelector | nindent 12 }}
           restartPolicy: OnFailure
-          serviceAccountName: {{ default "default" (include "app.serviceAccountName"
-            .) }}
+          serviceAccountName: {{ include "app.serviceAccountName" . }}
           tolerations: {{- toYaml .Values.cronJob.tolerations | nindent 12 }}
           topologySpreadConstraints: {{- toYaml .Values.cronJob.topologySpreadConstraints
             | nindent 12 }}
