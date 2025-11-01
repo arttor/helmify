@@ -106,8 +106,14 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	}
 	if spec.Tolerations != nil {
 		tolerations := make([]any, len(spec.Tolerations))
-		inrec, _ := json.Marshal(spec.Tolerations)
-		json.Unmarshal(inrec, &tolerations)
+		inrec, err := json.Marshal(spec.Tolerations)
+		if err != nil {
+			return nil, nil, err
+		}
+		err = json.Unmarshal(inrec, &tolerations)
+		if err != nil {
+			return nil, nil, err
+		}
 		err = unstructured.SetNestedSlice(values, tolerations, objName, "tolerations")
 		if err != nil {
 			return nil, nil, err
@@ -126,8 +132,14 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	}
 	if spec.TopologySpreadConstraints != nil {
 		topologySpreadConstraints := make([]any, len(spec.TopologySpreadConstraints))
-		inrec, _ := json.Marshal(spec.TopologySpreadConstraints)
-		json.Unmarshal(inrec, &topologySpreadConstraints)
+		inrec, err := json.Marshal(spec.TopologySpreadConstraints)
+		if err != nil {
+			return nil, nil, err
+		}
+		err = json.Unmarshal(inrec, &topologySpreadConstraints)
+		if err != nil {
+			return nil, nil, err
+		}
 		err = unstructured.SetNestedSlice(values, topologySpreadConstraints, objName, "topologySpreadConstraints")
 		if err != nil {
 			return nil, nil, err
