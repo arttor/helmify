@@ -41,8 +41,12 @@ type Config struct {
 	OriginalName bool
 	// PreserveNs retains the namespaces on the Kubernetes manifests
 	PreserveNs bool
-	// AddWebhookOption enables the generation of a webhook option in values.yamlß
+	// AddWebhookOption enables the generation of a webhook option in values.yaml
 	AddWebhookOption bool
+	// WrapCRDs wraps Custom Resource Definitions in a conditional
+	WrapCRDs bool
+	// WrapCRDsCondition is the condition used to wrap the Custom Resource Definitions
+	WrapCRDsCondition string
 }
 
 func (c *Config) Validate() error {
