@@ -103,6 +103,15 @@ myapp:
   revisionHistoryLimit: 5
   tolerations: []
   topologySpreadConstraints: []
+myappIpv6Service:
+  ipFamilies:
+  - IPv6
+  ipFamilyPolicy: PreferDualStack
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  type: ClusterIP
 myappLbService:
   loadBalancerSourceRanges:
   - 10.0.0.0/8
