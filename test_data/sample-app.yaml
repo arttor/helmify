@@ -161,19 +161,18 @@ kind: Service
 metadata:
   labels:
     app: myapp
-  name: myapp-ipv6-service
+  name: myapp-ipfamily-service
   namespace: my-ns
 spec:
-  ipFamilyPolicy: PreferDualStack
+  ipFamilyPolicy: PreferSingleStack
   ipFamilies:
-  - IPv6
+  - IPv4
   ports:
     - name: https
       port: 8443
       targetPort: https
   selector:
     app: myapp
----
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
