@@ -103,10 +103,10 @@ myapp:
   revisionHistoryLimit: 5
   tolerations: []
   topologySpreadConstraints: []
-myappIpv6Service:
+myappIpfamilyService:
   ipFamilies:
-  - IPv6
-  ipFamilyPolicy: PreferDualStack
+  - IPv4
+  ipFamilyPolicy: PreferSingleStack
   ports:
   - name: https
     port: 8443
