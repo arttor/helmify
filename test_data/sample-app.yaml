@@ -164,7 +164,7 @@ metadata:
   name: myapp-ipfamily-service
   namespace: my-ns
 spec:
-  ipFamilyPolicy: PreferSingleStack
+  ipFamilyPolicy: SingleStack
   ipFamilies:
   - IPv4
   ports:
