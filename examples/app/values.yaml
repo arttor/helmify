@@ -106,7 +106,7 @@ myapp:
 myappIpfamilyService:
   ipFamilies:
   - IPv4
-  ipFamilyPolicy: PreferSingleStack
+  ipFamilyPolicy: SingleStack
   ports:
   - name: https
     port: 8443
