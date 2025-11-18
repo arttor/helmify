@@ -51,27 +51,21 @@ func Test_crd_Process(t *testing.T) {
 	t.Run("wrapped with condition", func(t *testing.T) {
 		obj := internal.GenerateObj(strCRD)
 
-		conditions := []string{"crds.create", "crds.enabled", "installCRDs"}
+		meta := metadata.New(config.Config{OptionalCRDs: true})
+		processed, tmpl, err := testInstance.Process(meta, obj)
+		assert.NoError(t, err)
+		assert.True(t, processed)
+		assert.NotNil(t, tmpl)
 
-		for _, cond := range conditions {
-			t.Run(cond, func(t *testing.T) {
-				meta := metadata.New(config.Config{WrapCRDs: true, WrapCRDsCondition: cond})
-				processed, tmpl, err := testInstance.Process(meta, obj)
-				assert.NoError(t, err)
-				assert.True(t, processed)
-				assert.NotNil(t, tmpl)
+		data := string(tmpl.(*result).data)
 
-				data := string(tmpl.(*result).data)
+		assert.Contains(t, data, "{{- if .Values."+optionalCRDsConditional+" }}", "template should start with conditional")
+		assert.Contains(t, data, "{{- end }}", "template should end with conditional")
 
-				assert.Contains(t, data, "{{- if .Values."+cond+" }}", "template should start with conditional")
-				assert.Contains(t, data, "{{- end }}", "template should end with conditional")
-
-				values := tmpl.(*result).values
-				val, ok := getValue(values, cond)
-				assert.True(t, ok, "expected key crds."+cond+" in values")
-				assert.Equal(t, true, val)
-			})
-		}
+		values := tmpl.(*result).values
+		val, ok := getValue(values, optionalCRDsConditional)
+		assert.True(t, ok, "expected key crds."+optionalCRDsConditional+" in values")
+		assert.Equal(t, true, val)
 	})
 }
 

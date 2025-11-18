@@ -35,6 +35,8 @@ status:
   conditions: []
   storedVersions: []`
 
+const optionalCRDsConditional = "crds.enabled"
+
 var crdGVC = schema.GroupVersionKind{
 	Group:   "apiextensions.k8s.io",
 	Version: "v1",
@@ -132,12 +134,10 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 
 	values := helmify.Values{}
 
-	if appMeta.Config().WrapCRDs {
-
-		cond := appMeta.Config().WrapCRDsCondition
-		res = fmt.Sprintf("{{- if .Values.%s }}\n%s\n{{- end }}", cond, res)
-		_, _ = values.Add(true, strings.Split(appMeta.Config().WrapCRDsCondition, ".")...)
-		logrus.WithField("crd", name).WithField("condition", cond).Info("wrapping CRDs in conditional")
+	if appMeta.Config().OptionalCRDs {
+		res = fmt.Sprintf("{{- if .Values.%s }}\n%s\n{{- end }}", optionalCRDsConditional, res)
+		_, _ = values.Add(true, strings.Split(optionalCRDsConditional, ".")...)
+		logrus.WithField("crd", name).WithField("condition", optionalCRDsConditional).Debug("enabling optional CRD installation")
 	}
 
 	return true, &result{
