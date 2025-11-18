@@ -71,8 +71,7 @@ func ReadFlags() config.Config {
 	flag.Var(&files, "f", "File or directory containing k8s manifests.")
 	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace.")
 	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml.")
-	flag.BoolVar(&result.WrapCRDs, "wrap-crds", false, "Allows the user to wrap CRDs in a conditional.")
-	flag.StringVar(&result.WrapCRDsCondition, "wrap-crds-condition", "crds.enabled", "Allows the user to wrap CRDs in helm chart by specifying a condition name.")
+	flag.BoolVar(&result.OptionalCRDs, "optional-crds", false, "Enable optional CRD installation through values.")
 
 	flag.Parse()
 	if h || help {

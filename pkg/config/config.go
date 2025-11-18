@@ -43,10 +43,8 @@ type Config struct {
 	PreserveNs bool
 	// AddWebhookOption enables the generation of a webhook option in values.yaml
 	AddWebhookOption bool
-	// WrapCRDs wraps Custom Resource Definitions in a conditional
-	WrapCRDs bool
-	// WrapCRDsCondition is the condition used to wrap the Custom Resource Definitions
-	WrapCRDsCondition string
+	// OptionalCRDs - Enable optional CRD installation through values.
+	OptionalCRDs bool
 }
 
 func (c *Config) Validate() error {
