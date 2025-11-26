@@ -22,5 +22,10 @@ spec:
             imagePullPolicy: {{ .Values.cronJob.hello.imagePullPolicy }}
             name: hello
             resources: {}
+          nodeSelector: {{- toYaml .Values.cronJob.nodeSelector | nindent 12 }}
           restartPolicy: OnFailure
+          serviceAccountName: {{ include "app.serviceAccountName" . }}
+          tolerations: {{- toYaml .Values.cronJob.tolerations | nindent 12 }}
+          topologySpreadConstraints: {{- toYaml .Values.cronJob.topologySpreadConstraints
+            | nindent 12 }}
   schedule: {{ .Values.cronJob.schedule | quote }}

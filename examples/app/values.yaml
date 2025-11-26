@@ -1,16 +1,22 @@
 batchJob:
   backoffLimit: 4
+  nodeSelector: {}
   pi:
     image:
       repository: perl
       tag: 5.34.0
+  tolerations: []
+  topologySpreadConstraints: []
 cronJob:
   hello:
     image:
       repository: busybox
       tag: "1.28"
     imagePullPolicy: IfNotPresent
+  nodeSelector: {}
   schedule: '* * * * *'
+  tolerations: []
+  topologySpreadConstraints: []
 fluentdElasticsearch:
   fluentdElasticsearch:
     image:
@@ -22,6 +28,12 @@ fluentdElasticsearch:
       requests:
         cpu: 100m
         memory: 200Mi
+  nodeSelector: {}
+  tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
+  topologySpreadConstraints: []
 kubernetesClusterDomain: cluster.local
 myConfig:
   dummyconfigmapkey: dummyconfigmapvalue
@@ -89,6 +101,17 @@ myapp:
       tag: v0.8.0
   replicas: 3
   revisionHistoryLimit: 5
+  tolerations: []
+  topologySpreadConstraints: []
+myappIpfamilyService:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  type: ClusterIP
 myappLbService:
   loadBalancerSourceRanges:
   - 10.0.0.0/8
@@ -121,7 +144,10 @@ web:
     image:
       repository: registry.k8s.io/nginx-slim
       tag: "0.8"
+  nodeSelector: {}
   replicas: 2
+  tolerations: []
+  topologySpreadConstraints: []
   volumeClaims:
     www:
       requests:

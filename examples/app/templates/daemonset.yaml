@@ -32,11 +32,12 @@ spec:
         - mountPath: /var/lib/docker/containers
           name: varlibdockercontainers
           readOnly: true
+      nodeSelector: {{- toYaml .Values.fluentdElasticsearch.nodeSelector | nindent 8 }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
       terminationGracePeriodSeconds: 30
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-        operator: Exists
+      tolerations: {{- toYaml .Values.fluentdElasticsearch.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.fluentdElasticsearch.topologySpreadConstraints
+        | nindent 8 }}
       volumes:
       - hostPath:
           path: /var/log
