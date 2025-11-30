@@ -113,6 +113,7 @@ Usage:
 | -cert-manager-install-crd     | Allows the user to install cert-manager CRD as part of the cert-manager subchart.(default "true")                                                                                                           | `helmify -cert-manager-install-crd` |
 | -preserve-ns              | Allows users to use the object's original namespace instead of adding all the resources to a common namespace. (default "false")                                                                            | `helmify -preserve-ns`              |
 | -add-webhook-option | Adds an option to enable/disable webhook installation  | `helmify -add-webhook-option`|
+| -optional-secrets | Secrets whose values should not be required by helm  | `helmify -optional-secrets mysecret1,mysecret2`|
 ## Status
 Supported k8s resources:
 - Deployment, DaemonSet, StatefulSet
