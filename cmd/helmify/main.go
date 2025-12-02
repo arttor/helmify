@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"os"
 
 	"github.com/arttor/helmify/pkg/app"
@@ -8,7 +10,12 @@ import (
 )
 
 func main() {
-	conf := ReadFlags()
+	conf, err := ReadFlags()
+	if err != nil {
+		fmt.Println(err)
+		flag.Usage()
+		os.Exit(1)
+	}
 	stat, err := os.Stdin.Stat()
 	if err != nil {
 		logrus.WithError(err).Error("stdin error")
