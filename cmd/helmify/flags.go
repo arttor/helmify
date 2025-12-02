@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -38,6 +39,9 @@ Flags:
 
 type arrayFlags []string
 
+var osExit = os.Exit
+var errMutuallyExclusiveCRDs = errors.New("-crd and -optional-crds cannot be used together")
+
 func (i *arrayFlags) String() string {
 	if i == nil || len(*i) == 0 {
 		return ""
@@ -51,16 +55,16 @@ func (i *arrayFlags) Set(value string) error {
 }
 
 // ReadFlags command-line flags into app config.
-func ReadFlags() config.Config {
+func ReadFlags() (config.Config, error) {
 	files := arrayFlags{}
 	result := config.Config{}
-	var h, help, version, crd, preservens bool
+	var h, help, version bool
 	flag.BoolVar(&h, "h", false, "Print help. Example: helmify -h")
 	flag.BoolVar(&help, "help", false, "Print help. Example: helmify -help")
 	flag.BoolVar(&version, "version", false, "Print helmify version. Example: helmify -version")
 	flag.BoolVar(&result.Verbose, "v", false, "Enable verbose output (print WARN & INFO). Example: helmify -v")
 	flag.BoolVar(&result.VeryVerbose, "vv", false, "Enable very verbose output. Same as verbose but with DEBUG. Example: helmify -vv")
-	flag.BoolVar(&crd, "crd-dir", false, "Enable crd install into 'crds' directory.\nWarning: CRDs placed in 'crds' directory will not be templated by Helm.\nSee https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations\nExample: helmify -crd-dir")
+	flag.BoolVar(&result.Crd, "crd-dir", false, "Enable crd install into 'crds' directory. (cannot be used with 'optional-crds').\nWarning: CRDs placed in 'crds' directory will not be templated by Helm.\nSee https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations\nExample: helmify -crd-dir")
 	flag.BoolVar(&result.ImagePullSecrets, "image-pull-secrets", false, "Allows the user to use existing secrets as imagePullSecrets in values.yaml.")
 	flag.BoolVar(&result.GenerateDefaults, "generate-defaults", false, "Allows the user to add empty placeholders for typical customization options in values.yaml. Currently covers: topology constraints, node selectors, tolerances")
 	flag.BoolVar(&result.CertManagerAsSubchart, "cert-manager-as-subchart", false, "Allows the user to add cert-manager as a subchart")
@@ -69,31 +73,29 @@ func ReadFlags() config.Config {
 	flag.BoolVar(&result.FilesRecursively, "r", false, "Scan dirs from -f option recursively")
 	flag.BoolVar(&result.OriginalName, "original-name", false, "Use the object's original name instead of adding the chart's release name as the common prefix.")
 	flag.Var(&files, "f", "File or directory containing k8s manifests.")
-	flag.BoolVar(&preservens, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace.")
+	flag.BoolVar(&result.PreserveNs, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace.")
 	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml.")
-	flag.BoolVar(&result.OptionalCRDs, "optional-crds", false, "Enable optional CRD installation through values.")
+	flag.BoolVar(&result.OptionalCRDs, "optional-crds", false, "Enable optional CRD installation through values. (cannot be used with 'crd-dir')")
 
 	flag.Parse()
 	if h || help {
 		fmt.Print(helpText)
+		flag.CommandLine.SetOutput(os.Stdout)
 		flag.PrintDefaults()
-		os.Exit(0)
+		osExit(0)
 	}
 	if version {
 		printVersion()
-		os.Exit(0)
+		osExit(0)
 	}
 	name := flag.Arg(0)
 	if name != "" {
 		result.ChartName = filepath.Base(name)
 		result.ChartDir = filepath.Dir(name)
 	}
-	if crd {
-		result.Crd = crd
-	}
-	if preservens {
-		result.PreserveNs = true
+	if result.Crd && result.OptionalCRDs {
+		return config.Config{}, errMutuallyExclusiveCRDs
 	}
 	result.Files = files
-	return result
+	return result, nil
 }
