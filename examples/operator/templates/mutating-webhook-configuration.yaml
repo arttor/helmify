@@ -16,6 +16,14 @@ webhooks:
       path: /mutate-ceph-example-com-v1-mycluster
   failurePolicy: Fail
   name: mmycluster.kb.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - namespace-1
+      - '{{ .Release.Namespace }}'
+      - namespace-3
   rules:
   - apiGroups:
     - test.example.com

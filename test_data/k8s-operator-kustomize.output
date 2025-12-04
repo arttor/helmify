@@ -748,6 +748,14 @@ webhooks:
       path: /validate-ceph-example-com-v1alpha1-volume
   failurePolicy: Fail
   name: vvolume.kb.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - namespace-1
+      - my-operator-system
+      - namespace-3
   rules:
   - apiGroups:
     - test.example.com
@@ -835,6 +843,14 @@ webhooks:
       path: /mutate-ceph-example-com-v1-mycluster
   failurePolicy: Fail
   name: mmycluster.kb.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - namespace-1
+      - my-operator-system
+      - namespace-3
   rules:
   - apiGroups:
     - test.example.com
