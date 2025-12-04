@@ -9,6 +9,7 @@ import (
 	"github.com/arttor/helmify/pkg/helmify"
 	securityContext "github.com/arttor/helmify/pkg/processor/security-context"
 	"github.com/iancoleman/strcase"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,10 +55,13 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 	}
 
 	if appMeta.Config().ImagePullSecrets {
-		if _, defined := specMap["imagePullSecrets"]; !defined {
-			specMap["imagePullSecrets"] = "{{ .Values.imagePullSecrets | default list | toJson }}"
-			values["imagePullSecrets"] = []string{}
+		sourceImagePullSecrets, ok := specMap["imagePullSecrets"].([]interface{})
+		if !ok {
+			logrus.Debug("imagePullSecrets not found in pod spec, setting empty map")
+			sourceImagePullSecrets = []interface{}{}
 		}
+		specMap["imagePullSecrets"] = "{{ .Values.imagePullSecrets | default list | toJson }}"
+		values["imagePullSecrets"] = sourceImagePullSecrets
 	}
 
 	err = securityContext.ProcessContainerSecurityContext(objName, specMap, &values, nindent)
