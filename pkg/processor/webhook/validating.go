@@ -55,6 +55,7 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	for i, whc := range whConf.Webhooks {
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
 		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+		mutateNamespaceSelector(appMeta, whc.NamespaceSelector)
 		whConf.Webhooks[i] = whc
 	}
 	webhooks, _ := yaml.Marshal(whConf.Webhooks)
