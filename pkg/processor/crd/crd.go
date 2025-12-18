@@ -114,13 +114,21 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return true, nil, fmt.Errorf("%w: unable to cast to crd spec", err)
 	}
 
+	replacements := make(map[string]string)
 	if spec.Conversion != nil {
 		conv := spec.Conversion
 		if conv.Strategy == v1.WebhookConverter {
 			wh := conv.Webhook
 			if wh != nil && wh.ClientConfig != nil && wh.ClientConfig.Service != nil {
-				wh.ClientConfig.Service.Name = appMeta.TemplatedName(wh.ClientConfig.Service.Name)
-				wh.ClientConfig.Service.Namespace = strings.ReplaceAll(wh.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+				// Use placeholders starting with '*' to force quoting in YAML
+				namePlaceholder := "*__HELMIFY_NAME_PLACEHOLDER__"
+				nsPlaceholder := "*__HELMIFY_NS_PLACEHOLDER__"
+
+				replacements[namePlaceholder] = appMeta.TemplatedName(wh.ClientConfig.Service.Name)
+				wh.ClientConfig.Service.Name = namePlaceholder
+
+				replacements[nsPlaceholder] = strings.ReplaceAll(wh.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+				wh.ClientConfig.Service.Namespace = nsPlaceholder
 			}
 		}
 	}
@@ -129,7 +137,17 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	specYaml = yamlformat.Indent(specYaml, 2)
 	specYaml = bytes.TrimRight(specYaml, "\n ")
 
-	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
+	specStr := string(specYaml)
+	// Escape {{ and }} to {{ "{{" }} and {{ "}}" }} to prevent Helm from interpreting them
+	replacer := strings.NewReplacer("{{", `{{ "{{" }}`, "}}", `{{ "}}" }}`)
+	specStr = replacer.Replace(specStr)
+
+	// Restore placeholders with actual Helm templates
+	for k, v := range replacements {
+		specStr = strings.ReplaceAll(specStr, k, v)
+	}
+
+	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, specStr)
 	res = strings.ReplaceAll(res, "\n\n", "\n")
 
 	values := helmify.Values{}
