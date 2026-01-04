@@ -138,6 +138,35 @@ spec:
         runAsUser: 65532
 
 `
+	strDeploymentWithAffinity = `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: nginx-deployment
+ labels:
+   app: nginx
+spec:
+ replicas: 3
+ selector:
+   matchLabels:
+     app: nginx
+ template:
+   metadata:
+     labels:
+       app: nginx
+   spec:
+     containers:
+     - name: nginx
+       image: localhost:6001/my_project:latest
+     affinity:
+       nodeAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+           nodeSelectorTerms:
+           - matchExpressions:
+             - key: node-role.kubernetes.io/control-plane
+               operator: Exists
+
+`
 )
 
 func Test_pod_Process(t *testing.T) {
@@ -171,6 +200,7 @@ func Test_pod_Process(t *testing.T) {
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -188,6 +218,7 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
+				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -221,6 +252,7 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -234,6 +266,7 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
+				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -267,6 +300,7 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -280,6 +314,7 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
+				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -313,6 +348,7 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -326,6 +362,7 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
+				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -354,6 +391,7 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -373,8 +411,65 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
+				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
+	t.Run("deployment with affinity", func(t *testing.T) {
+		var deploy appsv1.Deployment
+		obj := internal.GenerateObj(strDeploymentWithAffinity)
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &deploy)
+		specMap, tmpl, err := ProcessSpec("nginx", &metadata.Service{}, deploy.Spec.Template.Spec, 0)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]interface{}{
+			"containers": []interface{}{
+				map[string]interface{}{
+					"env": []interface{}{
+						map[string]interface{}{
+							"name":  "KUBERNETES_CLUSTER_DOMAIN",
+							"value": "{{ quote .Values.kubernetesClusterDomain }}",
+						},
+					},
+					"image":     "{{ .Values.nginx.nginx.image.repository }}:{{ .Values.nginx.nginx.image.tag | default .Chart.AppVersion }}",
+					"name":      "nginx",
+					"resources": map[string]interface{}{},
+				},
+			},
+			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
+			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
+			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
+			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
+			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
+		}, specMap)
 
+		assert.Equal(t, helmify.Values{
+			"nginx": map[string]interface{}{
+				"affinity": map[string]interface{}{
+					"nodeAffinity": map[string]interface{}{
+						"requiredDuringSchedulingIgnoredDuringExecution": map[string]interface{}{
+							"nodeSelectorTerms": []interface{}{
+								map[string]interface{}{
+									"matchExpressions": []interface{}{
+										map[string]interface{}{
+											"key":      "node-role.kubernetes.io/control-plane",
+											"operator": "Exists",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				"nginx": map[string]interface{}{
+					"image": map[string]interface{}{
+						"repository": "localhost:6001/my_project",
+						"tag":        "latest",
+					},
+				},
+				"nodeSelector":              map[string]interface{}{},
+				"tolerations":               []interface{}{},
+				"topologySpreadConstraints": []interface{}{},
+			},
+		}, tmpl)
+	})
 }
