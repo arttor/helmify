@@ -94,6 +94,13 @@ spec:
       nodeSelector:
         region: east
         type: user-node
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: Exists
       terminationGracePeriodSeconds: 10
       volumes:
         - configMap:
@@ -166,7 +173,7 @@ metadata:
 spec:
   ipFamilyPolicy: SingleStack
   ipFamilies:
-  - IPv4
+    - IPv4
   ports:
     - name: https
       port: 8443
