@@ -16,6 +16,7 @@ spec:
         name: fluentd-elasticsearch
       {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
+      affinity: {{- toYaml .Values.fluentdElasticsearch.affinity | nindent 8 }}
       containers:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN

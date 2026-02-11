@@ -18,6 +18,7 @@ spec:
         app: myapp
       {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
+      affinity: {{- toYaml .Values.myapp.affinity | nindent 8 }}
       containers:
       - args: {{- toYaml .Values.myapp.app.args | nindent 8 }}
         command:
