@@ -151,6 +151,34 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		}
 	}
 
+	// process affinity if presented:
+	err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.affinity | nindent %d }}`, objName, nindent), "affinity")
+	if err != nil {
+		return nil, nil, err
+	}
+	if spec.Affinity != nil {
+		affinityMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(spec.Affinity)
+		if err != nil {
+			return nil, nil, err
+		}
+		if len(affinityMap) > 0 {
+			err = unstructured.SetNestedField(values, affinityMap, objName, "affinity")
+			if err != nil {
+				return nil, nil, err
+			}
+		} else {
+			err = unstructured.SetNestedField(values, map[string]interface{}{}, objName, "affinity")
+			if err != nil {
+				return nil, nil, err
+			}
+		}
+	} else {
+		err = unstructured.SetNestedField(values, map[string]interface{}{}, objName, "affinity")
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	return specMap, values, nil
 }
 
