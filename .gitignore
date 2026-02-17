@@ -29,3 +29,6 @@ testbin/*
 dist/
 
 vendor/
+
+# Binary
+helmify
