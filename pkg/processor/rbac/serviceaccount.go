@@ -21,6 +21,7 @@ metadata:
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  %[2]s
 automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
 {{- end }}`
 )
@@ -56,7 +57,12 @@ func (sa serviceAccount) Process(appMeta helmify.AppMetadata, obj *unstructured.
 		return true, nil, err
 	}
 	tmpl := saTempl
-	meta := fmt.Sprintf(tmpl, appMeta.ChartName())
+	namespace := ""
+	if obj.GetNamespace() != "" && appMeta.Config().PreserveNs {
+		namespace = fmt.Sprintf("namespace: %s", obj.GetNamespace())
+	}
+
+	meta := fmt.Sprintf(tmpl, appMeta.ChartName(), namespace)
 
 	return true, &saResult{
 		data:   []byte(meta),
