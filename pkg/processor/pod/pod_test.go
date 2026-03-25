@@ -218,7 +218,6 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
-				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -266,7 +265,6 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
-				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -314,7 +312,6 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
-				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -362,7 +359,6 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
-				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})
@@ -411,7 +407,6 @@ func Test_pod_Process(t *testing.T) {
 				"nodeSelector":              map[string]interface{}{},
 				"tolerations":               []interface{}{},
 				"topologySpreadConstraints": []interface{}{},
-				"affinity":                  map[string]interface{}{},
 			},
 		}, tmpl)
 	})

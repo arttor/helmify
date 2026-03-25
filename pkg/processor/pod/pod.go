@@ -113,11 +113,6 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		if err != nil {
 			return nil, nil, err
 		}
-	} else {
-		err = unstructured.SetNestedField(values, map[string]interface{}{}, objName, "affinity")
-		if err != nil {
-			return nil, nil, err
-		}
 	}
 
 	// process tolerations if presented:
