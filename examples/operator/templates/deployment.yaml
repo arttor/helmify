@@ -24,6 +24,7 @@ spec:
         control-plane: controller-manager
       {{- include "operator.selectorLabels" . | nindent 8 }}
     spec:
+      affinity: {{- toYaml .Values.controllerManager.affinity | nindent 8 }}
       containers:
       - args: {{- toYaml .Values.controllerManager.kubeRbacProxy.args | nindent 8 }}
         env:

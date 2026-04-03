@@ -1,5 +1,4 @@
 batchJob:
-  affinity: {}
   backoffLimit: 4
   nodeSelector: {}
   pi:
@@ -9,7 +8,6 @@ batchJob:
   tolerations: []
   topologySpreadConstraints: []
 cronJob:
-  affinity: {}
   hello:
     image:
       repository: busybox
@@ -20,7 +18,6 @@ cronJob:
   tolerations: []
   topologySpreadConstraints: []
 fluentdElasticsearch:
-  affinity: {}
   fluentdElasticsearch:
     image:
       repository: quay.io/fluentd_elasticsearch/fluentd
@@ -150,7 +147,6 @@ pvc:
     storageLimit: 5Gi
     storageRequest: 3Gi
 web:
-  affinity: {}
   nginx:
     image:
       repository: registry.k8s.io/nginx-slim
