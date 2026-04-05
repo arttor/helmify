@@ -76,6 +76,7 @@ func ReadFlags() (config.Config, error) {
 	flag.BoolVar(&result.PreserveNs, "preserve-ns", false, "Use the object's original namespace instead of adding all the resources to a common namespace.")
 	flag.BoolVar(&result.AddWebhookOption, "add-webhook-option", false, "Allows the user to add webhook option in values.yaml.")
 	flag.BoolVar(&result.OptionalCRDs, "optional-crds", false, "Enable optional CRD installation through values. (cannot be used with 'crd-dir')")
+	flag.BoolVar(&result.AddChecksumAnnotations, "add-checksum-annotations", false, "Add checksum annotations to pod templates for referenced ConfigMaps and Secrets. Triggers rolling restarts on config changes.")
 
 	flag.Parse()
 	if h || help {

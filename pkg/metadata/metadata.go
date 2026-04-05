@@ -25,15 +25,34 @@ var crdGVK = schema.GroupVersionKind{
 	Kind:    "CustomResourceDefinition",
 }
 
+var configMapGVK = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "ConfigMap",
+}
+
+var secretGVK = schema.GroupVersionKind{
+	Group:   "",
+	Version: "v1",
+	Kind:    "Secret",
+}
+
 func New(conf config.Config) *Service {
-	return &Service{names: make(map[string]struct{}), conf: conf}
+	return &Service{
+		names:          make(map[string]struct{}),
+		configMapNames: make(map[string]struct{}),
+		secretNames:    make(map[string]struct{}),
+		conf:           conf,
+	}
 }
 
 type Service struct {
-	commonPrefix string
-	namespace    string
-	names        map[string]struct{}
-	conf         config.Config
+	commonPrefix   string
+	namespace      string
+	names          map[string]struct{}
+	configMapNames map[string]struct{}
+	secretNames    map[string]struct{}
+	conf           config.Config
 }
 
 func (a *Service) Config() config.Config {
@@ -58,6 +77,12 @@ var _ helmify.AppMetadata = &Service{}
 // other app meta information.
 func (a *Service) Load(obj *unstructured.Unstructured) {
 	a.names[obj.GetName()] = struct{}{}
+	switch obj.GroupVersionKind() {
+	case configMapGVK:
+		a.configMapNames[obj.GetName()] = struct{}{}
+	case secretGVK:
+		a.secretNames[obj.GetName()] = struct{}{}
+	}
 	a.commonPrefix = detectCommonPrefix(obj, a.commonPrefix)
 	objNs := extractAppNamespace(obj)
 	if objNs == "" {
@@ -92,6 +117,24 @@ func (a *Service) TemplatedName(name string) string {
 	}
 	name = a.TrimName(name)
 	return fmt.Sprintf(nameTeml, a.conf.ChartName, name)
+}
+
+// HasConfigMap returns true if a ConfigMap with the given name is part of the chart.
+func (a *Service) HasConfigMap(name string) bool {
+	if a.configMapNames == nil {
+		return false
+	}
+	_, ok := a.configMapNames[name]
+	return ok
+}
+
+// HasSecret returns true if a Secret with the given name is part of the chart.
+func (a *Service) HasSecret(name string) bool {
+	if a.secretNames == nil {
+		return false
+	}
+	_, ok := a.secretNames[name]
+	return ok
 }
 
 func (a *Service) TemplatedString(str string) string {

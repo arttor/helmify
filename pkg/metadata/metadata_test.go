@@ -117,6 +117,32 @@ func Test_Service(t *testing.T) {
 	})
 }
 
+func Test_HasConfigMapAndSecret(t *testing.T) {
+	t.Run("tracks configmaps", func(t *testing.T) {
+		svc := New(config.Config{})
+		svc.Load(internal.GenerateObj(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-config
+  namespace: ns`))
+		assert.True(t, svc.HasConfigMap("my-config"))
+		assert.False(t, svc.HasConfigMap("other-config"))
+		assert.False(t, svc.HasSecret("my-config"))
+	})
+	t.Run("tracks secrets", func(t *testing.T) {
+		svc := New(config.Config{})
+		svc.Load(createRes("my-secret", "ns"))
+		assert.True(t, svc.HasSecret("my-secret"))
+		assert.False(t, svc.HasSecret("other-secret"))
+		assert.False(t, svc.HasConfigMap("my-secret"))
+	})
+	t.Run("nil maps safe", func(t *testing.T) {
+		svc := &Service{}
+		assert.False(t, svc.HasConfigMap("anything"))
+		assert.False(t, svc.HasSecret("anything"))
+	})
+}
+
 func createRes(name, ns string) *unstructured.Unstructured {
 	objYaml := fmt.Sprintf(res, name, ns)
 	return internal.GenerateObj(objYaml)

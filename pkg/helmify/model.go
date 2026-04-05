@@ -49,4 +49,9 @@ type AppMetadata interface {
 	TrimName(objName string) string
 
 	Config() config.Config
+
+	// HasConfigMap returns true if a ConfigMap with the given name is part of the chart.
+	HasConfigMap(name string) bool
+	// HasSecret returns true if a Secret with the given name is part of the chart.
+	HasSecret(name string) bool
 }
