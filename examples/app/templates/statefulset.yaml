@@ -29,6 +29,11 @@ spec:
         volumeMounts:
         - mountPath: /usr/share/nginx/html
           name: www
+      nodeSelector: {{- toYaml .Values.web.nodeSelector | nindent 8 }}
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      tolerations: {{- toYaml .Values.web.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.web.topologySpreadConstraints |
+        nindent 8 }}
   updateStrategy: {}
   volumeClaimTemplates:
   - metadata:

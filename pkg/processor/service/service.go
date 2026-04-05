@@ -25,7 +25,7 @@ spec:
   type: {{ .Values.%[1]s.type }}
   selector:
 %[2]s
-    {{- include "%[3]s.selectorLabels" . | nindent 4 }}
+    {{- include "%[3]s.selectorLabels" . | nindent 4 }}%[4]s
   ports:
   {{- .Values.%[1]s.ports | toYaml | nindent 2 }}`
 )
@@ -34,6 +34,17 @@ const (
 	lbSourceRangesTempSpec = `
   loadBalancerSourceRanges:
   {{- .Values.%[1]s.loadBalancerSourceRanges | toYaml | nindent 2 }}`
+)
+
+const (
+	ipFamilyTempSpec = `
+  {{- if .Values.%[1]s.ipFamilyPolicy }}
+  ipFamilyPolicy: {{ .Values.%[1]s.ipFamilyPolicy }}
+  {{- end }}
+  {{- if .Values.%[1]s.ipFamilies }}
+  ipFamilies:
+  {{- .Values.%[1]s.ipFamilies | toYaml | nindent 2 }}
+  {{- end }}`
 )
 
 var svcGVC = schema.GroupVersionKind{
@@ -102,7 +113,9 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 
 	_ = unstructured.SetNestedSlice(values, ports, shortNameCamel, "ports")
-	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName())
+
+	ipFamilySpec := parseIPFamily(values, service, shortNameCamel)
+	res := meta + fmt.Sprintf(svcTempSpec, shortNameCamel, selector, appMeta.ChartName(), ipFamilySpec)
 
 	res += parseLoadBalancerSourceRanges(values, service, shortNameCamel)
 
@@ -114,6 +127,29 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		data:   res,
 		values: values,
 	}, nil
+}
+
+func parseIPFamily(values helmify.Values, service corev1.Service, shortNameCamel string) string {
+	hasIPFamilyPolicy := service.Spec.IPFamilyPolicy != nil
+	hasIPFamilies := len(service.Spec.IPFamilies) > 0
+
+	if !hasIPFamilyPolicy && !hasIPFamilies {
+		return ""
+	}
+
+	if hasIPFamilyPolicy {
+		_ = unstructured.SetNestedField(values, string(*service.Spec.IPFamilyPolicy), shortNameCamel, "ipFamilyPolicy")
+	}
+
+	if hasIPFamilies {
+		ipFamilies := make([]interface{}, len(service.Spec.IPFamilies))
+		for i, fam := range service.Spec.IPFamilies {
+			ipFamilies[i] = string(fam)
+		}
+		_ = unstructured.SetNestedSlice(values, ipFamilies, shortNameCamel, "ipFamilies")
+	}
+
+	return fmt.Sprintf(ipFamilyTempSpec, shortNameCamel)
 }
 
 func parseLoadBalancerSourceRanges(values helmify.Values, service corev1.Service, shortNameCamel string) string {

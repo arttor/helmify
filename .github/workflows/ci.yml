@@ -2,26 +2,25 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-# GO tests
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-        cache: false
+      # GO tests
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: false
 
-    - name: Fmt
-      run: |
+      - name: Fmt
+        run: |
           # Run gofmt in "diff" mode to check for unformatted code
           UNFORMATTED_FILES=$(gofmt -l .)
           # Check if any files are unformatted
@@ -33,23 +32,23 @@ jobs:
           else
             echo "All Go files are properly formatted."
           fi
-    - name: Vet
-      run: go vet ./...
+      - name: Vet
+        run: go vet ./...
 
-    - name: Test
-      run: go test ./...
+      - name: Test
+        run: go test ./...
 
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.54
-# Generate example charts
-    - name: Generate example charts
-      run: |
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.54
+      # Generate example charts
+      - name: Generate example charts
+        run: |
           cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app
           cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
-    - name: Check that chart examples were commited
-      run: |
+      - name: Check that chart examples were commited
+        run: |
           if [[ -n "$(git status --porcelain)" ]]; then
             # Capture the list of uncommitted files
             UNCOMMITTED_FILES=$(git status --porcelain)
@@ -61,36 +60,36 @@ jobs:
           else
             echo "Chart examples generation check passed. No uncommitted changes."
           fi
-# Dry-run generated charts in cluster
-    - name: Install k8s cluster
-      uses: helm/kind-action@v1.4.0
-    - name: Install certs
-      run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
+      # Dry-run generated charts in cluster
+      - name: Install k8s cluster
+        uses: helm/kind-action@v1.13.0
+      - name: Install certs
+        run: kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
 
-    - name: Generate operator ci chart
-      run: cat test_data/k8s-operator-ci.yaml | go run ./cmd/helmify examples/operator-ci
-    - name: Fill operator ci secrets
-      run: sed -i 's/""/"abc"/' ./examples/operator-ci/values.yaml
-    - name: Dry-run operator in k8s cluster
-      run: helm template ./examples/operator-ci -n operator-ns --create-namespace | kubectl apply --dry-run=server -f -
+      - name: Generate operator ci chart
+        run: cat test_data/k8s-operator-ci.yaml | go run ./cmd/helmify examples/operator-ci
+      - name: Fill operator ci secrets
+        run: sed -i 's/""/"abc"/' ./examples/operator-ci/values.yaml
+      - name: Dry-run operator in k8s cluster
+        run: helm template ./examples/operator-ci -n operator-ns --create-namespace | kubectl apply --dry-run=server -f -
 
-    - name: Generate app chart
-      run: cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app
-    - name: Fill app secrets
-      run: sed -i 's/""/"abc"/' ./examples/app/values.yaml
-    - name: Dry-run app in k8s cluster
-      run: helm template ./examples/app -n app-ns --create-namespace | kubectl apply --dry-run=server -f -
+      - name: Generate app chart
+        run: cat test_data/sample-app.yaml | go run ./cmd/helmify examples/app
+      - name: Fill app secrets
+        run: sed -i 's/""/"abc"/' ./examples/app/values.yaml
+      - name: Dry-run app in k8s cluster
+        run: helm template ./examples/app -n app-ns --create-namespace | kubectl apply --dry-run=server -f -
 
-# Validate charts with Kubeconform
-    - name: Install Kubeconform
-      run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.6.1
+      # Validate charts with Kubeconform
+      - name: Install Kubeconform
+        run: go install github.com/yannh/kubeconform/cmd/kubeconform@v0.6.1
 
-    - name: Validate app
-      run: helm template ./examples/app -n app-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict
+      - name: Validate app
+        run: helm template ./examples/app -n app-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict
 
-    - name: Generate operator example chart
-      run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
-    - name: Fill operator example secrets
-      run: sed -i 's/""/"abc"/' ./examples/operator/values.yaml
-    - name: Validate example operator
-      run: helm template ./examples/operator -n operator-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict
+      - name: Generate operator example chart
+        run: cat test_data/k8s-operator-kustomize.output | go run ./cmd/helmify examples/operator
+      - name: Fill operator example secrets
+        run: sed -i 's/""/"abc"/' ./examples/operator/values.yaml
+      - name: Validate example operator
+        run: helm template ./examples/operator -n operator-ns --create-namespace | kubeconform -schema-location 'https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/v3/apis__apiextensions.k8s.io__v1_openapi.json' -strict

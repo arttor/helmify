@@ -28,3 +28,4 @@ testbin/*
 
 dist/
 
+vendor/

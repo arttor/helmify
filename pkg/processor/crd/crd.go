@@ -3,9 +3,10 @@ package crd
 import (
 	"bytes"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -33,6 +34,8 @@ status:
     plural: ""
   conditions: []
   storedVersions: []`
+
+const optionalCRDsConditional = "crds.enabled"
 
 var crdGVC = schema.GroupVersionKind{
 	Group:   "apiextensions.k8s.io",
@@ -129,15 +132,25 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
 	res = strings.ReplaceAll(res, "\n\n", "\n")
 
+	values := helmify.Values{}
+
+	if appMeta.Config().OptionalCRDs {
+		res = fmt.Sprintf("{{- if .Values.%s }}\n%s\n{{- end }}", optionalCRDsConditional, res)
+		_, _ = values.Add(true, strings.Split(optionalCRDsConditional, ".")...)
+		logrus.WithField("crd", name).WithField("condition", optionalCRDsConditional).Debug("enabling optional CRD installation")
+	}
+
 	return true, &result{
-		name: name + "-crd.yaml",
-		data: []byte(res),
+		name:   name + "-crd.yaml",
+		data:   []byte(res),
+		values: values,
 	}, nil
 }
 
 type result struct {
-	name string
-	data []byte
+	name   string
+	data   []byte
+	values helmify.Values
 }
 
 func (r *result) Filename() string {
@@ -145,7 +158,7 @@ func (r *result) Filename() string {
 }
 
 func (r *result) Values() helmify.Values {
-	return helmify.Values{}
+	return r.values
 }
 
 func (r *result) Write(writer io.Writer) error {

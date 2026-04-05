@@ -96,15 +96,11 @@ spec:
       nodeSelector: {{- toYaml .Values.controllerManager.nodeSelector | nindent 8 }}
       securityContext: {{- toYaml .Values.controllerManager.podSecurityContext | nindent
         8 }}
-      serviceAccountName: {{ include "operator.fullname" . }}-controller-manager
+      serviceAccountName: {{ include "operator.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
-      topologySpreadConstraints:
-      - matchLabelKeys:
-        - app
-        - pod-template-hash
-        maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
+      tolerations: {{- toYaml .Values.controllerManager.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.controllerManager.topologySpreadConstraints
+        | nindent 8 }}
       volumes:
       - configMap:
           name: {{ include "operator.fullname" . }}-manager-config

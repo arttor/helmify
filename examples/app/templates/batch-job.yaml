@@ -21,4 +21,9 @@ spec:
           | default .Chart.AppVersion }}
         name: pi
         resources: {}
+      nodeSelector: {{- toYaml .Values.batchJob.nodeSelector | nindent 8 }}
       restartPolicy: Never
+      serviceAccountName: {{ include "app.serviceAccountName" . }}
+      tolerations: {{- toYaml .Values.batchJob.tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml .Values.batchJob.topologySpreadConstraints
+        | nindent 8 }}

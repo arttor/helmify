@@ -1,11 +1,28 @@
 package rbac
 
 import (
-	"github.com/arttor/helmify/pkg/helmify"
-	"github.com/arttor/helmify/pkg/processor"
+	"fmt"
 	"io"
+
+	"github.com/arttor/helmify/pkg/helmify"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+	saTempl = `{{ if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "%[1]s.serviceAccountName" . }}
+  labels:
+  {{- include "%[1]s.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+{{- end }}`
 )
 
 var serviceAccountGVC = schema.GroupVersionKind{
@@ -27,10 +44,19 @@ func (sa serviceAccount) Process(appMeta helmify.AppMetadata, obj *unstructured.
 		return false, nil, nil
 	}
 	values := helmify.Values{}
-	meta, err := processor.ProcessObjMeta(appMeta, obj, processor.WithAnnotations(values))
+	_, _ = values.Add(true, "serviceAccount", "create")
+	_, _ = values.Add("", "serviceAccount", "name")
+	_, _ = values.Add(true, "serviceAccount", "automount")
+	valuesAnnotations := make(map[string]interface{})
+	for k, v := range obj.GetAnnotations() {
+		valuesAnnotations[k] = v
+	}
+	err := unstructured.SetNestedField(values, valuesAnnotations, "serviceAccount", "annotations")
 	if err != nil {
 		return true, nil, err
 	}
+	tmpl := saTempl
+	meta := fmt.Sprintf(tmpl, appMeta.ChartName())
 
 	return true, &saResult{
 		data:   []byte(meta),
