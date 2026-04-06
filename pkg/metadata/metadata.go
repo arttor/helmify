@@ -25,13 +25,15 @@ var crdGVK = schema.GroupVersionKind{
 	Kind:    "CustomResourceDefinition",
 }
 
-var configMapGVK = schema.GroupVersionKind{
+// ConfigMapGVK is the GroupVersionKind for core/v1 ConfigMap.
+var ConfigMapGVK = schema.GroupVersionKind{
 	Group:   "",
 	Version: "v1",
 	Kind:    "ConfigMap",
 }
 
-var secretGVK = schema.GroupVersionKind{
+// SecretGVK is the GroupVersionKind for core/v1 Secret.
+var SecretGVK = schema.GroupVersionKind{
 	Group:   "",
 	Version: "v1",
 	Kind:    "Secret",
@@ -78,9 +80,9 @@ var _ helmify.AppMetadata = &Service{}
 func (a *Service) Load(obj *unstructured.Unstructured) {
 	a.names[obj.GetName()] = struct{}{}
 	switch obj.GroupVersionKind() {
-	case configMapGVK:
+	case ConfigMapGVK:
 		a.configMapNames[obj.GetName()] = struct{}{}
-	case secretGVK:
+	case SecretGVK:
 		a.secretNames[obj.GetName()] = struct{}{}
 	}
 	a.commonPrefix = detectCommonPrefix(obj, a.commonPrefix)

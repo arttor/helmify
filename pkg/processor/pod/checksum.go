@@ -6,19 +6,57 @@ import (
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// ChecksumAnnotations scans a PodSpec for references to ConfigMaps and Secrets
-// that are part of the chart, and returns checksum annotation lines to be added
-// to the pod template metadata. This ensures pods are restarted when referenced
-// ConfigMaps or Secrets change.
-//
-// configMapFiles and secretFiles map original object names to their actual
+// WorkloadGVKs lists the resource kinds whose pod templates can get checksum annotations.
+var WorkloadGVKs = map[schema.GroupVersionKind]bool{
+	{Group: "apps", Version: "v1", Kind: "Deployment"}:  true,
+	{Group: "apps", Version: "v1", Kind: "DaemonSet"}:   true,
+	{Group: "apps", Version: "v1", Kind: "StatefulSet"}:  true,
+}
+
+// ChecksumAnnotations extracts the PodSpec from a workload object, scans it for
+// references to chart-local ConfigMaps and Secrets, and returns checksum annotation
+// lines. configMapFiles and secretFiles map original object names to their actual
 // template filenames on disk (e.g. "my-app-config" -> "input.yaml").
-func ChecksumAnnotations(appMeta helmify.AppMetadata, spec corev1.PodSpec, configMapFiles, secretFiles map[string]string) string {
-	configMaps := map[string]struct{}{}
-	secrets := map[string]struct{}{}
+//
+// Returns empty string if the object is not a supported workload or has no
+// chart-local config references.
+func ChecksumAnnotations(appMeta helmify.AppMetadata, obj *unstructured.Unstructured, configMapFiles, secretFiles map[string]string) string {
+	podSpec := extractPodSpec(obj)
+	if podSpec == nil {
+		return ""
+	}
+
+	configMaps, secrets := collectConfigRefs(appMeta, *podSpec)
+	if len(configMaps) == 0 && len(secrets) == 0 {
+		return ""
+	}
+
+	var annotations []string
+	for name := range configMaps {
+		trimmed := appMeta.TrimName(name)
+		annotations = append(annotations, checksumAnnotation("configmap", trimmed, configMapFiles[name]))
+	}
+	for name := range secrets {
+		trimmed := appMeta.TrimName(name)
+		annotations = append(annotations, checksumAnnotation("secret", trimmed, secretFiles[name]))
+	}
+	sort.Strings(annotations)
+
+	return strings.Join(annotations, "\n")
+}
+
+// collectConfigRefs scans a PodSpec for references to ConfigMaps and Secrets
+// that are part of the chart.
+func collectConfigRefs(appMeta helmify.AppMetadata, spec corev1.PodSpec) (configMaps, secrets map[string]struct{}) {
+	configMaps = map[string]struct{}{}
+	secrets = map[string]struct{}{}
 
 	collectFromContainers := func(containers []corev1.Container) {
 		for _, c := range containers {
@@ -66,24 +104,33 @@ func ChecksumAnnotations(appMeta helmify.AppMetadata, spec corev1.PodSpec, confi
 		}
 	}
 
-	if len(configMaps) == 0 && len(secrets) == 0 {
-		return ""
-	}
+	return configMaps, secrets
+}
 
-	var annotations []string
-	for name := range configMaps {
-		trimmed := appMeta.TrimName(name)
-		filename := configMapFiles[name]
-		annotations = append(annotations, checksumAnnotation("configmap", trimmed, filename))
+// extractPodSpec extracts the PodSpec from a supported workload object.
+// Returns nil if the object is not a supported workload type.
+func extractPodSpec(obj *unstructured.Unstructured) *corev1.PodSpec {
+	switch obj.GroupVersionKind() {
+	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}:
+		var d appsv1.Deployment
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &d); err != nil {
+			return nil
+		}
+		return &d.Spec.Template.Spec
+	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}:
+		var d appsv1.DaemonSet
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &d); err != nil {
+			return nil
+		}
+		return &d.Spec.Template.Spec
+	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"}:
+		var s appsv1.StatefulSet
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &s); err != nil {
+			return nil
+		}
+		return &s.Spec.Template.Spec
 	}
-	for name := range secrets {
-		trimmed := appMeta.TrimName(name)
-		filename := secretFiles[name]
-		annotations = append(annotations, checksumAnnotation("secret", trimmed, filename))
-	}
-	sort.Strings(annotations)
-
-	return strings.Join(annotations, "\n")
+	return nil
 }
 
 func checksumAnnotation(kind, trimmedName, filename string) string {

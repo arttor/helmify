@@ -11,11 +11,7 @@ import (
 	"github.com/arttor/helmify/pkg/metadata"
 	"github.com/arttor/helmify/pkg/processor/pod"
 	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // appContext helm processing context. Stores processed objects.
@@ -58,29 +54,36 @@ func (c *appContext) Add(obj *unstructured.Unstructured, filename string) {
 	c.fileNames = append(c.fileNames, filename)
 }
 
+// processedTemplate pairs a processed template with the original object index.
+type processedTemplate struct {
+	template helmify.Template
+	filename string
+	objIndex int
+}
+
 // CreateHelm creates helm chart from context k8s objects.
 func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 	logrus.WithFields(logrus.Fields{
 		"ChartName": c.appMeta.ChartName(),
 		"Namespace": c.appMeta.Namespace(),
 	}).Info("creating a chart")
-	var templates []helmify.Template
-	var filenames []string
-	// objIndices tracks which c.objects index produced each template.
-	var objIndices []int
+
+	var processed []processedTemplate
 	for i, obj := range c.objects {
 		template, err := c.process(obj)
 		if err != nil {
 			return err
 		}
 		if template != nil {
-			templates = append(templates, template)
 			filename := template.Filename()
 			if c.fileNames[i] != "" {
 				filename = c.fileNames[i]
 			}
-			filenames = append(filenames, filename)
-			objIndices = append(objIndices, i)
+			processed = append(processed, processedTemplate{
+				template: template,
+				filename: filename,
+				objIndex: i,
+			})
 		}
 		select {
 		case <-stop:
@@ -90,7 +93,14 @@ func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 	}
 
 	if c.config.AddChecksumAnnotations {
-		templates = c.addChecksumAnnotations(templates, filenames, objIndices)
+		c.addChecksumAnnotations(processed)
+	}
+
+	templates := make([]helmify.Template, len(processed))
+	filenames := make([]string, len(processed))
+	for i, p := range processed {
+		templates[i] = p.template
+		filenames[i] = p.filename
 	}
 
 	return c.output.Create(c.config.ChartDir, c.config.ChartName, c.config.Crd, c.config.CertManagerAsSubchart, c.config.CertManagerVersion, c.config.CertManagerInstallCRD, templates, filenames)
@@ -122,86 +132,38 @@ func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, 
 	return t, err
 }
 
-var (
-	configMapGVK = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ConfigMap"}
-	secretGVK    = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Secret"}
-)
-
-// workloadGVKs lists the resource kinds whose pod templates should get checksum annotations.
-var workloadGVKs = map[schema.GroupVersionKind]bool{
-	{Group: "apps", Version: "v1", Kind: "Deployment"}: true,
-	{Group: "apps", Version: "v1", Kind: "DaemonSet"}:  true,
-	{Group: "apps", Version: "v1", Kind: "StatefulSet"}: true,
-}
-
 // addChecksumAnnotations wraps workload templates to inject checksum annotations
 // for referenced ConfigMaps and Secrets. It uses the actual resolved filenames
 // so that the template paths are correct regardless of how input files are organized.
-func (c *appContext) addChecksumAnnotations(templates []helmify.Template, filenames []string, objIndices []int) []helmify.Template {
+func (c *appContext) addChecksumAnnotations(processed []processedTemplate) {
 	// Build maps: object name -> actual template filename for ConfigMaps and Secrets.
 	configMapFiles := map[string]string{}
 	secretFiles := map[string]string{}
-	for i, tmplIdx := range objIndices {
-		obj := c.objects[tmplIdx]
+	for _, p := range processed {
+		obj := c.objects[p.objIndex]
 		switch obj.GroupVersionKind() {
-		case configMapGVK:
-			configMapFiles[obj.GetName()] = filenames[i]
-		case secretGVK:
-			secretFiles[obj.GetName()] = filenames[i]
+		case metadata.ConfigMapGVK:
+			configMapFiles[obj.GetName()] = p.filename
+		case metadata.SecretGVK:
+			secretFiles[obj.GetName()] = p.filename
 		}
 	}
 
 	if len(configMapFiles) == 0 && len(secretFiles) == 0 {
-		return templates
+		return
 	}
 
 	// Wrap workload templates with checksum annotations.
-	result := make([]helmify.Template, len(templates))
-	copy(result, templates)
-	for i, tmplIdx := range objIndices {
-		obj := c.objects[tmplIdx]
-		if !workloadGVKs[obj.GroupVersionKind()] {
-			continue
-		}
-		podSpec := extractPodSpec(obj)
-		if podSpec == nil {
-			continue
-		}
-		checksumAnns := pod.ChecksumAnnotations(c.appMeta, *podSpec, configMapFiles, secretFiles)
+	for i, p := range processed {
+		obj := c.objects[p.objIndex]
+		checksumAnns := pod.ChecksumAnnotations(c.appMeta, obj, configMapFiles, secretFiles)
 		if checksumAnns != "" {
-			result[i] = &checksumTemplate{
-				wrapped:     templates[i],
+			processed[i].template = &checksumTemplate{
+				wrapped:     p.template,
 				annotations: checksumAnns,
 			}
 		}
 	}
-
-	return result
-}
-
-// extractPodSpec extracts the PodSpec from a workload object.
-func extractPodSpec(obj *unstructured.Unstructured) *corev1.PodSpec {
-	switch obj.GroupVersionKind() {
-	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "Deployment"}:
-		var d appsv1.Deployment
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &d); err != nil {
-			return nil
-		}
-		return &d.Spec.Template.Spec
-	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "DaemonSet"}:
-		var d appsv1.DaemonSet
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &d); err != nil {
-			return nil
-		}
-		return &d.Spec.Template.Spec
-	case schema.GroupVersionKind{Group: "apps", Version: "v1", Kind: "StatefulSet"}:
-		var s appsv1.StatefulSet
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &s); err != nil {
-			return nil
-		}
-		return &s.Spec.Template.Spec
-	}
-	return nil
 }
 
 // checksumTemplate wraps a Template to inject checksum annotations into its output.
@@ -223,15 +185,15 @@ func (t *checksumTemplate) Write(writer io.Writer) error {
 	if err := t.wrapped.Write(&buf); err != nil {
 		return err
 	}
-	output := buf.String()
-	output = injectAnnotations(output, t.annotations)
+	output := injectAnnotations(buf.String(), t.annotations)
 	_, err := fmt.Fprint(writer, output)
 	return err
 }
 
 // injectAnnotations injects checksum annotations into the pod template metadata
-// section of a workload YAML. It looks for the `template:\n    metadata:` pattern
-// and adds an `annotations:` block (or appends to an existing one).
+// section of a workload YAML. It looks for the "spec:" → "template:" → "metadata:"
+// pattern (2-space indent, which is what helmify always produces) and inserts or
+// appends to an annotations block.
 func injectAnnotations(yaml string, annotations string) string {
 	lines := strings.Split(yaml, "\n")
 	var result []string
@@ -244,42 +206,59 @@ func injectAnnotations(yaml string, annotations string) string {
 			continue
 		}
 
-		// Look for "  template:" (the pod template, not other uses of "template")
-		trimmed := strings.TrimRight(lines[i], " ")
-		if trimmed != "  template:" && trimmed != "    template:" {
+		if strings.TrimSpace(lines[i]) != "template:" {
 			continue
 		}
-		templateIndent := strings.Repeat(" ", len(lines[i])-len(strings.TrimLeft(lines[i], " ")))
+		indent := len(lines[i]) - len(strings.TrimLeft(lines[i], " "))
+		if indent < 2 {
+			continue
+		}
 
-		// Find the metadata: line within the next few lines
-		for j := i + 1; j < len(lines) && j <= i+2; j++ {
-			if strings.TrimSpace(lines[j]) != "metadata:" {
+		// Verify parent "spec:" at indent-2 by scanning back until we find
+		// a line at a lower or equal indent level (the parent block).
+		hasSpec := false
+		for k := i - 1; k >= 0; k-- {
+			kIndent := len(lines[k]) - len(strings.TrimLeft(lines[k], " "))
+			trimmed := strings.TrimSpace(lines[k])
+			if trimmed == "" {
 				continue
 			}
-			metadataIndent := templateIndent + "  "
-			annIndent := metadataIndent + "  "
-
-			result = append(result, lines[j])
-			i = j
-
-			// Check if there's already an annotations: block right after metadata:
-			if j+1 < len(lines) && strings.TrimSpace(lines[j+1]) == "annotations:" {
-				result = append(result, lines[j+1])
-				i = j + 1
-				// Insert our annotations after the existing annotations: key
-				for _, ann := range strings.Split(annotations, "\n") {
-					result = append(result, annIndent+"  "+ann)
-				}
-			} else {
-				// Add new annotations block
-				result = append(result, annIndent+"annotations:")
-				for _, ann := range strings.Split(annotations, "\n") {
-					result = append(result, annIndent+"  "+ann)
-				}
+			if kIndent < indent {
+				hasSpec = trimmed == "spec:" && kIndent == indent-2
+				break
 			}
-			injected = true
-			break
 		}
+		if !hasSpec {
+			continue
+		}
+
+		// Expect "metadata:" at indent+2.
+		if i+1 >= len(lines) {
+			continue
+		}
+		nextIndent := len(lines[i+1]) - len(strings.TrimLeft(lines[i+1], " "))
+		if strings.TrimSpace(lines[i+1]) != "metadata:" || nextIndent != indent+2 {
+			continue
+		}
+
+		// Found pod template metadata — inject annotations.
+		result = append(result, lines[i+1]) // metadata: line
+		i = i + 1
+
+		annKeyIndent := strings.Repeat(" ", indent+4)
+		annValueIndent := strings.Repeat(" ", indent+6)
+
+		if i+1 < len(lines) && strings.TrimSpace(lines[i+1]) == "annotations:" {
+			result = append(result, lines[i+1])
+			i = i + 1
+		} else {
+			result = append(result, annKeyIndent+"annotations:")
+		}
+		for _, ann := range strings.Split(annotations, "\n") {
+			result = append(result, annValueIndent+ann)
+		}
+
+		injected = true
 	}
 
 	return strings.Join(result, "\n")
