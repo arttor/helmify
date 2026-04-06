@@ -54,6 +54,8 @@ type Service struct {
 	names          map[string]struct{}
 	configMapNames map[string]struct{}
 	secretNames    map[string]struct{}
+	configMapFiles map[string]string
+	secretFiles    map[string]string
 	conf           config.Config
 }
 
@@ -137,6 +139,26 @@ func (a *Service) HasSecret(name string) bool {
 	}
 	_, ok := a.secretNames[name]
 	return ok
+}
+
+// SetConfigMapFiles sets the map of ConfigMap names to template filenames.
+func (a *Service) SetConfigMapFiles(files map[string]string) {
+	a.configMapFiles = files
+}
+
+// SetSecretFiles sets the map of Secret names to template filenames.
+func (a *Service) SetSecretFiles(files map[string]string) {
+	a.secretFiles = files
+}
+
+// ConfigMapFiles returns the map of ConfigMap names to template filenames.
+func (a *Service) ConfigMapFiles() map[string]string {
+	return a.configMapFiles
+}
+
+// SecretFiles returns the map of Secret names to template filenames.
+func (a *Service) SecretFiles() map[string]string {
+	return a.secretFiles
 }
 
 func (a *Service) TemplatedString(str string) string {

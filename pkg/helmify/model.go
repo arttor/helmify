@@ -54,4 +54,11 @@ type AppMetadata interface {
 	HasConfigMap(name string) bool
 	// HasSecret returns true if a Secret with the given name is part of the chart.
 	HasSecret(name string) bool
+
+	// ConfigMapFiles returns a map of ConfigMap object names to their template filenames.
+	// Only populated when AddChecksumAnnotations is enabled.
+	ConfigMapFiles() map[string]string
+	// SecretFiles returns a map of Secret object names to their template filenames.
+	// Only populated when AddChecksumAnnotations is enabled.
+	SecretFiles() map[string]string
 }
