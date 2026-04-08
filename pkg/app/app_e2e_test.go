@@ -2,10 +2,12 @@ package app
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"testing"
 
 	"github.com/arttor/helmify/pkg/config"
+	"github.com/arttor/helmify/pkg/translator/k8smanifest"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/action"
 )
@@ -19,8 +21,12 @@ func TestOperator(t *testing.T) {
 	file, err := os.Open("../../test_data/k8s-operator-kustomize.output")
 	assert.NoError(t, err)
 
+	conf := config.Config{ChartName: operatorChartName}
 	objects := bufio.NewReader(file)
-	err = Start(objects, config.Config{ChartName: operatorChartName})
+	trans := k8smanifest.New(conf, objects)
+	engine := NewEngine(conf)
+	
+	err = engine.Run(context.Background(), trans)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -41,8 +47,12 @@ func TestApp(t *testing.T) {
 	file, err := os.Open("../../test_data/sample-app.yaml")
 	assert.NoError(t, err)
 
+	conf := config.Config{ChartName: appChartName}
 	objects := bufio.NewReader(file)
-	err = Start(objects, config.Config{ChartName: appChartName})
+	trans := k8smanifest.New(conf, objects)
+	engine := NewEngine(conf)
+
+	err = engine.Run(context.Background(), trans)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {

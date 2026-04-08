@@ -2,12 +2,7 @@ package app
 
 import (
 	"context"
-	"io"
-	"os"
-	"os/signal"
-	"syscall"
 
-	"github.com/arttor/helmify/pkg/file"
 	"github.com/arttor/helmify/pkg/processor/job"
 	"github.com/arttor/helmify/pkg/processor/poddisruptionbudget"
 	"github.com/arttor/helmify/pkg/processor/statefulset"
@@ -15,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/arttor/helmify/pkg/config"
-	"github.com/arttor/helmify/pkg/decoder"
 	"github.com/arttor/helmify/pkg/helm"
+	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/configmap"
 	"github.com/arttor/helmify/pkg/processor/crd"
@@ -27,25 +22,32 @@ import (
 	"github.com/arttor/helmify/pkg/processor/service"
 	"github.com/arttor/helmify/pkg/processor/storage"
 	"github.com/arttor/helmify/pkg/processor/webhook"
+	"github.com/arttor/helmify/pkg/translator"
 )
 
-// Start - application entrypoint for processing input to a Helm chart.
-func Start(stdin io.Reader, config config.Config) error {
-	err := config.Validate()
+// Engine is the core helmify processing engine, decoupled from inputs like stdin or files.
+type Engine struct {
+	config config.Config
+	output helmify.Output
+}
+
+// NewEngine creates a new processing Engine.
+func NewEngine(cfg config.Config) *Engine {
+	return &Engine{
+		config: cfg,
+		output: helm.NewOutput(),
+	}
+}
+
+// Run executes the translation pipeline and creates a Helm chart.
+func (e *Engine) Run(ctx context.Context, trans translator.Translator) error {
+	err := e.config.Validate()
 	if err != nil {
 		return err
 	}
-	setLogLevel(config)
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-done
-		logrus.Debug("Received termination, signaling shutdown")
-		cancelFunc()
-	}()
-	appCtx := New(config, helm.NewOutput())
+	setLogLevel(e.config)
+
+	appCtx := New(e.config, e.output)
 	appCtx = appCtx.WithProcessors(
 		configmap.New(),
 		crd.New(),
@@ -68,18 +70,14 @@ func Start(stdin io.Reader, config config.Config) error {
 		job.NewJob(),
 		poddisruptionbudget.New(),
 	).WithDefaultProcessor(processor.Default())
-	if len(config.Files) != 0 {
-		file.Walk(config.Files, config.FilesRecursively, func(filename string, fileReader io.Reader) {
-			objects := decoder.Decode(ctx.Done(), fileReader)
-			for obj := range objects {
-				appCtx.Add(obj, filename)
-			}
-		})
-	} else {
-		objects := decoder.Decode(ctx.Done(), stdin)
-		for obj := range objects {
-			appCtx.Add(obj, "")
-		}
+
+	payloads, err := trans.Translate(ctx)
+	if err != nil {
+		return err
+	}
+
+	for payload := range payloads {
+		appCtx.Add(payload.Object, payload.Filename)
 	}
 
 	return appCtx.CreateHelm(ctx.Done())

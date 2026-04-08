@@ -29,3 +29,7 @@ testbin/*
 dist/
 
 vendor/
+
+chart-test/
+
+stand.py
