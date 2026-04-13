@@ -42,7 +42,7 @@ func (p pvc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return true, nil, err
 	}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	nameCamelCase := strcase.ToLowerCamel(name)
 	values := helmify.Values{}
 
@@ -98,7 +98,7 @@ func (p pvc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{
-		name: name + ".yaml",
+		name: name,
 		data: struct {
 			Meta string
 			Spec string
@@ -117,7 +117,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-pvc.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

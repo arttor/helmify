@@ -41,7 +41,7 @@ func main() {
 	}()
 
 	trans := k8smanifest.New(conf, os.Stdin)
-	engine := app.NewEngine(conf)
+	engine := app.NewEngine(conf, helm.NewOutput())
 
 	if err = engine.Run(ctx, trans); err != nil {
 		logrus.WithError(err).Error("helmify finished with error")

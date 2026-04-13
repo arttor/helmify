@@ -1,0 +1,88 @@
+default:
+  tags: ["podman"]
+
+variables:
+  BUILDER_IMAGE: "registry.access.redhat.com/ubi8/go-toolset:1.21.0"
+  CLI_TOOLS_IMAGE: "gitlab-ca.tjpa.jus.br:5050/devops/base-images/cli-tools-ubi:v1.3.0"
+  GOPATH: $CI_PROJECT_DIR/.go
+  GOCACHE: $CI_PROJECT_DIR/.gocache
+
+stages:
+  - test
+  - build
+  - containerize
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .go/pkg/mod
+    - .gocache
+
+# ---------------------------------------------------------------------------
+# Stage: Test (Variable Setup and Unit Tests)
+# ---------------------------------------------------------------------------
+setup-vars:
+  stage: test
+  image: $BUILDER_IMAGE
+  script:
+    - TAG="${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
+    - IMAGE="${QUAY_URL}/${CI_PROJECT_PATH}:${TAG}"
+    - echo "TAG=$TAG" > build.env
+    - echo "IMAGE=$IMAGE" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  only:
+    - develop
+    - tags
+
+app-test:
+  stage: test
+  image: $BUILDER_IMAGE
+  needs: [setup-vars]
+  script:
+    - echo "Running unit tests..."
+    - go test ./...
+  only:
+    - develop
+    - tags
+
+# ---------------------------------------------------------------------------
+# Stage: Build (Source -> Binary)
+# ---------------------------------------------------------------------------
+build-app:
+  stage: build
+  image: $BUILDER_IMAGE
+  needs:
+    - job: setup-vars
+      artifacts: true
+    - job: app-test
+  script:
+    - echo "Building the Helmify API binary..."
+    - go build -o helmify-api ./cmd/helmify-api
+  artifacts:
+    paths:
+      - helmify-api
+    expire_in: 1 hour
+  only:
+    - develop
+    - tags
+
+# ---------------------------------------------------------------------------
+# Stage: Containerize (Binary -> Image)
+# ---------------------------------------------------------------------------
+push-to-quay:
+  stage: containerize
+  image: $CLI_TOOLS_IMAGE
+  needs:
+    - job: setup-vars
+      artifacts: true
+    - job: build-app
+      artifacts: true
+  script:
+    - podman login $QUAY_URL -u $QUAY_USER -p $QUAY_PASS --tls-verify=false
+    - podman build --tls-verify=false -f Containerfile -t "$IMAGE" .
+    - podman push "$IMAGE" --tls-verify=false
+  only:
+    - develop
+    - tags

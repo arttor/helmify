@@ -3,7 +3,6 @@ package rbac
 import (
 	"fmt"
 	"io"
-	"strings"
 	"text/template"
 
 	"github.com/arttor/helmify/pkg/processor"
@@ -66,8 +65,10 @@ func (r roleBinding) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 		return true, nil, err
 	}
 
+	valueName := processor.ObjectValueName(appMeta, obj)
+
 	return true, &rbResult{
-		name: appMeta.TrimName(obj.GetName()),
+		name: valueName,
 		data: struct {
 			Meta     string
 			RoleRef  string
@@ -90,7 +91,7 @@ type rbResult struct {
 }
 
 func (r *rbResult) Filename() string {
-	return strings.TrimSuffix(r.name, "-rolebinding") + "-rbac.yaml"
+	return fmt.Sprintf("%s-rolebinding.yaml", r.name)
 }
 
 func (r *rbResult) Values() helmify.Values {

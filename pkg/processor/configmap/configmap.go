@@ -65,10 +65,10 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 		}
 	}
 
-	name := appMeta.TrimName(obj.GetName())
+	valueName := processor.ObjectValueName(appMeta, obj)
 	var values helmify.Values
 	if field, exists, _ := unstructured.NestedStringMap(obj.Object, "data"); exists {
-		field, values = parseMapData(field, name)
+		field, values = parseMapData(field, valueName)
 		data, err = yamlformat.Marshal(map[string]interface{}{"data": field}, 0)
 		if err != nil {
 			return true, nil, err
@@ -77,7 +77,7 @@ func (d configMap) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}
 
 	return true, &result{
-		name: name + ".yaml",
+		name: valueName,
 		data: struct {
 			Meta       string
 			Immutable  string
@@ -157,7 +157,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-configmap.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

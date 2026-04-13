@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: helmify-api
+  labels:
+    app: helmify-api
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: helmify-api
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: helmify-api
+  labels:
+    app: helmify-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: helmify-api
+  template:
+    metadata:
+      labels:
+        app: helmify-api
+    spec:
+      containers:
+      - name: helmify-api
+        image: quay-tj.br/devops/helmify-api:latest # Placeholder
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: helmify-api
+  labels:
+    app: helmify-api
+spec:
+  port:
+    targetPort: 8080-tcp
+  to:
+    kind: Service
+    name: helmify-api
+    weight: 100
+  wildcardPolicy: None

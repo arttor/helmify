@@ -43,7 +43,7 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	if err != nil {
 		return true, nil, err
 	}
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	nameCamelCase := strcase.ToLowerCamel(name)
 
 	jobObj := batchv1.Job{}
@@ -126,7 +126,7 @@ func (p job) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	specStr = strings.ReplaceAll(specStr, "'", "")
 
 	return true, &result{
-		name: name + ".yaml",
+		name: name,
 		data: struct {
 			Meta string
 			Spec string
@@ -145,7 +145,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-job.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

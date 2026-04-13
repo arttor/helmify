@@ -30,6 +30,7 @@ dist/
 
 vendor/
 
-chart-test/
-
 stand.py
+
+divida-ativa-batch/
+divida-ativa-batch-kustomize/

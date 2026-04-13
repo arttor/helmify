@@ -22,8 +22,7 @@ const (
 spec:
   minAvailable: {{ .Values.%[1]s.minAvailable }}
   maxUnavailable: {{ .Values.%[1]s.maxUnavailable }}
-  selector:
-%[2]s
+  selector:%[2]s
     {{- include "%[3]s.selectorLabels" . | nindent 6 }}`
 )
 
@@ -58,12 +57,15 @@ func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return true, nil, err
 	}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	nameCamel := strcase.ToLowerCamel(name)
 
-	selector, _ := yaml.Marshal(pdb.Spec.Selector)
-	selector = yamlformat.Indent(selector, 4)
-	selector = bytes.TrimRight(selector, "\n ")
+	var selector string
+	if pdb.Spec.Selector != nil && (len(pdb.Spec.Selector.MatchLabels) > 0 || len(pdb.Spec.Selector.MatchExpressions) > 0) {
+		selectorBytes, _ := yaml.Marshal(pdb.Spec.Selector)
+		selectorBytes = yamlformat.Indent(selectorBytes, 4)
+		selector = "\n" + string(bytes.TrimRight(selectorBytes, "\n "))
+	}
 
 	if spec.MaxUnavailable != nil {
 		_, err := values.Add(spec.MaxUnavailable.IntValue(), nameCamel, "maxUnavailable")
@@ -94,7 +96,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name + ".yaml"
+	return fmt.Sprintf("%s-pdb.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

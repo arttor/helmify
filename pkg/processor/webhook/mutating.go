@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
+	"github.com/iancoleman/strcase"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,18 +67,21 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
 	certName = appMeta.TrimName(certName)
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamel := strcase.ToLowerCamel(valueName)
 	tmpl := mwhTempl
 	values := helmify.Values{}
 	if appMeta.Config().AddWebhookOption {
 		// Add webhook.enabled value to values.yaml
-		_, _ = values.Add(true, "webhook", "enabled")
+		_, _ = values.Add(true, nameCamel, "webhook", "enabled")
 
 		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, mwhTempl, WebhookFooter)
 	}
 	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &mwhResult{
-		name: name,
-		data: []byte(res),
+		name:   valueName,
+		data:   []byte(res),
+		values: values,
 	}, nil
 }
 
@@ -87,7 +92,7 @@ type mwhResult struct {
 }
 
 func (r *mwhResult) Filename() string {
-	return r.name + ".yaml"
+	return fmt.Sprintf("%s-mutatingwebhook.yaml", r.name)
 }
 
 func (r *mwhResult) Values() helmify.Values {

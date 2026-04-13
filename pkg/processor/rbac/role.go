@@ -72,8 +72,11 @@ func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 		return true, nil, err
 	}
 
+	valueName := processor.ObjectValueName(appMeta, obj)
+
 	return true, &crResult{
-		name: appMeta.TrimName(obj.GetName()),
+		name: valueName,
+		kind: strings.ToLower(obj.GetKind()),
 		data: struct {
 			Meta            string
 			AggregationRule string
@@ -84,6 +87,7 @@ func (r role) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 
 type crResult struct {
 	name string
+	kind string
 	data struct {
 		Meta            string
 		AggregationRule string
@@ -92,7 +96,7 @@ type crResult struct {
 }
 
 func (r *crResult) Filename() string {
-	return strings.TrimSuffix(r.name, "-role") + "-rbac.yaml"
+	return fmt.Sprintf("%s-%s.yaml", r.name, r.kind)
 }
 
 func (r *crResult) GVK() schema.GroupVersionKind {

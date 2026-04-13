@@ -23,8 +23,7 @@ const (
 	svcTempSpec = `
 spec:
   type: {{ .Values.%[1]s.type }}
-  selector:
-%[2]s
+  selector:%[2]s
     {{- include "%[3]s.selectorLabels" . | nindent 4 }}%[4]s
   ports:
   {{- .Values.%[1]s.ports | toYaml | nindent 2 }}`
@@ -76,13 +75,16 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 		return true, nil, err
 	}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
 
-	selector, _ := yaml.Marshal(service.Spec.Selector)
-	selector = yamlformat.Indent(selector, 4)
-	selector = bytes.TrimRight(selector, "\n ")
+	var selector string
+	if len(service.Spec.Selector) > 0 {
+		selectorBytes, _ := yaml.Marshal(service.Spec.Selector)
+		selectorBytes = yamlformat.Indent(selectorBytes, 4)
+		selector = "\n" + string(bytes.TrimRight(selectorBytes, "\n "))
+	}
 
 	values := helmify.Values{}
 	svcType := service.Spec.Type
@@ -171,7 +173,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name + ".yaml"
+	return fmt.Sprintf("%s-service.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

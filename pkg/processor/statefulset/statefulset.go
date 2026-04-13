@@ -51,6 +51,8 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 		return true, nil, err
 	}
 
+	annotations := ss.Spec.Template.ObjectMeta.Annotations
+	ss.Spec.Template.ObjectMeta.Annotations = pod.AddReloadingAnnotations(appMeta, annotations, &ss.Spec.Template.Spec)
 	ssSpec := ss.Spec
 	ssSpecMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&ssSpec)
 	if err != nil {
@@ -60,7 +62,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 
 	values := helmify.Values{}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	nameCamel := strcase.ToLowerCamel(name)
 
 	if ssSpec.ServiceName != "" {
@@ -129,6 +131,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{
+		name:   name,
 		values: values,
 		data: struct {
 			Meta string
@@ -141,6 +144,7 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 }
 
 type result struct {
+	name string
 	data struct {
 		Meta string
 		Spec string
@@ -149,7 +153,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return "statefulset.yaml"
+	return fmt.Sprintf("%s-statefulset.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

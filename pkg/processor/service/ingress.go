@@ -44,15 +44,16 @@ func (r ingress) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstruct
 	if err != nil {
 		return true, nil, err
 	}
-	name := appMeta.TrimName(obj.GetName())
 	processIngressSpec(appMeta, &ing.Spec)
 	spec, err := yamlformat.Marshal(map[string]interface{}{"spec": &ing.Spec}, 0)
 	if err != nil {
 		return true, nil, err
 	}
 
+	valueName := processor.ObjectValueName(appMeta, obj)
+
 	return true, &ingressResult{
-		name: name + ".yaml",
+		name: valueName,
 		data: struct {
 			Meta string
 			Spec string
@@ -84,7 +85,7 @@ type ingressResult struct {
 }
 
 func (r *ingressResult) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-ingress.yaml", r.name)
 }
 
 func (r *ingressResult) Values() helmify.Values {

@@ -113,3 +113,42 @@ func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured,
 	metaStr = strings.ReplaceAll(metaStr, "\n\n", "\n")
 	return metaStr, nil
 }
+
+// GetAppName tries to pull the native application name from standard K8s labels.
+func GetAppName(obj *unstructured.Unstructured) string {
+	labels := obj.GetLabels()
+	if appName, ok := labels["app.kubernetes.io/name"]; ok && appName != "" {
+		return appName
+	}
+	if appName, ok := labels["app"]; ok && appName != "" {
+		return appName
+	}
+	if appName, ok := labels["io.kompose.service"]; ok && appName != "" {
+		return appName
+	}
+	if appName, ok := labels["io.kompose.configmap"]; ok && appName != "" {
+		return appName
+	}
+	return ""
+}
+
+// ObjectValueName creates a smart, unified values.yaml root key name for a Kubernetes object.
+// It relies on app labels or suffix stripping to group multiple microservice components under the same root.
+func ObjectValueName(appMeta helmify.AppMetadata, obj *unstructured.Unstructured) string {
+	// 1. Label Detection Route
+	if appName := GetAppName(obj); appName != "" {
+		return appName
+	}
+
+	// 2. Suffix Stripping Route
+	name := obj.GetName()
+	suffixes := []string{"-deploy", "-deployment", "-svc", "-service", "-route", "-cm", "-configmap", "-secret", "-job", "-cronjob", "-pdb"}
+	for _, s := range suffixes {
+		if strings.HasSuffix(name, s) {
+			return strings.TrimSuffix(name, s)
+		}
+	}
+
+	// 3. Mathematical Fallback
+	return appMeta.TrimName(name)
+}

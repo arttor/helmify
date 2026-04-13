@@ -77,7 +77,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 
 	values := helmify.Values{}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	replicas, err := processReplicas(name, &depl, &values)
 	if err != nil {
 		return true, nil, err
@@ -115,6 +115,10 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
+	annotations := depl.Spec.Template.ObjectMeta.Annotations
+	annotations = pod.AddReloadingAnnotations(appMeta, annotations, &depl.Spec.Template.Spec)
+	depl.Spec.Template.ObjectMeta.Annotations = annotations
+
 	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
 		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
 		if err != nil {
@@ -145,6 +149,7 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	spec = replaceSingleQuotes(spec)
 
 	return true, &result{
+		name:   name,
 		values: values,
 		data: struct {
 			Meta                 string
@@ -286,6 +291,7 @@ func processStrategy(name string, deployment *appsv1.Deployment, values *helmify
 }
 
 type result struct {
+	name string
 	data struct {
 		Meta                 string
 		Replicas             string
@@ -300,7 +306,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return "deployment.yaml"
+	return fmt.Sprintf("%s-deployment.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

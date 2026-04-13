@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
+	"github.com/iancoleman/strcase"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,18 +67,21 @@ func (w vwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	}
 	certName = strings.TrimPrefix(certName, appMeta.Namespace()+"/")
 	certName = appMeta.TrimName(certName)
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamel := strcase.ToLowerCamel(valueName)
 	tmpl := vwhTempl
 	values := helmify.Values{}
 	if appMeta.Config().AddWebhookOption {
 		// Add webhook.enabled value to values.yaml
-		_, _ = values.Add(true, "webhook", "enabled")
+		_, _ = values.Add(true, nameCamel, "webhook", "enabled")
 
-		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, mwhTempl, WebhookFooter)
+		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, vwhTempl, WebhookFooter)
 	}
 	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, certName, string(webhooks))
 	return true, &vwhResult{
-		name: name,
-		data: []byte(res),
+		name:   valueName,
+		data:   []byte(res),
+		values: values,
 	}, nil
 }
 
@@ -87,7 +92,7 @@ type vwhResult struct {
 }
 
 func (r *vwhResult) Filename() string {
-	return r.name + ".yaml"
+	return fmt.Sprintf("%s-validatingwebhook.yaml", r.name)
 }
 
 func (r *vwhResult) Values() helmify.Values {

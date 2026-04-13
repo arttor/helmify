@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/arttor/helmify/pkg/config"
-	"github.com/arttor/helmify/pkg/helm"
 	"github.com/arttor/helmify/pkg/helmify"
 	"github.com/arttor/helmify/pkg/processor"
 	"github.com/arttor/helmify/pkg/processor/configmap"
@@ -23,6 +22,7 @@ import (
 	"github.com/arttor/helmify/pkg/processor/storage"
 	"github.com/arttor/helmify/pkg/processor/webhook"
 	"github.com/arttor/helmify/pkg/translator"
+	"github.com/arttor/helmify/pkg/processor/route"
 )
 
 // Engine is the core helmify processing engine, decoupled from inputs like stdin or files.
@@ -32,10 +32,10 @@ type Engine struct {
 }
 
 // NewEngine creates a new processing Engine.
-func NewEngine(cfg config.Config) *Engine {
+func NewEngine(cfg config.Config, output helmify.Output) *Engine {
 	return &Engine{
 		config: cfg,
-		output: helm.NewOutput(),
+		output: output,
 	}
 }
 
@@ -69,6 +69,7 @@ func (e *Engine) Run(ctx context.Context, trans translator.Translator) error {
 		job.NewCron(),
 		job.NewJob(),
 		poddisruptionbudget.New(),
+		route.New(),
 	).WithDefaultProcessor(processor.Default())
 
 	payloads, err := trans.Translate(ctx)
@@ -77,6 +78,7 @@ func (e *Engine) Run(ctx context.Context, trans translator.Translator) error {
 	}
 
 	for payload := range payloads {
+		cleanKomposeMetadata(payload.Object)
 		appCtx.Add(payload.Object, payload.Filename)
 	}
 

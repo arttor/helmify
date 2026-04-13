@@ -58,8 +58,8 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 		return true, nil, err
 	}
 
-	name := appMeta.TrimName(obj.GetName())
-	nameCamelCase := strcase.ToLowerCamel(name)
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamelCase := strcase.ToLowerCamel(valueName)
 
 	secretType := string(sec.Type)
 	if secretType != "" {
@@ -114,7 +114,7 @@ func (d secret) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	}
 
 	return true, &result{
-		name: name + ".yaml",
+		name: valueName,
 		data: struct {
 			Type       string
 			Meta       string
@@ -137,7 +137,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-secret.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

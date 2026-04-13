@@ -5,23 +5,26 @@ import (
 	"io"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
+	"github.com/iancoleman/strcase"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
-	saTempl = `{{ if .Values.serviceAccount.create }}
+	saTempl = `{{- $sa := .Values.%[2]s.serviceAccount -}}
+{{- if $sa.create -}}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "%[1]s.serviceAccountName" . }}
+  name: {{ default (include "%[1]s.fullname" .) $sa.name }}
   labels:
   {{- include "%[1]s.labels" . | nindent 4 }}
-  {{- with .Values.serviceAccount.annotations }}
+  {{- with $sa.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+automountServiceAccountToken: {{ $sa.automount }}
 {{- end }}`
 )
 
@@ -43,34 +46,38 @@ func (sa serviceAccount) Process(appMeta helmify.AppMetadata, obj *unstructured.
 	if obj.GroupVersionKind() != serviceAccountGVC {
 		return false, nil, nil
 	}
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamel := strcase.ToLowerCamel(valueName)
 	values := helmify.Values{}
-	_, _ = values.Add(true, "serviceAccount", "create")
-	_, _ = values.Add("", "serviceAccount", "name")
-	_, _ = values.Add(true, "serviceAccount", "automount")
+	_, _ = values.Add(true, nameCamel, "serviceAccount", "create")
+	_, _ = values.Add("", nameCamel, "serviceAccount", "name")
+	_, _ = values.Add(true, nameCamel, "serviceAccount", "automount")
 	valuesAnnotations := make(map[string]interface{})
 	for k, v := range obj.GetAnnotations() {
 		valuesAnnotations[k] = v
 	}
-	err := unstructured.SetNestedField(values, valuesAnnotations, "serviceAccount", "annotations")
+	err := unstructured.SetNestedField(values, valuesAnnotations, nameCamel, "serviceAccount", "annotations")
 	if err != nil {
 		return true, nil, err
 	}
 	tmpl := saTempl
-	meta := fmt.Sprintf(tmpl, appMeta.ChartName())
+	meta := fmt.Sprintf(tmpl, appMeta.ChartName(), nameCamel)
 
 	return true, &saResult{
+		name:   valueName,
 		data:   []byte(meta),
 		values: values,
 	}, nil
 }
 
 type saResult struct {
+	name   string
 	data   []byte
 	values helmify.Values
 }
 
 func (r *saResult) Filename() string {
-	return "serviceaccount.yaml"
+	return fmt.Sprintf("%s-serviceaccount.yaml", r.name)
 }
 
 func (r *saResult) Values() helmify.Values {

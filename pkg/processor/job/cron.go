@@ -43,7 +43,7 @@ func (p cron) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	if err != nil {
 		return true, nil, err
 	}
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 	nameCamelCase := strcase.ToLowerCamel(name)
 
 	jobObj := batchv1.CronJob{}
@@ -127,7 +127,7 @@ func (p cron) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	specStr = strings.ReplaceAll(specStr, "'", "")
 
 	return true, &resultCron{
-		name: name + ".yaml",
+		name: name,
 		data: struct {
 			Meta string
 			Spec string
@@ -146,7 +146,7 @@ type resultCron struct {
 }
 
 func (r *resultCron) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-cronjob.yaml", r.name)
 }
 
 func (r *resultCron) Values() helmify.Values {

@@ -15,7 +15,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
+	"github.com/iancoleman/strcase"
 )
 
 const crdTeml = `apiVersion: apiextensions.k8s.io/v1
@@ -132,16 +134,18 @@ func (c crd) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	res := fmt.Sprintf(crdTeml, obj.GetName(), appMeta.ChartName(), annotations, labels, string(specYaml))
 	res = strings.ReplaceAll(res, "\n\n", "\n")
 
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamel := strcase.ToLowerCamel(valueName)
 	values := helmify.Values{}
 
 	if appMeta.Config().OptionalCRDs {
-		res = fmt.Sprintf("{{- if .Values.%s }}\n%s\n{{- end }}", optionalCRDsConditional, res)
-		_, _ = values.Add(true, strings.Split(optionalCRDsConditional, ".")...)
-		logrus.WithField("crd", name).WithField("condition", optionalCRDsConditional).Debug("enabling optional CRD installation")
+		res = fmt.Sprintf("{{- if .Values.%s.crds.enabled }}\n%s\n{{- end }}", nameCamel, res)
+		_, _ = values.Add(true, nameCamel, "crds", "enabled")
+		logrus.WithField("crd", name).WithField("condition", nameCamel+".crds.enabled").Debug("enabling optional CRD installation")
 	}
 
 	return true, &result{
-		name:   name + "-crd.yaml",
+		name:   valueName,
 		data:   []byte(res),
 		values: values,
 	}, nil
@@ -154,7 +158,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return r.name
+	return fmt.Sprintf("%s-crd.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

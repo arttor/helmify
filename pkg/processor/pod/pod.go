@@ -178,12 +178,20 @@ func processNestedContainers(specMap map[string]interface{}, objName string, val
 func processContainers(objName string, values helmify.Values, containerType string, containers []interface{}, nindent int) ([]interface{}, helmify.Values, error) {
 	for i := range containers {
 		containerName := strcase.ToLowerCamel((containers[i].(map[string]interface{})["name"]).(string))
-		res, exists, err := unstructured.NestedMap(values, objName, containerName, "resources")
+		var valuePath []string
+		if containerName == objName || containerName == "" {
+			valuePath = []string{objName}
+		} else {
+			valuePath = []string{objName, containerName}
+		}
+		valuePathStr := strings.Join(valuePath, ".")
+
+		res, exists, err := unstructured.NestedMap(values, append(valuePath, "resources")...)
 		if err != nil {
 			return nil, nil, err
 		}
 		if exists && len(res) > 0 {
-			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.%s.resources | nindent %d }}`, objName, containerName, nindent+2), "resources")
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.resources | nindent %d }}`, valuePathStr, nindent+2), "resources")
 			if err != nil {
 				return nil, nil, err
 			}
@@ -194,12 +202,12 @@ func processContainers(objName string, values helmify.Values, containerType stri
 			return nil, nil, err
 		}
 		if exists && len(args) > 0 {
-			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%[1]s.%[2]s.args | nindent %d }}`, objName, containerName, nindent), "args")
+			err = unstructured.SetNestedField(containers[i].(map[string]interface{}), fmt.Sprintf(`{{- toYaml .Values.%s.args | nindent %d }}`, valuePathStr, nindent), "args")
 			if err != nil {
 				return nil, nil, err
 			}
 
-			err = unstructured.SetNestedStringSlice(values, args, objName, containerName, "args")
+			err = unstructured.SetNestedStringSlice(values, args, append(valuePath, "args")...)
 			if err != nil {
 				return nil, nil, fmt.Errorf("%w: unable to set deployment value field", err)
 			}
@@ -254,18 +262,27 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 	}
 	repo, tag := c.Image[:index], c.Image[index+1:]
 	containerName := strcase.ToLowerCamel(c.Name)
-	c.Image = fmt.Sprintf("{{ .Values.%[1]s.%[2]s.image.repository }}:{{ .Values.%[1]s.%[2]s.image.tag | default .Chart.AppVersion }}", name, containerName)
+	
+	var valuePath []string
+	if containerName == name || containerName == "" {
+		valuePath = []string{name}
+	} else {
+		valuePath = []string{name, containerName}
+	}
+	valuePathStr := strings.Join(valuePath, ".")
 
-	err := unstructured.SetNestedField(*values, repo, name, containerName, "image", "repository")
+	c.Image = fmt.Sprintf("{{ .Values.%[1]s.image.repository }}:{{ .Values.%[1]s.image.tag | default .Chart.AppVersion }}", valuePathStr)
+
+	err := unstructured.SetNestedField(*values, repo, append(valuePath, "image", "repository")...)
 	if err != nil {
 		return c, fmt.Errorf("%w: unable to set deployment value field", err)
 	}
-	err = unstructured.SetNestedField(*values, tag, name, containerName, "image", "tag")
+	err = unstructured.SetNestedField(*values, tag, append(valuePath, "image", "tag")...)
 	if err != nil {
 		return c, fmt.Errorf("%w: unable to set deployment value field", err)
 	}
 
-	c, err = processEnv(name, appMeta, c, values)
+	c, err = processEnv(name, containerName, appMeta, c, values)
 	if err != nil {
 		return c, err
 	}
@@ -283,30 +300,36 @@ func processPodContainer(name string, appMeta helmify.AppMetadata, c corev1.Cont
 		Value: fmt.Sprintf("{{ quote .Values.%s }}", cluster.DomainKey),
 	})
 	for k, v := range c.Resources.Requests {
-		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "requests", k.String())
+		err = unstructured.SetNestedField(*values, v.ToUnstructured(), append(valuePath, "resources", "requests", k.String())...)
 		if err != nil {
 			return c, fmt.Errorf("%w: unable to set container resources value", err)
 		}
 	}
 	for k, v := range c.Resources.Limits {
-		err = unstructured.SetNestedField(*values, v.ToUnstructured(), name, containerName, "resources", "limits", k.String())
+		err = unstructured.SetNestedField(*values, v.ToUnstructured(), append(valuePath, "resources", "limits", k.String())...)
 		if err != nil {
 			return c, fmt.Errorf("%w: unable to set container resources value", err)
 		}
 	}
 
 	if c.ImagePullPolicy != "" {
-		err = unstructured.SetNestedField(*values, string(c.ImagePullPolicy), name, containerName, "imagePullPolicy")
+		err = unstructured.SetNestedField(*values, string(c.ImagePullPolicy), append(valuePath, "imagePullPolicy")...)
 		if err != nil {
 			return c, fmt.Errorf("%w: unable to set container imagePullPolicy", err)
 		}
-		c.ImagePullPolicy = corev1.PullPolicy(fmt.Sprintf(imagePullPolicyTemplate, name, containerName))
+		c.ImagePullPolicy = corev1.PullPolicy(fmt.Sprintf("{{ .Values.%s.imagePullPolicy }}", valuePathStr))
 	}
 	return c, nil
 }
 
-func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
-	containerName := strcase.ToLowerCamel(c.Name)
+func processEnv(name string, containerName string, appMeta helmify.AppMetadata, c corev1.Container, values *helmify.Values) (corev1.Container, error) {
+	var valuePath []string
+	if containerName == name || containerName == "" {
+		valuePath = []string{name}
+	} else {
+		valuePath = []string{name, containerName}
+	}
+	valuePathStr := strings.Join(valuePath, ".")
 	for i := 0; i < len(c.Env); i++ {
 		if c.Env[i].ValueFrom != nil {
 			switch {
@@ -320,11 +343,70 @@ func processEnv(name string, appMeta helmify.AppMetadata, c corev1.Container, va
 			continue
 		}
 
-		err := unstructured.SetNestedField(*values, c.Env[i].Value, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+		err := unstructured.SetNestedField(*values, c.Env[i].Value, append(valuePath, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))...)
 		if err != nil {
 			return c, fmt.Errorf("%w: unable to set deployment value field", err)
 		}
-		c.Env[i].Value = fmt.Sprintf(envValue, name, containerName, "env", strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
+		c.Env[i].Value = fmt.Sprintf("{{ .Values.%s.env.%s }}", valuePathStr, strcase.ToLowerCamel(strings.ToLower(c.Env[i].Name)))
 	}
 	return c, nil
+}
+
+// AddReloadingAnnotations scans the PodSpec for ConfigMap and Secret references, and injects Helm checksum
+// annotations into the provided map so that pods restart when configurations change.
+func AddReloadingAnnotations(appMeta helmify.AppMetadata, annotations map[string]string, spec *corev1.PodSpec) map[string]string {
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+
+	configMaps := make(map[string]struct{})
+	secrets := make(map[string]struct{})
+
+	for _, v := range spec.Volumes {
+		if v.ConfigMap != nil {
+			configMaps[v.ConfigMap.Name] = struct{}{}
+		}
+		if v.Secret != nil {
+			secrets[v.Secret.SecretName] = struct{}{}
+		}
+	}
+
+	scanContainerRef := func(c corev1.Container) {
+		for _, e := range c.EnvFrom {
+			if e.ConfigMapRef != nil {
+				configMaps[e.ConfigMapRef.Name] = struct{}{}
+			}
+			if e.SecretRef != nil {
+				secrets[e.SecretRef.Name] = struct{}{}
+			}
+		}
+		for _, e := range c.Env {
+			if e.ValueFrom != nil {
+				if e.ValueFrom.ConfigMapKeyRef != nil {
+					configMaps[e.ValueFrom.ConfigMapKeyRef.Name] = struct{}{}
+				}
+				if e.ValueFrom.SecretKeyRef != nil {
+					secrets[e.ValueFrom.SecretKeyRef.Name] = struct{}{}
+				}
+			}
+		}
+	}
+
+	for _, c := range spec.Containers {
+		scanContainerRef(c)
+	}
+	for _, c := range spec.InitContainers {
+		scanContainerRef(c)
+	}
+
+	for cm := range configMaps {
+		trimmed := appMeta.TrimName(cm)
+		annotations["checksum/config-"+trimmed] = fmt.Sprintf(`{{ include (print $.Template.BasePath "/%s.yaml") . | sha256sum }}`, trimmed)
+	}
+	for sec := range secrets {
+		trimmed := appMeta.TrimName(sec)
+		annotations["checksum/secret-"+trimmed] = fmt.Sprintf(`{{ include (print $.Template.BasePath "/%s.yaml") . | sha256sum }}`, trimmed)
+	}
+
+	return annotations
 }

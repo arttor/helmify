@@ -65,7 +65,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 
 	values := helmify.Values{}
 
-	name := appMeta.TrimName(obj.GetName())
+	name := processor.ObjectValueName(appMeta, obj)
 
 	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": dae.Spec.Selector.MatchLabels}, 0)
 	if err != nil {
@@ -89,6 +89,10 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
+	annotations := dae.Spec.Template.ObjectMeta.Annotations
+	annotations = pod.AddReloadingAnnotations(appMeta, annotations, &dae.Spec.Template.Spec)
+	dae.Spec.Template.ObjectMeta.Annotations = annotations
+
 	if len(dae.Spec.Template.ObjectMeta.Annotations) != 0 {
 		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": dae.Spec.Template.ObjectMeta.Annotations}, 6)
 		if err != nil {
@@ -115,6 +119,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	spec = strings.ReplaceAll(spec, "'", "")
 
 	return true, &result{
+		name:   name,
 		values: values,
 		data: struct {
 			Meta           string
@@ -133,6 +138,7 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 }
 
 type result struct {
+	name string
 	data struct {
 		Meta           string
 		Selector       string
@@ -144,7 +150,7 @@ type result struct {
 }
 
 func (r *result) Filename() string {
-	return "daemonset.yaml"
+	return fmt.Sprintf("%s-daemonset.yaml", r.name)
 }
 
 func (r *result) Values() helmify.Values {

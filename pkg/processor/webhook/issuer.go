@@ -6,7 +6,9 @@ import (
 	"io"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
+	"github.com/iancoleman/strcase"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
@@ -63,17 +65,20 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	} else {
 		tmpl = issuerTempl
 	}
+	valueName := processor.ObjectValueName(appMeta, obj)
+	nameCamel := strcase.ToLowerCamel(valueName)
 	values := helmify.Values{}
 	if appMeta.Config().AddWebhookOption {
 		// Add webhook.enabled value to values.yaml
-		_, _ = values.Add(true, "webhook", "enabled")
+		_, _ = values.Add(true, nameCamel, "webhook", "enabled")
 
-		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, tmpl, WebhookFooter)
+		tmpl = fmt.Sprintf("%s\n%s\n%s", fmt.Sprintf(WebhookHeader, nameCamel), tmpl, WebhookFooter)
 	}
 	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
 	return true, &issResult{
-		name: name,
-		data: []byte(res),
+		name:   valueName,
+		data:   []byte(res),
+		values: values,
 	}, nil
 }
 
@@ -84,7 +89,7 @@ type issResult struct {
 }
 
 func (r *issResult) Filename() string {
-	return r.name + ".yaml"
+	return fmt.Sprintf("%s-issuer.yaml", r.name)
 }
 
 func (r *issResult) Values() helmify.Values {
