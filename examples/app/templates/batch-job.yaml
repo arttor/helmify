@@ -8,7 +8,6 @@ spec:
   backoffLimit: {{ .Values.batchJob.backoffLimit }}
   template:
     spec:
-      affinity: {{- toYaml .Values.batchJob.affinity | nindent 8 }}
       containers:
       - command:
         - perl
