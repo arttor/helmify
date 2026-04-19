@@ -9,7 +9,6 @@ spec:
     spec:
       template:
         spec:
-          affinity: {{- toYaml .Values.cronJob.affinity | nindent 12 }}
           containers:
           - command:
             - /bin/sh

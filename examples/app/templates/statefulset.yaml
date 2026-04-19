@@ -15,7 +15,6 @@ spec:
       labels:
         app: nginx
     spec:
-      affinity: {{- toYaml .Values.web.affinity | nindent 8 }}
       containers:
       - env:
         - name: KUBERNETES_CLUSTER_DOMAIN

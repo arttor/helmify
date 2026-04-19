@@ -200,7 +200,6 @@ func Test_pod_Process(t *testing.T) {
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
 			"nodeSelector":              "{{- toYaml .Values.nginx.nodeSelector | nindent 8 }}",
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
-			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -251,7 +250,6 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
-			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -298,7 +296,6 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
-			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -345,7 +342,6 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
-			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
@@ -387,7 +383,6 @@ func Test_pod_Process(t *testing.T) {
 			"serviceAccountName":        `{{ include ".serviceAccountName" . }}`,
 			"tolerations":               "{{- toYaml .Values.nginx.tolerations | nindent 8 }}",
 			"topologySpreadConstraints": "{{- toYaml .Values.nginx.topologySpreadConstraints | nindent 8 }}",
-			"affinity":                  "{{- toYaml .Values.nginx.affinity | nindent 8 }}",
 		}, specMap)
 
 		assert.Equal(t, helmify.Values{
