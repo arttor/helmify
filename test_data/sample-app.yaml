@@ -101,6 +101,7 @@ spec:
               - matchExpressions:
                   - key: node-role.kubernetes.io/control-plane
                     operator: Exists
+      priorityClassName: system-cluster-critical
       terminationGracePeriodSeconds: 10
       volumes:
         - configMap:
@@ -278,6 +279,7 @@ spec:
       labels:
         name: fluentd-elasticsearch
     spec:
+      priorityClassName: system-node-critical
       tolerations:
         # this toleration is to have the daemonset runnable on master nodes
         # remove it if your masters can't run pods
@@ -332,6 +334,7 @@ spec:
     spec:
       template:
         spec:
+          priorityClassName: low-priority
           containers:
             - name: hello
               image: busybox:1.28
@@ -371,6 +374,7 @@ spec:
       labels:
         app: nginx
     spec:
+      priorityClassName: high-priority
       containers:
         - name: nginx
           image: registry.k8s.io/nginx-slim:0.8

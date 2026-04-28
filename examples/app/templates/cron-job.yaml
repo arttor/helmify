@@ -23,6 +23,7 @@ spec:
             name: hello
             resources: {}
           nodeSelector: {{- toYaml .Values.cronJob.nodeSelector | nindent 12 }}
+          priorityClassName: {{ .Values.cronJob.priorityClassName }}
           restartPolicy: OnFailure
           serviceAccountName: {{ include "app.serviceAccountName" . }}
           tolerations: {{- toYaml .Values.cronJob.tolerations | nindent 12 }}

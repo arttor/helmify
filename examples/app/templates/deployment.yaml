@@ -96,6 +96,7 @@ spec:
         name: init-container
         resources: {}
       nodeSelector: {{- toYaml .Values.myapp.nodeSelector | nindent 8 }}
+      priorityClassName: {{ .Values.myapp.priorityClassName }}
       securityContext: {{- toYaml .Values.myapp.podSecurityContext | nindent 8 }}
       serviceAccountName: {{ include "app.serviceAccountName" . }}
       terminationGracePeriodSeconds: 10
