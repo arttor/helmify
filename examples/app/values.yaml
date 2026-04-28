@@ -14,6 +14,7 @@ cronJob:
       tag: "1.28"
     imagePullPolicy: IfNotPresent
   nodeSelector: {}
+  priorityClassName: low-priority
   schedule: '* * * * *'
   tolerations: []
   topologySpreadConstraints: []
@@ -29,6 +30,7 @@ fluentdElasticsearch:
         cpu: 100m
         memory: 200Mi
   nodeSelector: {}
+  priorityClassName: system-node-critical
   tolerations:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
@@ -99,6 +101,7 @@ myapp:
     fsGroup: 20000
     runAsNonRoot: true
     runAsUser: 65532
+  priorityClassName: system-cluster-critical
   proxySidecar:
     args:
     - --secure-listen-address=0.0.0.0:8443
@@ -152,6 +155,7 @@ web:
       repository: registry.k8s.io/nginx-slim
       tag: "0.8"
   nodeSelector: {}
+  priorityClassName: high-priority
   replicas: 2
   tolerations: []
   topologySpreadConstraints: []
