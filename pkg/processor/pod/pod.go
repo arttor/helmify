@@ -115,6 +115,18 @@ func ProcessSpec(objName string, appMeta helmify.AppMetadata, spec corev1.PodSpe
 		}
 	}
 
+	// process priorityClassName if presented:
+	if spec.PriorityClassName != "" {
+		err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{ .Values.%s.priorityClassName }}`, objName), "priorityClassName")
+		if err != nil {
+			return nil, nil, err
+		}
+		err = unstructured.SetNestedField(values, spec.PriorityClassName, objName, "priorityClassName")
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// process tolerations if presented:
 	err = unstructured.SetNestedField(specMap, fmt.Sprintf(`{{- toYaml .Values.%s.tolerations | nindent %d }}`, objName, nindent), "tolerations")
 	if err != nil {
