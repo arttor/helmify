@@ -119,14 +119,18 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 		return true, nil, err
 	}
 
-	podAnnotations := ""
+	podAnnotations := "\n      annotations:"
 	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
-		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
+		staticAnnotations, err := yamlformat.Marshal(depl.Spec.Template.ObjectMeta.Annotations, 8)
 		if err != nil {
 			return true, nil, err
 		}
-
-		podAnnotations = "\n" + podAnnotations
+		podAnnotations += "\n" + staticAnnotations
+	}
+	podAnnotations += fmt.Sprintf("\n      {{- with .Values.%s.podAnnotations }}\n      {{- toYaml . | nindent 8 }}\n      {{- end }}", nameCamel)
+	err = unstructured.SetNestedField(values, make(map[string]interface{}), nameCamel, "podAnnotations")
+	if err != nil {
+		return true, nil, err
 	}
 
 	specMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, depl.Spec.Template.Spec, 0)
