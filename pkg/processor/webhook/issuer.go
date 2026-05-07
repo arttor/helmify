@@ -6,32 +6,11 @@ import (
 	"io"
 
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/yaml"
-)
-
-const (
-	issuerTempl = `apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-spec:
-%[3]s`
-	issuerTemplWithAnno = `apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "1"
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-spec:
-%[3]s`
 )
 
 var issuerGVC = schema.GroupVersionKind{
@@ -59,9 +38,17 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 	spec = bytes.TrimRight(spec, "\n ")
 	tmpl := ""
 	if appMeta.Config().CertManagerAsSubchart {
-		tmpl = issuerTemplWithAnno
-	} else {
-		tmpl = issuerTempl
+		annotations := obj.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		annotations["helm.sh/hook"] = "post-install,post-upgrade"
+		annotations["helm.sh/hook-weight"] = "1"
+		obj.SetAnnotations(annotations)
+	}
+	tmpl, err := processor.ProcessObjMeta(appMeta, obj)
+	if err != nil {
+		return true, nil, err
 	}
 	values := helmify.Values{}
 	if appMeta.Config().AddWebhookOption {
@@ -70,7 +57,7 @@ func (i issuer) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructu
 
 		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, tmpl, WebhookFooter)
 	}
-	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
+	res := tmpl + "\nspec:\n" + string(spec)
 	return true, &issResult{
 		name: name,
 		data: []byte(res),

@@ -57,7 +57,9 @@ func (r roleBinding) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 	}
 
 	for i, s := range rb.Subjects {
-		s.Namespace = "{{ .Release.Namespace }}"
+		if !(appMeta.Config().PreserveNs && s.Namespace != "") {
+			s.Namespace = "{{ .Release.Namespace }}"
+		}
 		s.Name = fmt.Sprintf("{{ include \"%s.serviceAccountName\" . }}", appMeta.ChartName())
 		rb.Subjects[i] = s
 	}

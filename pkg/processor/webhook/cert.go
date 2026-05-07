@@ -8,6 +8,7 @@ import (
 
 	"github.com/arttor/helmify/pkg/cluster"
 	"github.com/arttor/helmify/pkg/helmify"
+	"github.com/arttor/helmify/pkg/processor"
 	yamlformat "github.com/arttor/helmify/pkg/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,25 +18,6 @@ import (
 const (
 	WebhookHeader = `{{- if .Values.webhook.enabled }}`
 	WebhookFooter = `{{- end }}`
-	certTempl     = `apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-spec:
-%[3]s`
-	certTemplWithAnno = `apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: {{ include "%[1]s.fullname" . }}-%[2]s
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "2"
-  labels:
-  {{- include "%[1]s.labels" . | nindent 4 }}
-spec:
-%[3]s`
 )
 
 var certGVC = schema.GroupVersionKind{
@@ -89,11 +71,22 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 	spec = yamlformat.Indent(spec, 2)
 	spec = bytes.TrimRight(spec, "\n ")
 	tmpl := ""
+
 	if appMeta.Config().CertManagerAsSubchart {
-		tmpl = certTemplWithAnno
-	} else {
-		tmpl = certTempl
+		annotations := obj.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		annotations["helm.sh/hook"] = "post-install,post-upgrade"
+		annotations["helm.sh/hook-weight"] = "2"
+		obj.SetAnnotations(annotations)
 	}
+
+	tmpl, err = processor.ProcessObjMeta(appMeta, obj)
+	if err != nil {
+		return true, nil, err
+	}
+
 	values := helmify.Values{}
 	if appMeta.Config().AddWebhookOption {
 		// Add webhook.enabled value to values.yaml
@@ -101,7 +94,7 @@ func (c cert) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructure
 
 		tmpl = fmt.Sprintf("%s\n%s\n%s", WebhookHeader, tmpl, WebhookFooter)
 	}
-	res := fmt.Sprintf(tmpl, appMeta.ChartName(), name, string(spec))
+	res := tmpl + "\nspec:\n" + string(spec)
 	return true, &certResult{
 		name:   name,
 		data:   []byte(res),
