@@ -17,6 +17,13 @@ spec:
       labels:
         app: myapp
       {{- include "app.selectorLabels" . | nindent 8 }}
+      {{- if  .Values.myapp.podLabels }}
+      {{- toYaml .Values.myapp.podLabels | nindent 8 }}
+      {{- end }}
+      annotations:
+      {{- with .Values.myapp.podAnnotations }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       affinity: {{- toYaml .Values.myapp.affinity | nindent 8 }}
       containers:

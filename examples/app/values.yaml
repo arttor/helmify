@@ -97,6 +97,8 @@ myapp:
   nodeSelector:
     region: east
     type: user-node
+  podAnnotations: {}
+  podLabels: {}
   podSecurityContext:
     fsGroup: 20000
     runAsNonRoot: true

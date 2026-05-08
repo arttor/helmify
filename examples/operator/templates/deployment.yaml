@@ -23,6 +23,13 @@ spec:
       labels:
         control-plane: controller-manager
       {{- include "operator.selectorLabels" . | nindent 8 }}
+      {{- if  .Values.controllerManager.podLabels }}
+      {{- toYaml .Values.controllerManager.podLabels | nindent 8 }}
+      {{- end }}
+      annotations:
+      {{- with .Values.controllerManager.podAnnotations }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       containers:
       - args: {{- toYaml .Values.controllerManager.kubeRbacProxy.args | nindent 8 }}

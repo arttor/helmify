@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/arttor/helmify/pkg/metadata"
@@ -134,6 +135,126 @@ func Test_deployment_Process(t *testing.T) {
 		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, false, processed)
+	})
+}
+
+const (
+	// strDeplNoAnnotations has no pod template annotations — tests that podAnnotations is
+	// still seeded in values and the values-driven block is present in the template.
+	strDeplNoAnnotations = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: my-operator-controller-manager
+  namespace: my-operator-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - name: manager
+        image: controller:latest
+`
+	// strDeplWithAnnotations has static pod template annotations — tests that static
+	// annotations are preserved and the values-driven block is appended after them.
+	strDeplWithAnnotations = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: my-operator-controller-manager
+  namespace: my-operator-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: controller-manager
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+    spec:
+      containers:
+      - name: manager
+        image: controller:latest
+`
+)
+
+func Test_deployment_podAnnotations(t *testing.T) {
+	var testInstance deployment
+
+	t.Run("no static annotations - values seeded and template block present", func(t *testing.T) {
+		obj := internal.GenerateObj(strDeplNoAnnotations)
+		processed, tmpl, err := testInstance.Process(&metadata.Service{}, obj)
+		assert.NoError(t, err)
+		assert.True(t, processed)
+
+		// podAnnotations should be seeded as empty map in values
+		// the deployment name "my-operator-controller-manager" trims to "controller-manager"
+		// which becomes "controllerManager" in lowerCamel
+		vals := tmpl.Values()
+		controllerManager, ok := vals["myOperatorControllerManager"].(map[string]interface{})
+		assert.True(t, ok, "expected myOperatorControllerManager key in values")
+		podAnnotations, ok := controllerManager["podAnnotations"]
+		assert.True(t, ok, "expected podAnnotations key in values")
+		assert.Equal(t, map[string]interface{}{}, podAnnotations)
+
+		// Template output must contain the values-driven annotations block
+		var buf bytes.Buffer
+		assert.NoError(t, tmpl.Write(&buf))
+		output := buf.String()
+		assert.Contains(t, output, "{{- with .Values.myOperatorControllerManager.podAnnotations }}")
+		assert.Contains(t, output, "{{- toYaml . | nindent 8 }}")
+		assert.Contains(t, output, "annotations:")
+	})
+
+	t.Run("static annotations preserved and values block appended", func(t *testing.T) {
+		obj := internal.GenerateObj(strDeplWithAnnotations)
+		processed, tmpl, err := testInstance.Process(&metadata.Service{}, obj)
+		assert.NoError(t, err)
+		assert.True(t, processed)
+
+		var buf bytes.Buffer
+		assert.NoError(t, tmpl.Write(&buf))
+		output := buf.String()
+
+		// Static annotation must be in the output
+		assert.Contains(t, output, "kubectl.kubernetes.io/default-container: manager")
+		// Values-driven block must also be present
+		assert.Contains(t, output, "{{- with .Values.myOperatorControllerManager.podAnnotations }}")
+	})
+}
+
+func Test_deployment_podLabels(t *testing.T) {
+	var testInstance deployment
+
+	t.Run("podLabels seeded in values and template block present", func(t *testing.T) {
+		obj := internal.GenerateObj(strDeplNoAnnotations)
+		processed, tmpl, err := testInstance.Process(&metadata.Service{}, obj)
+		assert.NoError(t, err)
+		assert.True(t, processed)
+
+		vals := tmpl.Values()
+		controllerManager, ok := vals["myOperatorControllerManager"].(map[string]interface{})
+		assert.True(t, ok, "expected myOperatorControllerManager key in values")
+		podLabels, ok := controllerManager["podLabels"]
+		assert.True(t, ok, "expected podLabels key in values")
+		assert.Equal(t, map[string]interface{}{}, podLabels)
+
+		var buf bytes.Buffer
+		assert.NoError(t, tmpl.Write(&buf))
+		output := buf.String()
+		assert.Contains(t, output, "{{- if  .Values.myOperatorControllerManager.podLabels }}")
+		assert.Contains(t, output, "{{- toYaml .Values.myOperatorControllerManager.podLabels | nindent 8 }}")
 	})
 }
 
