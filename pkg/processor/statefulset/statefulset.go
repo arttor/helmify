@@ -108,6 +108,12 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 		}
 	}
 
+	// Compute checksum annotations before ProcessSpec modifies ConfigMap/Secret names.
+	checksumAnns := ""
+	if appMeta.Config().AddChecksumAnnotations {
+		checksumAnns = pod.ChecksumAnnotations(appMeta, ssSpec.Template.Spec, appMeta.ConfigMapFiles(), appMeta.SecretFiles(), 6)
+	}
+
 	// process pod spec:
 	podSpecMap, podValues, err := pod.ProcessSpec(nameCamel, appMeta, ssSpec.Template.Spec, 0)
 	if err != nil {
@@ -127,6 +133,12 @@ func (d statefulset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unst
 		return true, nil, err
 	}
 	spec = strings.ReplaceAll(spec, "'", "")
+
+	if checksumAnns != "" {
+		// Insert checksum annotations after the pod template metadata line.
+		// The marshaled spec has "    metadata:\n" under "  template:\n".
+		spec = strings.Replace(spec, "    metadata:\n", "    metadata:\n"+checksumAnns+"\n", 1)
+	}
 
 	return true, &result{
 		values: values,

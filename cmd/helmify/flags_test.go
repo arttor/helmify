@@ -180,6 +180,7 @@ func TestReadFlags_DefaultValuesMatchFlagDefaults(t *testing.T) {
 		{"original-name", func(cfg config.Config) bool { return cfg.OriginalName }},
 		{"preserve-ns", func(cfg config.Config) bool { return cfg.PreserveNs }},
 		{"add-webhook-option", func(cfg config.Config) bool { return cfg.AddWebhookOption }},
+		{"add-checksum-annotations", func(cfg config.Config) bool { return cfg.AddChecksumAnnotations }},
 	}
 
 	for _, tt := range stringTests {

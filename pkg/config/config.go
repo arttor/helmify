@@ -45,6 +45,9 @@ type Config struct {
 	AddWebhookOption bool
 	// OptionalCRDs - Enable optional CRD installation through values.
 	OptionalCRDs bool
+	// AddChecksumAnnotations - Add checksum annotations for ConfigMaps and Secrets referenced by workloads.
+	// This triggers rolling restarts when referenced ConfigMap/Secret content changes.
+	AddChecksumAnnotations bool
 }
 
 func (c *Config) Validate() error {

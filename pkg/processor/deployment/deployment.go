@@ -115,13 +115,28 @@ func (d deployment) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstr
 	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
-	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
-		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
-		if err != nil {
-			return true, nil, err
+	if appMeta.Config().AddChecksumAnnotations {
+		checksumAnns := pod.ChecksumAnnotations(appMeta, depl.Spec.Template.Spec, appMeta.ConfigMapFiles(), appMeta.SecretFiles(), 6)
+		if checksumAnns != "" {
+			podAnnotations = "\n" + checksumAnns
 		}
-
-		podAnnotations = "\n" + podAnnotations
+	}
+	if len(depl.Spec.Template.ObjectMeta.Annotations) != 0 {
+		existingAnns, err2 := yamlformat.Marshal(map[string]interface{}{"annotations": depl.Spec.Template.ObjectMeta.Annotations}, 6)
+		if err2 != nil {
+			return true, nil, err2
+		}
+		if podAnnotations == "" {
+			podAnnotations = "\n" + existingAnns
+		} else {
+			// Append existing annotation values under the annotations: key already created by checksums.
+			for _, line := range strings.Split(existingAnns, "\n") {
+				if strings.TrimSpace(line) == "annotations:" {
+					continue
+				}
+				podAnnotations += "\n" + line
+			}
+		}
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)

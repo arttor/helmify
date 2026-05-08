@@ -54,6 +54,11 @@ func (c *appContext) CreateHelm(stop <-chan struct{}) error {
 		"ChartName": c.appMeta.ChartName(),
 		"Namespace": c.appMeta.Namespace(),
 	}).Info("creating a chart")
+
+	if c.config.AddChecksumAnnotations {
+		c.precomputeConfigFileNames()
+	}
+
 	var templates []helmify.Template
 	var filenames []string
 	for i, obj := range c.objects {
@@ -102,4 +107,28 @@ func (c *appContext) process(obj *unstructured.Unstructured) (helmify.Template, 
 	}
 	_, t, err := c.defaultProcessor.Process(c.appMeta, obj)
 	return t, err
+}
+
+// precomputeConfigFileNames builds the ConfigMap/Secret name → filename maps
+// and stores them on appMeta so processors can generate checksum annotations.
+// For objects from file input, the input filename is used. For stdin input,
+// the filename follows the processor convention: trimmedName + ".yaml".
+func (c *appContext) precomputeConfigFileNames() {
+	configMapFiles := map[string]string{}
+	secretFiles := map[string]string{}
+	for i, obj := range c.objects {
+		name := obj.GetName()
+		filename := c.fileNames[i]
+		if filename == "" {
+			filename = c.appMeta.TrimName(name) + ".yaml"
+		}
+		switch obj.GroupVersionKind() {
+		case metadata.ConfigMapGVK:
+			configMapFiles[name] = filename
+		case metadata.SecretGVK:
+			secretFiles[name] = filename
+		}
+	}
+	c.appMeta.SetConfigMapFiles(configMapFiles)
+	c.appMeta.SetSecretFiles(secretFiles)
 }

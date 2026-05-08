@@ -89,13 +89,27 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
-	if len(dae.Spec.Template.ObjectMeta.Annotations) != 0 {
-		podAnnotations, err = yamlformat.Marshal(map[string]interface{}{"annotations": dae.Spec.Template.ObjectMeta.Annotations}, 6)
-		if err != nil {
-			return true, nil, err
+	if appMeta.Config().AddChecksumAnnotations {
+		checksumAnns := pod.ChecksumAnnotations(appMeta, dae.Spec.Template.Spec, appMeta.ConfigMapFiles(), appMeta.SecretFiles(), 6)
+		if checksumAnns != "" {
+			podAnnotations = "\n" + checksumAnns
 		}
-
-		podAnnotations = "\n" + podAnnotations
+	}
+	if len(dae.Spec.Template.ObjectMeta.Annotations) != 0 {
+		existingAnns, err2 := yamlformat.Marshal(map[string]interface{}{"annotations": dae.Spec.Template.ObjectMeta.Annotations}, 6)
+		if err2 != nil {
+			return true, nil, err2
+		}
+		if podAnnotations == "" {
+			podAnnotations = "\n" + existingAnns
+		} else {
+			for _, line := range strings.Split(existingAnns, "\n") {
+				if strings.TrimSpace(line) == "annotations:" {
+					continue
+				}
+				podAnnotations += "\n" + line
+			}
+		}
 	}
 
 	nameCamel := strcase.ToLowerCamel(name)
