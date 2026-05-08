@@ -8,6 +8,7 @@ import (
 
 	"github.com/arttor/helmify/pkg/helmify"
 	v1 "k8s.io/api/admissionregistration/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -55,6 +56,7 @@ func (w mwh) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	for i, whc := range whConf.Webhooks {
 		whc.ClientConfig.Service.Name = appMeta.TemplatedName(whc.ClientConfig.Service.Name)
 		whc.ClientConfig.Service.Namespace = strings.ReplaceAll(whc.ClientConfig.Service.Namespace, appMeta.Namespace(), `{{ .Release.Namespace }}`)
+		mutateNamespaceSelector(appMeta, whc.NamespaceSelector)
 		whConf.Webhooks[i] = whc
 	}
 	webhooks, _ := yaml.Marshal(whConf.Webhooks)
@@ -97,4 +99,27 @@ func (r *mwhResult) Values() helmify.Values {
 func (r *mwhResult) Write(writer io.Writer) error {
 	_, err := writer.Write(r.data)
 	return err
+}
+
+const (
+	nameLabel         = "kubernetes.io/metadata.name"
+	namespaceTemplate = "{{ .Release.Namespace }}"
+)
+
+// Replace the relase namespace in a namespace selector
+func mutateNamespaceSelector(appMeta helmify.AppMetadata, sel *metav1.LabelSelector) {
+	if appMeta.Config().PreserveNs || sel == nil {
+		return
+	}
+	origNamespace := appMeta.Namespace()
+	for i, me := range sel.MatchExpressions {
+		if me.Key == nameLabel {
+			for vi, v := range me.Values {
+				if v == origNamespace {
+					me.Values[vi] = namespaceTemplate
+				}
+			}
+			sel.MatchExpressions[i] = me
+		}
+	}
 }

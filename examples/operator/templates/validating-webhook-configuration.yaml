@@ -17,6 +17,14 @@ webhooks:
       path: /validate-ceph-example-com-v1alpha1-volume
   failurePolicy: Fail
   name: vvolume.kb.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - namespace-1
+      - '{{ .Release.Namespace }}'
+      - namespace-3
   rules:
   - apiGroups:
     - test.example.com

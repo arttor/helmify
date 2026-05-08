@@ -26,6 +26,14 @@ webhooks:
       path: /validate-ceph-example-com-v1alpha1-volume
   failurePolicy: Fail
   name: vvolume.kb.io
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - namespace-1
+      - my-operator-system
+      - namespace-3
   rules:
   - apiGroups:
     - test.example.com
@@ -43,7 +51,7 @@ func Test_vwh_Process(t *testing.T) {
 
 	t.Run("processed", func(t *testing.T) {
 		obj := internal.GenerateObj(vwhYaml)
-		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
+		processed, _, err := testInstance.Process(testAppMetaWithNamespace(), obj)
 		assert.NoError(t, err)
 		assert.Equal(t, true, processed)
 	})
