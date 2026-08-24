@@ -80,9 +80,12 @@ func (r svc) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	shortName := strings.TrimPrefix(name, "controller-manager-")
 	shortNameCamel := strcase.ToLowerCamel(shortName)
 
-	selector, _ := yaml.Marshal(service.Spec.Selector)
-	selector = yamlformat.Indent(selector, 4)
-	selector = bytes.TrimRight(selector, "\n ")
+	var selector []byte
+	if stripped := processor.StripSelectorLabels(service.Spec.Selector); len(stripped) > 0 {
+		selector, _ = yaml.Marshal(stripped)
+		selector = yamlformat.Indent(selector, 4)
+		selector = bytes.TrimRight(selector, "\n ")
+	}
 
 	values := helmify.Values{}
 	svcType := service.Spec.Type

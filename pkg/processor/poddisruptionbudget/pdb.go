@@ -61,9 +61,20 @@ func (r pdb) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstructured
 	name := appMeta.TrimName(obj.GetName())
 	nameCamel := strcase.ToLowerCamel(name)
 
-	selector, _ := yaml.Marshal(pdb.Spec.Selector)
-	selector = yamlformat.Indent(selector, 4)
-	selector = bytes.TrimRight(selector, "\n ")
+	var selector []byte
+	if pdb.Spec.Selector != nil {
+		sel := pdb.Spec.Selector.DeepCopy()
+		sel.MatchLabels = processor.StripSelectorLabels(sel.MatchLabels)
+		if len(sel.MatchLabels) == 0 && len(sel.MatchExpressions) == 0 {
+			// selector only had keys provided by selectorLabels; keep the matchLabels
+			// key so the include nests correctly under it (avoids an empty "{}").
+			selector = []byte("    matchLabels:")
+		} else {
+			raw, _ := yaml.Marshal(sel)
+			selector = yamlformat.Indent(raw, 4)
+			selector = bytes.TrimRight(selector, "\n ")
+		}
+	}
 
 	if spec.MaxUnavailable != nil {
 		_, err := values.Add(spec.MaxUnavailable.IntValue(), nameCamel, "maxUnavailable")

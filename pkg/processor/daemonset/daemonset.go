@@ -67,9 +67,12 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 
 	name := appMeta.TrimName(obj.GetName())
 
-	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": dae.Spec.Selector.MatchLabels}, 0)
-	if err != nil {
-		return true, nil, err
+	matchLabels := "matchLabels:"
+	if stripped := processor.StripSelectorLabels(dae.Spec.Selector.MatchLabels); len(stripped) > 0 {
+		matchLabels, err = yamlformat.Marshal(map[string]interface{}{"matchLabels": stripped}, 0)
+		if err != nil {
+			return true, nil, err
+		}
 	}
 	matchExpr := ""
 	if dae.Spec.Selector.MatchExpressions != nil {
@@ -82,11 +85,14 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	selector = strings.Trim(selector, " \n")
 	selector = string(yamlformat.Indent([]byte(selector), 4))
 
-	podLabels, err := yamlformat.Marshal(dae.Spec.Template.ObjectMeta.Labels, 8)
-	if err != nil {
-		return true, nil, err
+	podLabels := fmt.Sprintf("      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
+	if strippedPodLabels := processor.StripSelectorLabels(dae.Spec.Template.ObjectMeta.Labels); len(strippedPodLabels) > 0 {
+		podLabels, err = yamlformat.Marshal(strippedPodLabels, 8)
+		if err != nil {
+			return true, nil, err
+		}
+		podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 	}
-	podLabels += fmt.Sprintf("\n      {{- include \"%s.selectorLabels\" . | nindent 8 }}", appMeta.ChartName())
 
 	podAnnotations := ""
 	if len(dae.Spec.Template.ObjectMeta.Annotations) != 0 {
