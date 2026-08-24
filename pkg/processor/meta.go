@@ -49,6 +49,32 @@ func WithAnnotations(values helmify.Values) MetaOpt {
 	}
 }
 
+// selectorLabelsKeys are the label keys emitted by the "<chart>.selectorLabels" helper.
+// They are stripped from selectors and pod-template labels so they are not rendered
+// twice (once hardcoded from the source manifest, once from the helper), which would
+// produce duplicate YAML mapping keys rejected by strict parsers (e.g. ArgoCD).
+var selectorLabelsKeys = map[string]struct{}{
+	"app.kubernetes.io/name":     {},
+	"app.kubernetes.io/instance": {},
+}
+
+// StripSelectorLabels returns a copy of labels with the keys provided by the
+// "<chart>.selectorLabels" helper removed. Use it on selectors and pod-template
+// labels before rendering them next to a selectorLabels include.
+func StripSelectorLabels(labels map[string]string) map[string]string {
+	if len(labels) == 0 {
+		return labels
+	}
+	stripped := make(map[string]string, len(labels))
+	for k, v := range labels {
+		if _, drop := selectorLabelsKeys[k]; drop {
+			continue
+		}
+		stripped[k] = v
+	}
+	return stripped
+}
+
 // ProcessObjMeta - returns object apiVersion, kind and metadata as helm template.
 func ProcessObjMeta(appMeta helmify.AppMetadata, obj *unstructured.Unstructured, opts ...MetaOpt) (string, error) {
 	options := &options{}

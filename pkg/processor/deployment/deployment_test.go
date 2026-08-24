@@ -1,6 +1,7 @@
 package deployment
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/arttor/helmify/pkg/metadata"
@@ -24,10 +25,13 @@ spec:
     type: Recreate
   selector:
     matchLabels:
+      app.kubernetes.io/name: my-operator
       control-plane: controller-manager
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: my-operator
+        app.kubernetes.io/instance: my-operator
         control-plane: controller-manager
     spec:
       containers:
@@ -125,9 +129,21 @@ func Test_deployment_Process(t *testing.T) {
 
 	t.Run("processed", func(t *testing.T) {
 		obj := internal.GenerateObj(strDepl)
-		processed, _, err := testInstance.Process(&metadata.Service{}, obj)
+		processed, tpl, err := testInstance.Process(&metadata.Service{}, obj)
 		assert.NoError(t, err)
 		assert.Equal(t, true, processed)
+
+		// issue #196: app.kubernetes.io/name and app.kubernetes.io/instance from
+		// selector.matchLabels and pod-template labels are provided by the
+		// chart.selectorLabels helper and must not be emitted hardcoded, otherwise
+		// the rendered manifest has duplicate YAML mapping keys.
+		var buf bytes.Buffer
+		assert.NoError(t, tpl.Write(&buf))
+		rendered := buf.String()
+		assert.Contains(t, rendered, "selectorLabels")
+		assert.Contains(t, rendered, "control-plane: controller-manager")
+		assert.NotContains(t, rendered, "app.kubernetes.io/name: my-operator")
+		assert.NotContains(t, rendered, "app.kubernetes.io/instance: my-operator")
 	})
 	t.Run("skipped", func(t *testing.T) {
 		obj := internal.TestNs

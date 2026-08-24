@@ -11,10 +11,12 @@ spec:
   selector:
     matchLabels:
       app: myapp
+      app.kubernetes.io/name: myapp
   template:
     metadata:
       labels:
         app: myapp
+        app.kubernetes.io/name: myapp
     spec:
       initContainers:
         - name: init-container
@@ -145,6 +147,7 @@ spec:
       targetPort: https
   selector:
     app: myapp
+    app.kubernetes.io/name: myapp
 ---
 apiVersion: v1
 kind: Service
@@ -274,10 +277,12 @@ spec:
   selector:
     matchLabels:
       name: fluentd-elasticsearch
+      app.kubernetes.io/name: fluentd-elasticsearch
   template:
     metadata:
       labels:
         name: fluentd-elasticsearch
+        app.kubernetes.io/name: fluentd-elasticsearch
     spec:
       priorityClassName: system-node-critical
       tolerations:
@@ -404,3 +409,4 @@ spec:
   selector:
     matchLabels:
       app: nginx
+      app.kubernetes.io/name: nginx
