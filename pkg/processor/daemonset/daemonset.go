@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var daemonsetGVC = schema.GroupVersionKind{
@@ -27,6 +28,9 @@ var daemonsetGVC = schema.GroupVersionKind{
 var daemonsetTempl, _ = template.New("daemonset").Parse(
 	`{{- .Meta }}
 spec:
+{{- if .UpdateStrategy }}
+{{ .UpdateStrategy }}
+{{- end }}
   selector:
 {{ .Selector }}
   template:
@@ -66,6 +70,10 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	values := helmify.Values{}
 
 	name := appMeta.TrimName(obj.GetName())
+	updateStrategy, err := processUpdateStrategy(name, &dae, &values)
+	if err != nil {
+		return true, nil, err
+	}
 
 	matchLabels, err := yamlformat.Marshal(map[string]interface{}{"matchLabels": dae.Spec.Selector.MatchLabels}, 0)
 	if err != nil {
@@ -118,12 +126,14 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 		values: values,
 		data: struct {
 			Meta           string
+			UpdateStrategy string
 			Selector       string
 			PodLabels      string
 			PodAnnotations string
 			Spec           string
 		}{
 			Meta:           meta,
+			UpdateStrategy: updateStrategy,
 			Selector:       selector,
 			PodLabels:      podLabels,
 			PodAnnotations: podAnnotations,
@@ -132,9 +142,69 @@ func (d daemonset) Process(appMeta helmify.AppMetadata, obj *unstructured.Unstru
 	}, nil
 }
 
+func processUpdateStrategy(name string, dae *appsv1.DaemonSet, values *helmify.Values) (string, error) {
+	if dae.Spec.UpdateStrategy.Type == "" && dae.Spec.UpdateStrategy.RollingUpdate == nil {
+		return "", nil
+	}
+	if dae.Spec.UpdateStrategy.Type == "" {
+		dae.Spec.UpdateStrategy.Type = appsv1.RollingUpdateDaemonSetStrategyType
+	}
+	allowedStrategyTypes := map[appsv1.DaemonSetUpdateStrategyType]bool{
+		appsv1.RollingUpdateDaemonSetStrategyType: true,
+		appsv1.OnDeleteDaemonSetStrategyType:      true,
+	}
+	if !allowedStrategyTypes[dae.Spec.UpdateStrategy.Type] {
+		return "", fmt.Errorf("invalid daemonset update strategy type: %s", dae.Spec.UpdateStrategy.Type)
+	}
+	strategyTypeTpl, err := values.Add(string(dae.Spec.UpdateStrategy.Type), name, "updateStrategy", "type")
+	if err != nil {
+		return "", err
+	}
+	strategyMap := map[string]interface{}{
+		"type": strategyTypeTpl,
+	}
+	if dae.Spec.UpdateStrategy.Type == appsv1.RollingUpdateDaemonSetStrategyType {
+		if rollingUpdate := dae.Spec.UpdateStrategy.RollingUpdate; rollingUpdate != nil {
+			rollingUpdateMap := map[string]interface{}{}
+			setRollingUpdateField := func(value *intstr.IntOrString, fieldName string) error {
+				var tpl string
+				var err error
+				if value.Type == intstr.Int {
+					tpl, err = values.Add(value.IntValue(), name, "updateStrategy", "rollingUpdate", fieldName)
+				} else {
+					tpl, err = values.Add(value.String(), name, "updateStrategy", "rollingUpdate", fieldName)
+				}
+				if err != nil {
+					return err
+				}
+				rollingUpdateMap[fieldName] = tpl
+				return nil
+			}
+			if rollingUpdate.MaxSurge != nil {
+				if err := setRollingUpdateField(rollingUpdate.MaxSurge, "maxSurge"); err != nil {
+					return "", err
+				}
+			}
+			if rollingUpdate.MaxUnavailable != nil {
+				if err := setRollingUpdateField(rollingUpdate.MaxUnavailable, "maxUnavailable"); err != nil {
+					return "", err
+				}
+			}
+			strategyMap["rollingUpdate"] = rollingUpdateMap
+		}
+	}
+	strategy, err := yamlformat.Marshal(map[string]interface{}{"updateStrategy": strategyMap}, 2)
+	if err != nil {
+		return "", err
+	}
+	strategy = strings.ReplaceAll(strategy, "'", "")
+	return strategy, nil
+}
+
 type result struct {
 	data struct {
 		Meta           string
+		UpdateStrategy string
 		Selector       string
 		PodLabels      string
 		PodAnnotations string
